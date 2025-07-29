@@ -166,3 +166,4 @@ config.local.json
 
 # IndexedDB files (for development)
 IndexedDB/ 
+.vercel

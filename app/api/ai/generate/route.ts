@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { getWeekStartDate, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Firebase on server side
