@@ -4,7 +4,6 @@ import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 
 import { formatDate } from '@/lib/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Firebase on server side
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
