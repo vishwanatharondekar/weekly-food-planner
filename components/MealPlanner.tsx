@@ -175,15 +175,13 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {aiStatus.canGenerate && (
-                  <button
-                    disabled
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-pink-600 opacity-50 cursor-not-allowed"
-                  >
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generating...
-                  </button>
-                )}
+                <button
+                  disabled
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-pink-600 opacity-50 cursor-not-allowed"
+                >
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Generating...
+                </button>
                 <button
                   onClick={() => setShowDietaryPreferences(true)}
                   disabled={loading}
@@ -323,16 +321,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {aiStatus.canGenerate && (
-                <button
-                  onClick={generateAIMeals}
-                  disabled={loading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Fill Empty Slots
-                </button>
-              )}
+              <button
+                onClick={aiStatus.canGenerate ? generateAIMeals : () => toast.error('Fill at least 2 weeks of meal data to enable AI suggestions')}
+                disabled={loading}
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
+                  aiStatus.canGenerate 
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:ring-purple-500' 
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Fill with AI
+              </button>
               <button
                 onClick={clearMeals}
                 disabled={loading}
@@ -447,25 +447,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             </table>
           </div>
         </div>
-
-        {/* AI Status */}
-        {!aiStatus.hasHistory && (
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                  Start Planning to Unlock AI Features
-                </h3>
-                <div className="mt-2 text-sm text-blue-700">
-                  <p>Fill in at least 2 weeks of meal data to enable AI-powered suggestions for empty slots.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         
       </div>
     </div>
