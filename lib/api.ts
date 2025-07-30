@@ -274,14 +274,14 @@ export const mealsAPI = {
       }
 
       // Create an empty meal plan to clear all meals
-      const emptyMeals = {
-        monday: { breakfast: '', lunch: '', dinner: '' },
-        tuesday: { breakfast: '', lunch: '', dinner: '' },
-        wednesday: { breakfast: '', lunch: '', dinner: '' },
-        thursday: { breakfast: '', lunch: '', dinner: '' },
-        friday: { breakfast: '', lunch: '', dinner: '' },
-        saturday: { breakfast: '', lunch: '', dinner: '' },
-        sunday: { breakfast: '', lunch: '', dinner: '' },
+      const defaultMeals = {
+        monday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        tuesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        wednesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        thursday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        friday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        saturday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        sunday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
       };
 
       const response = await fetch(`/api/meals/${weekStartDate}`, {
@@ -290,7 +290,7 @@ export const mealsAPI = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ meals: emptyMeals }),
+        body: JSON.stringify({ meals: defaultMeals }),
       });
 
       if (!response.ok) {

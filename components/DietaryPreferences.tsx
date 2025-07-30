@@ -16,10 +16,11 @@ const DAYS_OF_WEEK = [
 ];
 
 interface DietaryPreferencesProps {
+  user: any;
   onClose: () => void;
 }
 
-export default function DietaryPreferences({ onClose }: DietaryPreferencesProps) {
+export default function DietaryPreferences({ user, onClose }: DietaryPreferencesProps) {
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [nonVegDays, setNonVegDays] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
