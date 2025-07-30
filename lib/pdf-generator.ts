@@ -92,17 +92,7 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
     margin: { left: 20, right: 20 },
   });
 
-  // Add notes section
-  const finalY = (doc as any).lastAutoTable?.finalY || 60;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Notes:', 20, finalY + 20);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text('• Please check for any allergies or dietary restrictions', 20, finalY + 30);
-  doc.text('• Adjust portions according to family size', 20, finalY + 38);
-  doc.text('• Feel free to substitute ingredients as needed', 20, finalY + 46);
+  // No notes section - removed for cleaner layout
 
   // Footer
   doc.setFontSize(8);
@@ -169,10 +159,17 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       
       // Create side-by-side layout
       if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
+        // Store the initial Y position for both headers
+        const headerY = currentY;
+        
         // Left side: Grouped ingredients
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Ingredients by Meal:', 20, currentY);
+        doc.text('Ingredients by Meal:', 20, headerY);
+        
+        // Right side: Consolidated list header (same Y position)
+        doc.text('Complete Shopping List:', 110, headerY);
+        
         currentY += 10;
         
         // Create compact grouped list
@@ -202,13 +199,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           }
         });
         
-        // Right side: Consolidated list
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Complete Shopping List:', 110, currentY);
-        
         // Create consolidated list
-        let rightY = currentY + 10;
+        let rightY = headerY + 10; // Align with header
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         
@@ -226,7 +218,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         });
         
         // Right column - align with left column
-        let rightColumnY = currentY + 10;
+        let rightColumnY = headerY + 10; // Align with header
         rightColumn.forEach((ingredient: string) => {
           // Clean ingredient name (remove ampersands and other unwanted characters)
           const cleanIngredient = ingredient.replace(/[&]/g, 'and').trim();
