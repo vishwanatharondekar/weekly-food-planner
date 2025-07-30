@@ -115,7 +115,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
     const meals = plan.meals;
     const weekInfo = `Week of ${plan.weekStartDate}:\n`;
     const mealsText = Object.entries(meals).map(([day, dayMeals]: [string, any]) => {
-      return `  ${day}: ${dayMeals.breakfast || 'empty'} / ${dayMeals.lunch || 'empty'} / ${dayMeals.dinner || 'empty'}`;
+      return `  ${day}: ${dayMeals.breakfast || 'empty'} / ${dayMeals.morningSnack || 'empty'} / ${dayMeals.lunch || 'empty'} / ${dayMeals.eveningSnack || 'empty'} / ${dayMeals.dinner || 'empty'}`;
     }).join('\n');
     return weekInfo + mealsText;
   }).join('\n\n');
@@ -132,7 +132,7 @@ ${dietaryInfo}
 Meal History:
 ${historyText}
 
-Please suggest meals for each day (breakfast, lunch, dinner) that are:
+Please suggest meals for each day (breakfast, morning snack, lunch, evening snack, dinner) that are:
 1. Similar to the user's historical preferences
 2. Respect their dietary restrictions
 3. Varied and healthy
@@ -140,13 +140,13 @@ Please suggest meals for each day (breakfast, lunch, dinner) that are:
 
 Return the suggestions in this exact JSON format:
 {
-  "monday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "tuesday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "wednesday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "thursday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "friday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "saturday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" },
-  "sunday": { "breakfast": "meal name", "lunch": "meal name", "dinner": "meal name" }
+  "monday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "tuesday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "wednesday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "thursday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "friday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "saturday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
+  "sunday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" }
 }`;
 
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });

@@ -127,15 +127,15 @@ export class FirebaseStorageProvider {
       } as MealPlan;
     }
 
-    // Create default meal plan if none exists
-    const defaultMeals: MealData = {
-      monday: { breakfast: '', lunch: '', dinner: '' },
-      tuesday: { breakfast: '', lunch: '', dinner: '' },
-      wednesday: { breakfast: '', lunch: '', dinner: '' },
-      thursday: { breakfast: '', lunch: '', dinner: '' },
-      friday: { breakfast: '', lunch: '', dinner: '' },
-      saturday: { breakfast: '', lunch: '', dinner: '' },
-      sunday: { breakfast: '', lunch: '', dinner: '' },
+    // Create default meal plan
+    const defaultMeals = {
+      monday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      tuesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      wednesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      thursday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      friday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      saturday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+      sunday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
     };
 
     const defaultPlan: MealPlan = {

@@ -7,11 +7,15 @@ interface User {
   id: string;
   email: string;
   name: string;
-  createdAt: Date;
   dietaryPreferences?: {
-    nonVegDays: string[]; // Array of day names like ['monday', 'wednesday']
     isVegetarian: boolean;
+    nonVegDays: string[];
   };
+  mealSettings?: {
+    enabledMealTypes: string[];
+  };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface MealData {
@@ -28,6 +32,9 @@ interface MealPlan {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Re-export MealSettings from utils for consistency
+export type { MealSettings } from './utils';
 
 class StorageManager {
   private db: IDBDatabase | null = null;
@@ -195,13 +202,13 @@ class StorageManager {
     if (typeof window === 'undefined') {
       // Return a default plan for server-side rendering
       const defaultMeals: MealData = {
-        monday: { breakfast: '', lunch: '', dinner: '' },
-        tuesday: { breakfast: '', lunch: '', dinner: '' },
-        wednesday: { breakfast: '', lunch: '', dinner: '' },
-        thursday: { breakfast: '', lunch: '', dinner: '' },
-        friday: { breakfast: '', lunch: '', dinner: '' },
-        saturday: { breakfast: '', lunch: '', dinner: '' },
-        sunday: { breakfast: '', lunch: '', dinner: '' },
+        monday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        tuesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        wednesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        thursday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        friday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        saturday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+        sunday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
       };
 
       return {
@@ -219,21 +226,21 @@ class StorageManager {
 
     return new Promise((resolve, reject) => {
       const request = index.get([userId, weekStartDate]);
+
       request.onsuccess = () => {
-        const existingPlan = request.result;
-        
-        if (existingPlan) {
-          resolve(existingPlan);
+        const result = request.result;
+        if (result) {
+          resolve(result);
         } else {
-          // Create a default meal plan structure if none exists
+          // Create default meal plan
           const defaultMeals: MealData = {
-            monday: { breakfast: '', lunch: '', dinner: '' },
-            tuesday: { breakfast: '', lunch: '', dinner: '' },
-            wednesday: { breakfast: '', lunch: '', dinner: '' },
-            thursday: { breakfast: '', lunch: '', dinner: '' },
-            friday: { breakfast: '', lunch: '', dinner: '' },
-            saturday: { breakfast: '', lunch: '', dinner: '' },
-            sunday: { breakfast: '', lunch: '', dinner: '' },
+            monday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            tuesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            wednesday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            thursday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            friday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            saturday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
+            sunday: { breakfast: '', morningSnack: '', lunch: '', eveningSnack: '', dinner: '' },
           };
 
           const defaultPlan: MealPlan = {

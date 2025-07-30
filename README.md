@@ -58,7 +58,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ## Features
 
 ### **Core Functionality**
-- 📅 **Weekly Meal Planning**: Plan breakfast, lunch, and dinner for each day
+- 📅 **Weekly Meal Planning**: Plan breakfast, morning snack, lunch, evening snack, and dinner for each day
 - 👤 **User Authentication**: Secure registration and login system
 - 💾 **Data Persistence**: Firebase Firestore for cloud storage
 - 🔄 **Real-time Sync**: Automatic data synchronization
