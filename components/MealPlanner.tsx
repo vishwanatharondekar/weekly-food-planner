@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, addWeeks, subWeeks } from 'date-fns';
-import { ChevronLeft, ChevronRight, Sparkles, Trash2, Leaf, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Trash2, Leaf, X, FileDown, ShoppingCart } from 'lucide-react';
 import { mealsAPI, aiAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, MEAL_TYPES, getWeekStartDate, formatDate, debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import DietaryPreferences from './DietaryPreferences';
+import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 
 interface MealData {
   [day: string]: {
@@ -150,6 +151,43 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     } catch (error) {
       console.error('Error clearing meals:', error);
       toast.error('Failed to clear meals');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGeneratePDF = () => {
+    try {
+      generateMealPlanPDF({
+        weekStartDate: formatDate(currentWeek),
+        meals,
+        userInfo: {
+          name: user?.name,
+          email: user?.email
+        }
+      });
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
+  const handleGenerateShoppingList = async () => {
+    try {
+      setLoading(true);
+      await generateShoppingListPDF({
+        weekStartDate: formatDate(currentWeek),
+        meals,
+        userInfo: {
+          name: user?.name,
+          email: user?.email
+        }
+      });
+      toast.success('Shopping list downloaded!');
+    } catch (error) {
+      console.error('Error generating shopping list:', error);
+      toast.error('Failed to generate shopping list');
     } finally {
       setLoading(false);
     }
@@ -347,6 +385,22 @@ export default function MealPlanner({ user }: MealPlannerProps) {
               >
                 <Leaf className="w-4 h-4 mr-2" />
                 Dietary Preferences
+              </button>
+              <button
+                onClick={handleGeneratePDF}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                Download PDF
+              </button>
+              <button
+                onClick={handleGenerateShoppingList}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Shopping List
               </button>
             </div>
             
