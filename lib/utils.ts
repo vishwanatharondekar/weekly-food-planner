@@ -79,3 +79,18 @@ export function getMealPlaceholder(mealType: string): string {
 export function sortMealTypes(mealTypes: string[]): string[] {
   return ALL_MEAL_TYPES.filter(type => mealTypes.includes(type));
 } 
+
+export interface MealData {
+  [day: string]: {
+    [mealType: string]: string;
+  };
+}
+
+export interface MealDataWithVideos {
+  [day: string]: {
+    [mealType: string]: {
+      name: string;
+      videoUrl?: string;
+    };
+  };
+} 

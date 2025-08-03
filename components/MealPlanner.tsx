@@ -16,19 +16,30 @@ interface MealData {
   };
 }
 
+interface MealDataWithVideos {
+  [day: string]: {
+    [mealType: string]: {
+      name: string;
+      videoUrl?: string;
+    };
+  };
+}
+
 interface MealPlannerProps {
   user: any;
 }
 
 export default function MealPlanner({ user }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
-  const [meals, setMeals] = useState<MealData>({});
+  const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState({ hasHistory: false, canGenerate: false });
   const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
   const [showMealSettings, setShowMealSettings] = useState(false);
   const [mealSettings, setMealSettings] = useState<MealSettings>(DEFAULT_MEAL_SETTINGS);
   const [savingMeals, setSavingMeals] = useState<Set<string>>(new Set()); // Track which meals are being saved
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
 
   useEffect(() => {
     loadMealSettings();
@@ -76,7 +87,55 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       setLoading(true);
       const weekStart = formatDate(currentWeek);
       const response = await mealsAPI.getWeekMeals(weekStart);
-      setMeals(response.meals || {});
+      
+      console.log('Raw meal data from API:', response.meals);
+      
+      // Load video URLs from backend
+      let videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      try {
+        const videoResponse = await fetch(`/api/meals/${weekStart}/video`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (videoResponse.ok) {
+          const videoData = await videoResponse.json();
+          videoURLs = videoData.videoURLs || {};
+          console.log('Video URLs loaded:', videoURLs);
+        }
+      } catch (error) {
+        console.warn('Failed to load video URLs:', error);
+      }
+      
+      // Convert to new format with video URLs
+      const convertedMeals: MealDataWithVideos = {};
+      DAYS_OF_WEEK.forEach(day => {
+        convertedMeals[day] = {};
+        // Load ALL meal types from the response, not just enabled ones
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = response.meals[day]?.[mealType];
+          if (meal) {
+            // Handle different meal data formats
+            let mealName = '';
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object' && meal.name) {
+              mealName = meal.name;
+            } else {
+              // Fallback: convert to string if it's an object
+              mealName = String(meal);
+            }
+            
+            convertedMeals[day][mealType] = {
+              name: mealName,
+              videoUrl: videoURLs[day]?.[mealType] || undefined
+            };
+          }
+        });
+      });
+      
+      console.log('Converted meals:', convertedMeals);
+      setMeals(convertedMeals);
     } catch (error) {
       console.error('Error loading meals:', error);
       toast.error('Failed to load meals');
@@ -123,12 +182,72 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       ...prev,
       [day]: {
         ...prev[day],
-        [mealType]: value
+        [mealType]: {
+          ...prev[day]?.[mealType],
+          name: value
+        }
       }
     }));
 
     // Debounce the API call
     debouncedUpdateMeal(day, mealType, value);
+  };
+
+  const handleVideoUrlChange = (day: string, mealType: string, videoUrl: string) => {
+    setMeals(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [mealType]: {
+          ...prev[day]?.[mealType],
+          videoUrl: videoUrl || undefined
+        }
+      }
+    }));
+  };
+
+  const openVideoModal = (day: string, mealType: string) => {
+    setSelectedMeal({ day, mealType });
+    setShowVideoModal(true);
+  };
+
+  const closeVideoModal = () => {
+    setShowVideoModal(false);
+    setSelectedMeal(null);
+  };
+
+  const saveVideoUrl = async (videoUrl: string) => {
+    if (selectedMeal) {
+      // Update local state immediately
+      handleVideoUrlChange(selectedMeal.day, selectedMeal.mealType, videoUrl);
+      
+      // Save to backend
+      try {
+        const weekStart = formatDate(currentWeek);
+        const response = await fetch(`/api/meals/${weekStart}/video`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            day: selectedMeal.day,
+            mealType: selectedMeal.mealType,
+            videoUrl: videoUrl
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save video URL');
+        }
+        
+        toast.success('Video URL saved successfully!');
+      } catch (error) {
+        console.error('Error saving video URL:', error);
+        toast.error('Failed to save video URL');
+      }
+    }
+    closeVideoModal();
   };
 
   const generateAIMeals = async () => {
@@ -147,14 +266,17 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         for (const [mealType, mealName] of Object.entries(dayMeals as any)) {
           // Only update if the meal type is enabled in settings
           if (mealSettings.enabledMealTypes.includes(mealType)) {
-            const currentMeal = meals[day]?.[mealType] || '';
-            if (!currentMeal.trim()) {
-              // Update local state
-              updatedMeals[day] = {
-                ...updatedMeals[day],
-                [mealType]: mealName as string
-              };
-              hasUpdates = true;
+            const currentMeal = meals[day]?.[mealType]?.name || '';
+          if (!currentMeal.trim()) {
+            // Update local state
+            updatedMeals[day] = {
+              ...updatedMeals[day],
+                [mealType]: {
+                  name: mealName as string,
+                  videoUrl: undefined
+                }
+            };
+            hasUpdates = true;
             }
           }
         }
@@ -198,59 +320,95 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     }
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setCurrentWeek(subWeeks(currentWeek, 1));
+    } else {
+      setCurrentWeek(addWeeks(currentWeek, 1));
+    }
+  };
+
   const handleGeneratePDF = () => {
-    try {
-      generateMealPlanPDF({
-        weekStartDate: formatDate(currentWeek),
-        meals,
-        userInfo: {
-          name: user?.name,
-          email: user?.email
-        },
-        mealSettings // Pass meal settings to PDF generator
+    // Convert to format expected by PDF generator
+    const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
+    const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+    
+    DAYS_OF_WEEK.forEach(day => {
+      pdfMeals[day] = {};
+      videoURLs[day] = {};
+      mealSettings.enabledMealTypes.forEach(mealType => {
+        const meal = meals[day]?.[mealType];
+        if (meal) {
+          pdfMeals[day][mealType] = meal.name;
+          if (meal.videoUrl) {
+            videoURLs[day][mealType] = meal.videoUrl;
+          }
+        }
       });
-      toast.success('PDF downloaded successfully!');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
-    }
+    });
+
+    generateMealPlanPDF({
+      weekStartDate: formatDate(currentWeek),
+      meals: pdfMeals,
+      userInfo: user,
+      mealSettings,
+      videoURLs
+    });
   };
 
-  const handleGenerateShoppingList = async () => {
-    try {
-      setLoading(true);
-      await generateShoppingListPDF({
-        weekStartDate: formatDate(currentWeek),
-        meals,
-        userInfo: {
-          name: user?.name,
-          email: user?.email
-        },
-        mealSettings // Pass meal settings to PDF generator
+  const handleGenerateShoppingList = () => {
+    // Convert to format expected by PDF generator
+    const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
+    const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+    
+    DAYS_OF_WEEK.forEach(day => {
+      pdfMeals[day] = {};
+      videoURLs[day] = {};
+      mealSettings.enabledMealTypes.forEach(mealType => {
+        const meal = meals[day]?.[mealType];
+        if (meal) {
+          pdfMeals[day][mealType] = meal.name;
+          if (meal.videoUrl) {
+            videoURLs[day][mealType] = meal.videoUrl;
+          }
+        }
       });
-      toast.success('Shopping list downloaded!');
-    } catch (error) {
-      console.error('Error generating shopping list:', error);
-      toast.error('Failed to generate shopping list');
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
 
-  const navigateWeek = (direction: 'next' | 'prev') => {
-    setCurrentWeek(prev => direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1));
+    generateShoppingListPDF({
+      weekStartDate: formatDate(currentWeek),
+      meals: pdfMeals,
+      userInfo: user,
+      mealSettings,
+      videoURLs
+    });
   };
-
-  if (showDietaryPreferences) {
-    return (
-      <DietaryPreferences
-        user={user}
-        onClose={() => setShowDietaryPreferences(false)}
-      />
-    );
-  }
 
   const enabledMealTypes = mealSettings.enabledMealTypes;
+
+  const getVideoIcon = (day: string, mealType: string) => {
+    const meal = meals[day]?.[mealType];
+    if (meal?.videoUrl) {
+      return (
+        <span 
+          className="text-green-600 cursor-pointer"
+          title="Video attached"
+          onClick={() => openVideoModal(day, mealType)}
+        >
+          🎥
+        </span>
+      );
+    }
+    return (
+      <span 
+        className="text-gray-400 cursor-pointer hover:text-blue-600"
+        title="Add video"
+        onClick={() => openVideoModal(day, mealType)}
+      >
+        📹
+      </span>
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -267,26 +425,26 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                {loading ? 'Generating...' : 'AI Suggestions'}
+                {loading ? 'Generating...' : 'Fill Food with AI'}
               </button>
             )}
             
-            <button
-              onClick={clearMeals}
-              disabled={loading}
+              <button
+                onClick={clearMeals}
+                disabled={loading}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear Week
-            </button>
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear Week
+              </button>
             
-            <button
-              onClick={() => setShowDietaryPreferences(true)}
+              <button
+                onClick={() => setShowDietaryPreferences(true)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              <Leaf className="w-4 h-4 mr-2" />
-              Dietary Preferences
-            </button>
+              >
+                <Leaf className="w-4 h-4 mr-2" />
+                Dietary Preferences
+              </button>
             <button
               onClick={() => setShowMealSettings(true)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -296,7 +454,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             </button>
             <button
               onClick={handleGeneratePDF}
-              disabled={loading}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               <FileDown className="w-4 h-4 mr-2" />
@@ -311,29 +468,29 @@ export default function MealPlanner({ user }: MealPlannerProps) {
               Shopping List
             </button>
           </div>
-        </div>
-
+            </div>
+            
         {/* Week Navigation */}
         <div className="flex items-center justify-between bg-white rounded-lg shadow p-4">
-          <button
-            onClick={() => navigateWeek('prev')}
+              <button
+                onClick={() => navigateWeek('prev')}
             className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
+              >
             <ChevronLeft className="w-4 h-4 mr-1" />
             Previous Week
-          </button>
+              </button>
           
           <h2 className="text-lg font-semibold text-gray-900">
             {format(currentWeek, 'MMMM d')} - {format(addWeeks(currentWeek, 1), 'MMMM d, yyyy')}
           </h2>
           
-          <button
-            onClick={() => navigateWeek('next')}
+              <button
+                onClick={() => navigateWeek('next')}
             className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
+              >
             Next Week
             <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
+              </button>
         </div>
 
         {/* Status Messages */}
@@ -352,7 +509,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
               </div>
             </div>
           </div>
-        )}
+          )}
 
         {/* Meal Table */}
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -387,33 +544,64 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                       </td>
                       {enabledMealTypes.map(mealType => (
                         <td key={mealType} className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative">
+                          <div className="relative group">
                             <input
                               type="text"
-                              value={meals[day]?.[mealType] || ''}
+                              value={(() => {
+                                const meal = meals[day]?.[mealType];
+                                if (!meal) return '';
+                                if (typeof meal === 'string') return meal;
+                                if (typeof meal === 'object' && meal.name) return meal.name;
+                                return String(meal);
+                              })()}
                               onChange={(e) => updateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                              className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                                 savingMeals.has(`${day}-${mealType}`) 
                                   ? 'border-blue-300 bg-blue-50' 
                                   : 'border-gray-300'
                               }`}
                             />
+                            {(() => {
+                              const meal = meals[day]?.[mealType];
+                              if (!meal) return null;
+                              const mealName = typeof meal === 'string' ? meal : (meal.name || '');
+                              // Show tooltip for any non-empty meal name
+                              if (mealName.trim()) {
+                                return (
+                                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
+                                    <div className="text-white">
+                                      {mealName}
+                                    </div>
+                                    <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                             {savingMeals.has(`${day}-${mealType}`) && (
                               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                               </div>
                             )}
-                            {meals[day]?.[mealType] && !savingMeals.has(`${day}-${mealType}`) && (
+                            {(() => {
+                              const meal = meals[day]?.[mealType];
+                              if (!meal) return false;
+                              const mealName = typeof meal === 'string' ? meal : (meal.name || '');
+                              return mealName && !savingMeals.has(`${day}-${mealType}`);
+                            })() && (
                               <button
                                 type="button"
                                 onClick={() => updateMeal(day, mealType, '')}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
+                                className="absolute inset-y-0 right-8 pr-2 flex items-center hover:text-gray-600 transition-colors"
                                 title="Clear meal"
                               >
                                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                               </button>
                             )}
+                            <div className="absolute inset-y-0 right-2 flex items-center">
+                              {getVideoIcon(day, mealType)}
+                            </div>
                           </div>
                         </td>
                       ))}
@@ -425,16 +613,124 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
         </div>
         
+        {/* Meal Settings Modal */}
+        {showMealSettings && (
+          <MealSettingsComponent
+            user={user}
+            onSettingsChange={handleMealSettingsChange}
+            onClose={() => setShowMealSettings(false)}
+          />
+        )}
+
+        {showVideoModal && selectedMeal && (
+          <VideoModal
+            isOpen={showVideoModal}
+            onClose={closeVideoModal}
+            onSave={saveVideoUrl}
+            currentVideoUrl={meals[selectedMeal.day]?.[selectedMeal.mealType]?.videoUrl || ''}
+            mealName={meals[selectedMeal.day]?.[selectedMeal.mealType]?.name || ''}
+          />
+        )}
+
+        {/* Dietary Preferences Modal */}
+        {showDietaryPreferences && (
+          <DietaryPreferences
+            user={user}
+            onClose={() => setShowDietaryPreferences(false)}
+          />
+        )}
       </div>
-      
-      {/* Meal Settings Modal */}
-      {showMealSettings && (
-        <MealSettingsComponent
-          user={user}
-          onSettingsChange={handleMealSettingsChange}
-          onClose={() => setShowMealSettings(false)}
-        />
-      )}
+    </div>
+  );
+}
+
+// Video Modal Component
+interface VideoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (videoUrl: string) => Promise<void>;
+  currentVideoUrl: string;
+  mealName: string;
+}
+
+function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: VideoModalProps) {
+  const [videoUrl, setVideoUrl] = useState(currentVideoUrl);
+  const [saving, setSaving] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(videoUrl);
+    } catch (error) {
+      console.error('Error saving video URL:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const extractVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
+  };
+
+  const videoId = extractVideoId(videoUrl);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+        <h2 className="text-xl font-bold mb-4">
+          Attach YouTube Video for: {mealName}
+        </h2>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            YouTube Video URL:
+          </label>
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {videoId && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Preview:</h3>
+            <div className="aspect-video bg-gray-100 rounded">
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Video'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 } 
