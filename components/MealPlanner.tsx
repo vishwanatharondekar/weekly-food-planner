@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 import DietaryPreferences from './DietaryPreferences';
 import MealSettingsComponent from './MealSettings';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
+import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
+import VideoURLManager from './VideoURLManager';
 
 interface MealData {
   [day: string]: {
@@ -40,6 +42,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   const [savingMeals, setSavingMeals] = useState<Set<string>>(new Set()); // Track which meals are being saved
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
+  const [showVideoURLManager, setShowVideoURLManager] = useState(false);
 
   useEffect(() => {
     loadMealSettings();
@@ -218,28 +221,19 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
   const saveVideoUrl = async (videoUrl: string) => {
     if (selectedMeal) {
-      // Update local state immediately
-      handleVideoUrlChange(selectedMeal.day, selectedMeal.mealType, videoUrl);
+      const mealName = meals[selectedMeal.day]?.[selectedMeal.mealType]?.name || '';
       
-      // Save to backend
+      if (!mealName) {
+        toast.error('Please enter a meal name first');
+        return;
+      }
+
       try {
-        const weekStart = formatDate(currentWeek);
-        const response = await fetch(`/api/meals/${weekStart}/video`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            day: selectedMeal.day,
-            mealType: selectedMeal.mealType,
-            videoUrl: videoUrl
-          }),
-        });
+        // Save to user's video URL collection
+        await saveVideoURLForRecipe(mealName, videoUrl);
         
-        if (!response.ok) {
-          throw new Error('Failed to save video URL');
-        }
+        // Update local state immediately
+        handleVideoUrlChange(selectedMeal.day, selectedMeal.mealType, videoUrl);
         
         toast.success('Video URL saved successfully!');
       } catch (error) {
@@ -328,7 +322,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     }
   };
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
     // Convert to format expected by PDF generator
     const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
     const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
@@ -347,7 +341,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       });
     });
 
-    generateMealPlanPDF({
+    await generateMealPlanPDF({
       weekStartDate: formatDate(currentWeek),
       meals: pdfMeals,
       userInfo: user,
@@ -356,7 +350,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     });
   };
 
-  const handleGenerateShoppingList = () => {
+  const handleGenerateShoppingList = async () => {
     // Convert to format expected by PDF generator
     const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
     const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
@@ -375,7 +369,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       });
     });
 
-    generateShoppingListPDF({
+    await generateShoppingListPDF({
       weekStartDate: formatDate(currentWeek),
       meals: pdfMeals,
       userInfo: user,
@@ -466,6 +460,13 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Shopping List
+            </button>
+            <button
+              onClick={() => setShowVideoURLManager(true)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              🎥
+              <span className="ml-2">Video URLs</span>
             </button>
           </div>
             </div>
@@ -639,6 +640,12 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             onClose={() => setShowDietaryPreferences(false)}
           />
         )}
+
+        {/* Video URL Manager */}
+        <VideoURLManager
+          isOpen={showVideoURLManager}
+          onClose={() => setShowVideoURLManager(false)}
+        />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { MealData } from './storage';
 import { DAYS_OF_WEEK, ALL_MEAL_TYPES, getWeekDays, getMealDisplayName, DEFAULT_MEAL_SETTINGS, type MealSettings } from './utils';
+import { getVideoURLForRecipe } from './video-url-utils';
 
 /**
  * PDF Generator for Weekly Meal Plans
@@ -34,36 +35,20 @@ export interface PDFMealPlan {
   videoURLs?: { [day: string]: { [mealType: string]: string } };
 }
 
-// Helper function to generate direct YouTube video URL for a recipe
-function generateDirectYouTubeURL(mealName: string): string {
-  if (!mealName || !mealName.trim()) return '';
-  
-  // Clean the meal name and create a focused search query
-  const cleanMealName = mealName.trim().replace(/[^\w\s]/g, '');
-  
-  // Create a more specific search that's likely to find recipe videos
-  const searchQuery = `${cleanMealName} recipe tutorial cooking`;
-  const encodedQuery = encodeURIComponent(searchQuery);
-  
-  // Use YouTube's search with additional parameters for better video results:
-  // - sp=EgIQAQ%253D%253D filters for videos only
-  // - type=video ensures we get videos
-  // This format often shows the most relevant cooking video first
-  const url = `https://www.youtube.com/results?search_query=${encodedQuery}&sp=EgIQAQ%253D%253D`;
-  
-  return url;
-}
-
 // Helper function to get video URL from meal data
-function getVideoURL(meal: any): string {
+async function getVideoURL(meal: any): Promise<string> {
   if (typeof meal === 'object' && meal.videoUrl) {
     return meal.videoUrl;
   }
-  // Fallback to search URL if no direct video URL
-  return generateDirectYouTubeURL(typeof meal === 'string' ? meal : meal.name || '');
+  
+  const mealName = typeof meal === 'string' ? meal : meal.name || '';
+  if (!mealName.trim()) return '';
+  
+  // Use the new video URL system
+  return await getVideoURLForRecipe(mealName);
 }
 
-export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
+export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> {
   try {
     // Create PDF in landscape orientation
     const doc = new jsPDF('landscape');
@@ -112,7 +97,8 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
     // Prepare table data with meals in columns
     const tableData: (string | { content: string, link: string })[][] = [];
     
-    DAYS_OF_WEEK.forEach((day, dayIndex) => {
+    for (let dayIndex = 0; dayIndex < DAYS_OF_WEEK.length; dayIndex++) {
+      const day = DAYS_OF_WEEK[dayIndex];
       const dayDate = weekDays[dayIndex];
       const dayName = `${day.charAt(0).toUpperCase() + day.slice(1)}`;
       const dateStr = format(dayDate, 'MMM d');
@@ -122,12 +108,12 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
       ];
       
       // Add meals as columns
-      enabledMealTypes.forEach(mealType => {
+      for (const mealType of enabledMealTypes) {
         const meal = mealPlan.meals[day]?.[mealType] || '';
         if (meal && meal.trim()) {
           // Use stored video URL if available, otherwise generate search URL
           const storedVideoUrl = mealPlan.videoURLs?.[day]?.[mealType];
-          const youtubeURL = storedVideoUrl || generateDirectYouTubeURL(meal);
+          const youtubeURL = storedVideoUrl || await getVideoURL(meal);
           
           row.push({
             content: meal.trim(),
@@ -136,10 +122,10 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
         } else {
           row.push('');
         }
-      });
+      }
       
       tableData.push(row);
-    });
+    }
 
     // Check if we have any data to display
     if (tableData.length === 0) {

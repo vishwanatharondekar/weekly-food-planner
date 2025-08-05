@@ -81,6 +81,13 @@ GEMINI_API_KEY=your_gemini_api_key_here
 - 🎨 **Modern UI**: Clean, intuitive interface with Tailwind CSS
 - 🔔 **Real-time Feedback**: Toast notifications and loading states
 
+### **Recipe Video Management**
+- 🎥 **Video URL Storage**: Save YouTube URLs for your favorite recipes
+- 🔄 **Automatic Reuse**: Video URLs are reused when the same recipe is added
+- 📋 **Centralized Management**: Manage all recipe videos in one place
+- 🔗 **Smart Fallback**: YouTube search URLs generated for recipes without saved videos
+- 📄 **PDF Integration**: Video URLs included in meal plan PDFs
+
 ## Tech Stack
 
 ### **Frontend**
