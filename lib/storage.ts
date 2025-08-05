@@ -14,6 +14,9 @@ interface User {
   mealSettings?: {
     enabledMealTypes: string[];
   };
+  videoURLs?: {
+    [recipeName: string]: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }

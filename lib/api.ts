@@ -119,6 +119,58 @@ export const authAPI = {
       throw error;
     }
   },
+
+  // Video URL management
+  getVideoURLs: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/video-urls', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get video URLs');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  saveVideoURL: async (recipeName: string, videoUrl: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/video-urls', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recipeName, videoUrl }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save video URL');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 // Meals API - using server routes
