@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, addWeeks, subWeeks } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, Leaf, X, FileDown, ShoppingCart, Settings } from 'lucide-react';
-import { mealsAPI, aiAPI } from '@/lib/api';
+import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import DietaryPreferences from './DietaryPreferences';
@@ -93,21 +93,13 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       
       console.log('Raw meal data from API:', response.meals);
       
-      // Load video URLs from backend
-      let videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      // Load user's video URLs
+      let userVideoURLs: { [recipeName: string]: string } = {};
       try {
-        const videoResponse = await fetch(`/api/meals/${weekStart}/video`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        if (videoResponse.ok) {
-          const videoData = await videoResponse.json();
-          videoURLs = videoData.videoURLs || {};
-          console.log('Video URLs loaded:', videoURLs);
-        }
+        userVideoURLs = await authAPI.getVideoURLs();
+        console.log('User video URLs loaded:', userVideoURLs);
       } catch (error) {
-        console.warn('Failed to load video URLs:', error);
+        console.warn('Failed to load user video URLs:', error);
       }
       
       // Convert to new format with video URLs
@@ -129,9 +121,13 @@ export default function MealPlanner({ user }: MealPlannerProps) {
               mealName = String(meal);
             }
             
+            // Look up video URL for this recipe
+            const normalizedRecipeName = mealName.toLowerCase().trim();
+            const videoUrl = userVideoURLs[normalizedRecipeName];
+            
             convertedMeals[day][mealType] = {
               name: mealName,
-              videoUrl: videoURLs[day]?.[mealType] || undefined
+              videoUrl: videoUrl || undefined
             };
           }
         });
@@ -180,6 +176,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   );
 
   const updateMeal = async (day: string, mealType: string, value: string) => {
+    // Check if there's a saved video URL for this recipe
+    let videoUrl: string | undefined = undefined;
+    if (value.trim()) {
+      try {
+        const userVideoURLs = await authAPI.getVideoURLs();
+        const normalizedRecipeName = value.toLowerCase().trim();
+        videoUrl = userVideoURLs[normalizedRecipeName];
+      } catch (error) {
+        console.warn('Failed to check for video URL:', error);
+      }
+    }
+
     // Update local state immediately for responsive UI
     setMeals(prev => ({
       ...prev,
@@ -187,7 +195,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         ...prev[day],
         [mealType]: {
           ...prev[day]?.[mealType],
-          name: value
+          name: value,
+          videoUrl: videoUrl
         }
       }
     }));
@@ -262,12 +271,22 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           if (mealSettings.enabledMealTypes.includes(mealType)) {
             const currentMeal = meals[day]?.[mealType]?.name || '';
           if (!currentMeal.trim()) {
+            // Check if there's a saved video URL for this recipe
+            let videoUrl: string | undefined = undefined;
+            try {
+              const userVideoURLs = await authAPI.getVideoURLs();
+              const normalizedRecipeName = (mealName as string).toLowerCase().trim();
+              videoUrl = userVideoURLs[normalizedRecipeName];
+            } catch (error) {
+              console.warn('Failed to check for video URL:', error);
+            }
+
             // Update local state
             updatedMeals[day] = {
               ...updatedMeals[day],
                 [mealType]: {
                   name: mealName as string,
-                  videoUrl: undefined
+                  videoUrl: videoUrl
                 }
             };
             hasUpdates = true;
