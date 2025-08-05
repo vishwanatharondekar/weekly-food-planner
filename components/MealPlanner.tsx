@@ -175,19 +175,35 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     [currentWeek]
   );
 
-  const updateMeal = async (day: string, mealType: string, value: string) => {
-    // Check if there's a saved video URL for this recipe
-    let videoUrl: string | undefined = undefined;
-    if (value.trim()) {
+  // Debounced video URL check function
+  const debouncedCheckVideoURL = useCallback(
+    debounce(async (day: string, mealType: string, mealName: string) => {
+      if (!mealName.trim()) return;
+      
       try {
         const userVideoURLs = await authAPI.getVideoURLs();
-        const normalizedRecipeName = value.toLowerCase().trim();
-        videoUrl = userVideoURLs[normalizedRecipeName];
+        const normalizedRecipeName = mealName.toLowerCase().trim();
+        const videoUrl = userVideoURLs[normalizedRecipeName];
+        
+        // Update local state with video URL
+        setMeals(prev => ({
+          ...prev,
+          [day]: {
+            ...prev[day],
+            [mealType]: {
+              ...prev[day]?.[mealType],
+              videoUrl: videoUrl || undefined
+            }
+          }
+        }));
       } catch (error) {
         console.warn('Failed to check for video URL:', error);
       }
-    }
+    }, 300), // 300ms delay for video URL checking
+    []
+  );
 
+  const updateMeal = async (day: string, mealType: string, value: string) => {
     // Update local state immediately for responsive UI
     setMeals(prev => ({
       ...prev,
@@ -195,14 +211,16 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         ...prev[day],
         [mealType]: {
           ...prev[day]?.[mealType],
-          name: value,
-          videoUrl: videoUrl
+          name: value
         }
       }
     }));
 
-    // Debounce the API call
+    // Debounce the API call for meal saving
     debouncedUpdateMeal(day, mealType, value);
+    
+    // Debounce the video URL check
+    debouncedCheckVideoURL(day, mealType, value);
   };
 
   const handleVideoUrlChange = (day: string, mealType: string, videoUrl: string) => {
@@ -572,7 +590,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                                 if (!meal) return '';
                                 if (typeof meal === 'string') return meal;
                                 if (typeof meal === 'object' && meal.name) return meal.name;
-                                return String(meal);
+                                if (typeof meal === 'object' && meal.name === '') return '';
+                                return '';
                               })()}
                               onChange={(e) => updateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
