@@ -4,6 +4,25 @@ import { format } from 'date-fns';
 import { MealData } from './storage';
 import { DAYS_OF_WEEK, ALL_MEAL_TYPES, getWeekDays, getMealDisplayName, DEFAULT_MEAL_SETTINGS, type MealSettings } from './utils';
 
+/**
+ * PDF Generator for Weekly Meal Plans
+ * 
+ * OPTIMIZED SINGLE-PAGE LANDSCAPE LAYOUT:
+ * Carefully balanced design that fits everything on one page:
+ * 
+ * | Day | Breakfast | Morning Snack | Lunch | Evening Snack | Dinner |
+ * |-----|-----------|---------------|-------|---------------|--------|
+ * | Mon | Pancakes  | Apple         | Salad | Yogurt        | Chicken|
+ * | Tue | Oatmeal   | Banana        | Soup  | Nuts          | Pasta  |
+ * | Wed | Eggs      | Orange        | Wrap  | Cheese        | Fish   |
+ * 
+ * Optimizations:
+ * - Compact header (30px height)
+ * - Balanced fonts (16px title, 10px headers, 8px content)
+ * - Optimized padding and spacing
+ * - Single-page guarantee with 18px cell height
+ * - Efficient text wrapping for long meal names
+ */
 export interface PDFMealPlan {
   weekStartDate: string;
   meals: MealData;
@@ -12,6 +31,7 @@ export interface PDFMealPlan {
     email?: string;
   };
   mealSettings?: MealSettings;
+  videoURLs?: { [day: string]: { [mealType: string]: string } };
 }
 
 // Helper function to generate direct YouTube video URL for a recipe
@@ -34,89 +54,66 @@ function generateDirectYouTubeURL(mealName: string): string {
   return url;
 }
 
+// Helper function to get video URL from meal data
+function getVideoURL(meal: any): string {
+  if (typeof meal === 'object' && meal.videoUrl) {
+    return meal.videoUrl;
+  }
+  // Fallback to search URL if no direct video URL
+  return generateDirectYouTubeURL(typeof meal === 'string' ? meal : meal.name || '');
+}
+
 export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
   try {
-    const doc = new jsPDF();
+    // Create PDF in landscape orientation
+    const doc = new jsPDF('landscape');
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
     // Get enabled meal types from settings or use all meal types as fallback
     const enabledMealTypes = mealPlan.mealSettings?.enabledMealTypes || ALL_MEAL_TYPES;
   
-    // Modern color palette - simplified for compatibility
+    // Simple color palette
     const colors = {
       primary: [52, 152, 219] as [number, number, number],
       secondary: [155, 89, 182] as [number, number, number],
-      accent: [231, 76, 60] as [number, number, number],
-      success: [46, 204, 113] as [number, number, number],
       text: [44, 62, 80] as [number, number, number],
       textLight: [127, 140, 141] as [number, number, number],
-      background: [236, 240, 241] as [number, number, number],
-      white: [255, 255, 255] as [number, number, number],
-      lightBlue: [174, 214, 241] as [number, number, number]
+      background: [248, 249, 250] as [number, number, number],
+      white: [255, 255, 255] as [number, number, number]
     };
 
-    // Add subtle background
-    doc.setFillColor(colors.background[0], colors.background[1], colors.background[2]);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    // Modern header with gradient effect
+    // Compact header
     doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.rect(0, 0, pageWidth, 55, 'F');
-    
-    // Add header shadow effect
-    doc.setFillColor(colors.primary[0] - 20, colors.primary[1] - 20, colors.primary[2] - 20);
-    doc.rect(0, 52, pageWidth, 3, 'F');
+    doc.rect(0, 0, pageWidth, 30, 'F');
 
-    // Main title with better typography
+    // Title
     doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFontSize(24);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Weekly Meal Plan', pageWidth / 2, 25, { align: 'center' });
+    doc.text('Weekly Meal Plan', pageWidth / 2, 18, { align: 'center' });
     
-    // Subtitle with week range
+    // Week range
     const weekStart = new Date(mealPlan.weekStartDate);
     const weekDays = getWeekDays(weekStart);
     const weekEnd = weekDays[6];
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(
       `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
       pageWidth / 2,
-      40,
+      26,
       { align: 'center' }
     );
 
-    // User info card
-    let currentY = 70;
-    if (mealPlan.userInfo?.name) {
-      // User info card with rounded corners effect
-      doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-      doc.rect(15, currentY - 5, pageWidth - 30, 25, 'F');
-      
-      // Card border
-      doc.setDrawColor(colors.lightBlue[0], colors.lightBlue[1], colors.lightBlue[2]);
-      doc.setLineWidth(1);
-      doc.rect(15, currentY - 5, pageWidth - 30, 25, 'S');
-      
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Prepared for:', 20, currentY + 5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(mealPlan.userInfo.name, 65, currentY + 5);
-      
-      doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-      doc.setFontSize(9);
-      doc.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')}`, 20, currentY + 13);
-      currentY += 35;
-    }
+    // Start table closer to header
+    let currentY = 40;
 
-    // Prepare table data with clickable meal names
+    // Prepare table data with meals in columns
     const tableData: (string | { content: string, link: string })[][] = [];
     
-    DAYS_OF_WEEK.forEach((day, index) => {
-      const dayDate = weekDays[index];
+    DAYS_OF_WEEK.forEach((day, dayIndex) => {
+      const dayDate = weekDays[dayIndex];
       const dayName = `${day.charAt(0).toUpperCase() + day.slice(1)}`;
       const dateStr = format(dayDate, 'MMM d');
       
@@ -124,23 +121,16 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
         `${dayName}\n${dateStr}`
       ];
       
-      // Add meals with YouTube links
+      // Add meals as columns
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType] || '';
-        if (meal.trim()) {
-          const youtubeURL = generateDirectYouTubeURL(meal);
-          // Handle long meal names by adding line breaks for better display
-          let displayMeal = meal.trim();
-          if (displayMeal.length > 25) {
-            // Split long meal names at word boundaries for better display
-            const words = displayMeal.split(' ');
-            if (words.length > 3) {
-              const midPoint = Math.ceil(words.length / 2);
-              displayMeal = words.slice(0, midPoint).join(' ') + '\n' + words.slice(midPoint).join(' ');
-            }
-          }
+        if (meal && meal.trim()) {
+          // Use stored video URL if available, otherwise generate search URL
+          const storedVideoUrl = mealPlan.videoURLs?.[day]?.[mealType];
+          const youtubeURL = storedVideoUrl || generateDirectYouTubeURL(meal);
+          
           row.push({
-            content: displayMeal,
+            content: meal.trim(),
             link: youtubeURL
           });
         } else {
@@ -151,207 +141,165 @@ export function generateMealPlanPDF(mealPlan: PDFMealPlan): void {
       tableData.push(row);
     });
 
-    // Create enhanced table headers
+    // Check if we have any data to display
+    if (tableData.length === 0) {
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('No meals planned for this week.', pageWidth / 2, currentY + 20, { align: 'center' });
+      doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
+      return;
+    }
+
+    // Create table headers
     const tableHeaders = [
       'Day',
       ...enabledMealTypes.map(mealType => getMealDisplayName(mealType))
     ];
 
-      // Dynamic column sizing with better proportions for longer food names
-  const dayColumnWidth = 25;
+    // Calculate column widths for landscape
+    const dayColumnWidth = 25;
+    const mealColumnWidth = (pageWidth - 40 - dayColumnWidth) / enabledMealTypes.length;
 
-    // Create beautiful modern table
+    // Create compact table
     autoTable(doc, {
       head: [tableHeaders],
       body: tableData.map(row => row.map(cell => typeof cell === 'object' ? '' : cell)),
       startY: currentY,
       theme: 'plain',
       styles: {
-        fontSize: 1, // Tiny font to effectively hide all default text
-        cellPadding: { top: 8, right: 6, bottom: 10, left: 6 },
-        lineColor: colors.lightBlue,
+        fontSize: 1, // Hide default text
+        cellPadding: { top: 5, right: 4, bottom: 5, left: 4 },
+        lineColor: [200, 200, 200],
         lineWidth: 0.5,
-        textColor: [255, 255, 255], // White text (invisible on white background)
-        minCellHeight: 30,
-        valign: 'top'
+        textColor: [255, 255, 255], // Hide default text
+        minCellHeight: 18,
+        valign: 'middle'
       },
       headStyles: {
-        fillColor: colors.primary,
+        fillColor: colors.secondary,
         textColor: colors.white,
         fontStyle: 'bold',
-        fontSize: 11,
-        halign: 'center',
-        valign: 'middle',
-        minCellHeight: 20
+        fontSize: 10,
+        halign: 'center'
       },
       columnStyles: {
         0: { 
-          cellWidth: dayColumnWidth, 
-          fontStyle: 'bold',
-          fillColor: colors.secondary,
+          cellWidth: dayColumnWidth,
           textColor: [255, 255, 255], // Hide default text
           halign: 'center',
-          valign: 'middle',
           fontSize: 1
         },
         ...enabledMealTypes.reduce((styles, _, index) => {
           styles[index + 1] = { 
+            cellWidth: mealColumnWidth,
             textColor: [255, 255, 255], // Hide default text
-            fillColor: index % 2 === 0 ? colors.white : colors.lightBlue,
-            fontSize: 1,
-            valign: 'middle',
-            halign: 'center'
+            halign: 'center',
+            fontSize: 1
           };
           return styles;
         }, {} as any)
       },
-      alternateRowStyles: {
-        fillColor: [248, 249, 250] as [number, number, number]
-      },
       margin: { left: 20, right: 20 },
       didDrawCell: function(data) {
-        // Custom text rendering for all cells to avoid double rendering
-        if (data.section === 'body') {
-          if (data.column.index === 0) {
-            // Day column: render day and date
-            const rowData = tableData[data.row.index];
-            const dayText = rowData[0] as string; // This contains "Monday\nJul 29" format
-            
-            doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            
-            // Split day and date, render them separately
-            const lines = dayText.split('\n');
-            const lineHeight = 12;
-            const startY = data.cell.y + data.cell.height / 2 - (lines.length * lineHeight) / 2 + lineHeight / 2;
-            
-            lines.forEach((line, index) => {
-              doc.text(line, data.cell.x + data.cell.width / 2, startY + (index * lineHeight), { 
-                align: 'center'
-              });
-            });
-          } else {
-            // Meal columns: render meal names
+        try {
+          // Custom text rendering
+          if (data.section === 'body') {
             const rowData = tableData[data.row.index];
             const cellData = rowData[data.column.index];
             
-            if (typeof cellData === 'object' && cellData.link) {
-              // Clickable meal: render in blue with link
-              const lines = cellData.content.split('\n');
-              const lineHeight = 10;
-              const totalTextHeight = lines.length * lineHeight;
-              const startY = data.cell.y + data.cell.height / 2 - totalTextHeight / 2 + lineHeight / 2;
-              
-              // Add clickable link over the text area with some padding
-              try {
-                doc.link(data.cell.x + 3, data.cell.y + 3, data.cell.width - 6, data.cell.height - 6, { 
-                  url: cellData.link 
-                });
-              } catch (error) {
-                // Link creation failed but continue
-              }
-              
-              // Render clickable text in blue
-              doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(9);
-              
-              lines.forEach((line, index) => {
-                doc.text(line, data.cell.x + data.cell.width / 2, startY + (index * lineHeight), { 
-                  align: 'center'
-                });
-              });
-            } else if (typeof cellData === 'string' && cellData.trim()) {
-              // Non-clickable meal: render in normal color
-              const lines = cellData.split('\n');
-              const lineHeight = 10;
-              const totalTextHeight = lines.length * lineHeight;
-              const startY = data.cell.y + data.cell.height / 2 - totalTextHeight / 2 + lineHeight / 2;
-              
+            if (data.column.index === 0) {
+              // Day column
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-              doc.setFont('helvetica', 'normal');
+              doc.setFont('helvetica', 'bold');
               doc.setFontSize(9);
+              
+              const lines = (cellData as string).split('\n');
+              const lineHeight = 6;
+              const startY = data.cell.y + data.cell.height / 2 - (lines.length * lineHeight) / 2 + lineHeight / 2;
               
               lines.forEach((line, index) => {
                 doc.text(line, data.cell.x + data.cell.width / 2, startY + (index * lineHeight), { 
-                  align: 'center'
+                  align: 'center',
+                  baseline: 'middle'
                 });
               });
+            } else {
+              // Meal columns
+              if (typeof cellData === 'object' && cellData.link) {
+                // Clickable meal
+                try {
+                  doc.link(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, { 
+                    url: cellData.link 
+                  });
+                } catch (error) {
+                  console.warn('Failed to create link:', error);
+                }
+                
+                doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                
+                // Handle long meal names by wrapping text
+                const maxWidth = data.cell.width - 2;
+                const words = cellData.content.split(' ');
+                let lines = [''];
+                let currentLine = 0;
+                
+                words.forEach(word => {
+                  const testLine = lines[currentLine] + (lines[currentLine] ? ' ' : '') + word;
+                  const testWidth = doc.getTextWidth(testLine);
+                  
+                  if (testWidth <= maxWidth) {
+                    lines[currentLine] = testLine;
+                  } else {
+                    currentLine++;
+                    lines[currentLine] = word;
+                  }
+                });
+                
+                const lineHeight = 5;
+                const totalHeight = lines.length * lineHeight;
+                const startY = data.cell.y + data.cell.height / 2 - totalHeight / 2 + lineHeight / 2;
+                
+                lines.forEach((line, index) => {
+                  doc.text(line, data.cell.x + data.cell.width / 2, startY + (index * lineHeight), { 
+                    align: 'center',
+                    baseline: 'middle'
+                  });
+                });
+              } else if (typeof cellData === 'string' && cellData.trim()) {
+                // Non-clickable meal
+                doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.text(cellData, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { 
+                  align: 'center',
+                  baseline: 'middle'
+                });
+              }
             }
-            // If cell is empty, don't render anything
           }
+        } catch (error) {
+          console.warn('Error rendering cell:', error);
         }
       }
     });
 
-    // Modern instructions card
+    // Add compact instructions at the bottom
     const finalY = (doc as any).lastAutoTable?.finalY || currentY;
-    currentY = finalY + 20;
-    
-    // Instructions card
-    doc.setFillColor(colors.success[0], colors.success[1], colors.success[2]);
-    doc.rect(20, currentY, pageWidth - 40, 35, 'F');
-    
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('How to Use This Meal Plan', pageWidth / 2, currentY + 12, { align: 'center' });
-    
-      doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Blue meal names are clickable - click to watch cooking tutorial videos!', pageWidth / 2, currentY + 25, { align: 'center' });
+    if (finalY && finalY < pageHeight - 15) {
+      doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Note: Blue meal names are clickable and link to recipe videos', 20, finalY + 10);
+    }
 
-    // Modern tips section
-    currentY += 50;
-    
-    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.rect(20, currentY, pageWidth - 40, 60, 'F');
-    doc.setDrawColor(colors.lightBlue[0], colors.lightBlue[1], colors.lightBlue[2]);
-    doc.rect(20, currentY, pageWidth - 40, 60, 'S');
-    
-    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Helpful Tips', 25, currentY + 12);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-      const tips = [
-    '• Check for allergies and dietary restrictions before cooking',
-    '• Adjust portion sizes according to your family size',
-    '• Feel free to substitute ingredients based on availability',
-    '• Blue meal names are clickable for cooking video tutorials'
-  ];
-    
-    tips.forEach((tip, index) => {
-      doc.text(tip, 25, currentY + 25 + (index * 8));
-    });
-
-    // Modern footer
-    doc.setFillColor(colors.text[0], colors.text[1], colors.text[2]);
-    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      'Generated by Weekly Food Planner App - Your Smart Cooking Companion',
-      pageWidth / 2,
-      pageHeight - 12,
-      { align: 'center' }
-    );
-
-    // Enhanced filename
-    const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
-    const userName = mealPlan.userInfo?.name ? `-${mealPlan.userInfo.name.replace(/\s+/g, '-')}` : '';
-    const filename = `weekly-meal-plan-${weekStartFormatted}${userName}.pdf`;
-    
     // Save the PDF
-    doc.save(filename);
+    doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
   } catch (error) {
-    console.error('Error generating meal plan PDF:', error);
-    alert('Failed to generate meal plan PDF. Please try again.');
+    console.error('Error generating PDF:', error);
+    alert('Failed to generate PDF. Please try again.');
   }
 }
 

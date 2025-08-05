@@ -93,6 +93,14 @@ class StorageManager {
           mealPlanStore.createIndex('weekStartDate', 'weekStartDate', { unique: false });
           mealPlanStore.createIndex('userId_weekStartDate', ['userId', 'weekStartDate'], { unique: true });
         }
+
+        // Create videoURLs store
+        if (!db.objectStoreNames.contains('videoURLs')) {
+          const videoURLsStore = db.createObjectStore('videoURLs', { keyPath: 'id' });
+          videoURLsStore.createIndex('userId', 'userId', { unique: false });
+          videoURLsStore.createIndex('weekStartDate', 'weekStartDate', { unique: false });
+          videoURLsStore.createIndex('userId_weekStartDate', ['userId', 'weekStartDate'], { unique: false });
+        }
       };
     });
   }
@@ -418,22 +426,95 @@ class StorageManager {
 
   // Clear all data (for testing)
   async clearAllData(): Promise<void> {
-    if (typeof window === 'undefined') {
-      return;
+    if (!this.db) {
+      await this.init();
     }
 
-    const userStore = await this.getStore('users', 'readwrite');
-    const mealStore = await this.getStore('mealPlans', 'readwrite');
+    const transaction = this.db!.transaction(['users', 'mealPlans'], 'readwrite');
+    const userStore = transaction.objectStore('users');
+    const mealPlanStore = transaction.objectStore('mealPlans');
 
+    await Promise.all([
+      new Promise<void>((resolve, reject) => {
+        const userRequest = userStore.clear();
+        userRequest.onsuccess = () => resolve();
+        userRequest.onerror = () => reject(userRequest.error);
+      }),
+      new Promise<void>((resolve, reject) => {
+        const mealPlanRequest = mealPlanStore.clear();
+        mealPlanRequest.onsuccess = () => resolve();
+        mealPlanRequest.onerror = () => reject(mealPlanRequest.error);
+      })
+    ]);
+  }
+
+  // Video URL storage methods
+  async saveVideoURL(userId: string, weekStartDate: string, day: string, mealType: string, videoUrl: string): Promise<void> {
+    if (!this.db) {
+      await this.init();
+    }
+
+    const key = `${userId}_${weekStartDate}_${day}_${mealType}`;
+    const videoData = {
+      id: key,
+      userId,
+      weekStartDate,
+      day,
+      mealType,
+      videoUrl,
+      createdAt: new Date()
+    };
+
+    const transaction = this.db!.transaction(['videoURLs'], 'readwrite');
+    const store = transaction.objectStore('videoURLs');
+    
     return new Promise((resolve, reject) => {
-      const userRequest = userStore.clear();
-      const mealRequest = mealStore.clear();
+      const request = store.put(videoData);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-      userRequest.onsuccess = () => {
-        mealRequest.onsuccess = () => resolve();
-        mealRequest.onerror = () => reject(mealRequest.error);
+  async getVideoURL(userId: string, weekStartDate: string, day: string, mealType: string): Promise<string | null> {
+    if (!this.db) {
+      await this.init();
+    }
+
+    const key = `${userId}_${weekStartDate}_${day}_${mealType}`;
+    const transaction = this.db!.transaction(['videoURLs'], 'readonly');
+    const store = transaction.objectStore('videoURLs');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onsuccess = () => {
+        resolve(request.result?.videoUrl || null);
       };
-      userRequest.onerror = () => reject(userRequest.error);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAllVideoURLs(userId: string, weekStartDate: string): Promise<{ [day: string]: { [mealType: string]: string } }> {
+    if (!this.db) {
+      await this.init();
+    }
+
+    const transaction = this.db!.transaction(['videoURLs'], 'readonly');
+    const store = transaction.objectStore('videoURLs');
+    const index = store.index('userId_weekStartDate');
+    
+    return new Promise((resolve, reject) => {
+      const request = index.getAll([userId, weekStartDate]);
+      request.onsuccess = () => {
+        const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+        request.result.forEach((item: any) => {
+          if (!videoURLs[item.day]) {
+            videoURLs[item.day] = {};
+          }
+          videoURLs[item.day][item.mealType] = item.videoUrl;
+        });
+        resolve(videoURLs);
+      };
+      request.onerror = () => reject(request.error);
     });
   }
 }
