@@ -114,16 +114,15 @@ export default function Home() {
                 <h1 className="text-2xl font-bold text-white">Weekly Food Planner</h1>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-blue-100">Welcome, {user.name}</span>
+
                 
                 {/* Settings Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                    className="flex items-center space-x-2 text-sm text-white hover:text-blue-100 px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+                    className="flex items-center space-x-2 text-sm text-white hover:text-blue-100 px-3 py-2 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
+                    <span>{user.name}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   
@@ -161,16 +160,21 @@ export default function Home() {
                         <Video className="w-4 h-4 mr-3 text-orange-600" />
                         Video URLs
                       </button>
+                      
+                      <div className="border-t border-gray-200 my-1"></div>
+                      
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setShowSettingsDropdown(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Logout
+                      </button>
                     </div>
                   )}
                 </div>
-                
-                <button
-                  onClick={handleLogout}
-                  className="text-sm text-white hover:text-blue-100 px-3 py-1 rounded-md hover:bg-white/10 transition-colors"
-                >
-                  Logout
-                </button>
               </div>
             </div>
           </div>
