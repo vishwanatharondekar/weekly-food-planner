@@ -78,9 +78,9 @@ export async function PUT(request: NextRequest) {
 
     const { recipeName, videoUrl } = await request.json();
 
-    if (!recipeName || !videoUrl) {
+    if (!recipeName) {
       return NextResponse.json(
-        { error: 'Recipe name and video URL are required' },
+        { error: 'Recipe name is required' },
         { status: 400 }
       );
     }
@@ -98,11 +98,19 @@ export async function PUT(request: NextRequest) {
     const userData = userDoc.data();
     const currentVideoURLs = userData.videoURLs || {};
     
-    // Add or update the video URL for this recipe
-    const updatedVideoURLs = {
-      ...currentVideoURLs,
-      [recipeName.toLowerCase().trim()]: videoUrl
-    };
+    // Add, update, or delete the video URL for this recipe
+    let updatedVideoURLs;
+    if (videoUrl === '') {
+      // Delete the video URL for this recipe
+      const { [recipeName.toLowerCase().trim()]: deleted, ...rest } = currentVideoURLs;
+      updatedVideoURLs = rest;
+    } else {
+      // Add or update the video URL for this recipe
+      updatedVideoURLs = {
+        ...currentVideoURLs,
+        [recipeName.toLowerCase().trim()]: videoUrl
+      };
+    }
 
     await updateDoc(userRef, {
       videoURLs: updatedVideoURLs,
@@ -112,7 +120,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       videoURLs: updatedVideoURLs,
-      message: `Video URL saved for "${recipeName}"`
+      message: videoUrl === '' 
+        ? `Video URL deleted for "${recipeName}"`
+        : `Video URL saved for "${recipeName}"`
     });
   } catch (error) {
     console.error('Update video URL error:', error);
