@@ -5,7 +5,11 @@ import AuthForm from '@/components/AuthForm';
 import MealPlanner from '@/components/MealPlanner';
 import StorageInitializer from '@/components/StorageInitializer';
 import FirebaseSetup from '@/components/FirebaseSetup';
+import DietaryPreferences from '@/components/DietaryPreferences';
+import MealSettingsComponent from '@/components/MealSettings';
+import VideoURLManager from '@/components/VideoURLManager';
 import { authAPI } from '@/lib/api';
+import { ChevronDown, Settings, Leaf, Video } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -13,6 +17,10 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(true);
   const [showFirebaseSetup, setShowFirebaseSetup] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
+  const [showMealSettings, setShowMealSettings] = useState(false);
+  const [showVideoURLManager, setShowVideoURLManager] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -52,6 +60,20 @@ export default function Home() {
     setAuthMode(prev => prev === 'login' ? 'register' : 'login');
   };
 
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSettingsDropdown) {
+        setShowSettingsDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSettingsDropdown]);
+
   // Check if Firebase is configured
   const isFirebaseConfigured = () => {
     return process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
@@ -82,15 +104,70 @@ export default function Home() {
     <StorageInitializer>
       <div>
         {/* Header with logout */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <h1 className="text-xl font-semibold text-gray-900">Weekly Food Planner</h1>
+            <div className="flex justify-between items-center py-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-2xl">🍽️</span>
+                </div>
+                <h1 className="text-2xl font-bold text-white">Weekly Food Planner</h1>
+              </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Welcome, {user.name}</span>
+                <span className="text-sm text-blue-100">Welcome, {user.name}</span>
+                
+                {/* Settings Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                    className="flex items-center space-x-2 text-sm text-white hover:text-blue-100 px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Settings</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showSettingsDropdown && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                      <button
+                        onClick={() => {
+                          setShowDietaryPreferences(true);
+                          setShowSettingsDropdown(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <Leaf className="w-4 h-4 mr-3 text-green-600" />
+                        Dietary Preferences
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setShowMealSettings(true);
+                          setShowSettingsDropdown(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <Settings className="w-4 h-4 mr-3 text-blue-600" />
+                        Meal Settings
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setShowVideoURLManager(true);
+                          setShowSettingsDropdown(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <Video className="w-4 h-4 mr-3 text-orange-600" />
+                        Video URLs
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
                 <button
                   onClick={handleLogout}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-white hover:text-blue-100 px-3 py-1 rounded-md hover:bg-white/10 transition-colors"
                 >
                   Logout
                 </button>
@@ -100,6 +177,29 @@ export default function Home() {
         </div>
         
         <MealPlanner user={user} />
+        
+        {/* Settings Modals */}
+        {showMealSettings && (
+          <MealSettingsComponent
+            user={user}
+            onSettingsChange={() => {}} // This will be handled by MealPlanner
+            onClose={() => setShowMealSettings(false)}
+          />
+        )}
+        
+        {showDietaryPreferences && (
+          <DietaryPreferences
+            user={user}
+            onClose={() => setShowDietaryPreferences(false)}
+          />
+        )}
+        
+        {showVideoURLManager && (
+          <VideoURLManager
+            isOpen={showVideoURLManager}
+            onClose={() => setShowVideoURLManager(false)}
+          />
+        )}
       </div>
     </StorageInitializer>
   );

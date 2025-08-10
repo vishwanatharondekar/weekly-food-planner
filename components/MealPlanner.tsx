@@ -1,16 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addWeeks, subWeeks } from 'date-fns';
-import { ChevronLeft, ChevronRight, Sparkles, Trash2, Leaf, X, FileDown, ShoppingCart, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import DietaryPreferences from './DietaryPreferences';
-import MealSettingsComponent from './MealSettings';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
-import VideoURLManager from './VideoURLManager';
 
 interface MealData {
   [day: string]: {
@@ -36,13 +33,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState({ hasHistory: false, canGenerate: false });
-  const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
-  const [showMealSettings, setShowMealSettings] = useState(false);
   const [mealSettings, setMealSettings] = useState<MealSettings>(DEFAULT_MEAL_SETTINGS);
   const [savingMeals, setSavingMeals] = useState<Set<string>>(new Set()); // Track which meals are being saved
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
-  const [showVideoURLManager, setShowVideoURLManager] = useState(false);
+  
+  // Tooltip delay states
+  const [showPdfTooltip, setShowPdfTooltip] = useState(false);
+  const [showShoppingTooltip, setShowShoppingTooltip] = useState(false);
+  const [showAiTooltip, setShowAiTooltip] = useState(false);
+  const pdfTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shoppingTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const aiTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadMealSettings();
@@ -52,6 +54,21 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     loadMeals();
     checkAIStatus();
   }, [currentWeek]);
+
+  // Cleanup tooltip timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfTooltipTimeoutRef.current) {
+        clearTimeout(pdfTooltipTimeoutRef.current);
+      }
+      if (shoppingTooltipTimeoutRef.current) {
+        clearTimeout(shoppingTooltipTimeoutRef.current);
+      }
+      if (aiTooltipTimeoutRef.current) {
+        clearTimeout(aiTooltipTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadMealSettings = async () => {
     try {
@@ -411,6 +428,60 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     });
   };
 
+  // Tooltip handlers with 2-second delay
+  const handlePdfTooltipStart = () => {
+    if (pdfTooltipTimeoutRef.current) {
+      clearTimeout(pdfTooltipTimeoutRef.current);
+    }
+    pdfTooltipTimeoutRef.current = setTimeout(() => {
+      setShowPdfTooltip(true);
+    }, 1000);
+  };
+
+  const handlePdfTooltipEnd = () => {
+    if (pdfTooltipTimeoutRef.current) {
+      clearTimeout(pdfTooltipTimeoutRef.current);
+      pdfTooltipTimeoutRef.current = null;
+    }
+    setShowPdfTooltip(false);
+  };
+
+  const handleShoppingTooltipStart = () => {
+    if (shoppingTooltipTimeoutRef.current) {
+      clearTimeout(shoppingTooltipTimeoutRef.current);
+    }
+    shoppingTooltipTimeoutRef.current = setTimeout(() => {
+      setShowShoppingTooltip(true);
+    }, 1000);
+  };
+
+  const handleShoppingTooltipEnd = () => {
+    if (shoppingTooltipTimeoutRef.current) {
+      clearTimeout(shoppingTooltipTimeoutRef.current);
+      shoppingTooltipTimeoutRef.current = null;
+    }
+    setShowShoppingTooltip(false);
+  };
+
+  const handleAiTooltipStart = () => {
+    if (aiTooltipTimeoutRef.current) {
+      clearTimeout(aiTooltipTimeoutRef.current);
+    }
+    aiTooltipTimeoutRef.current = setTimeout(() => {
+      setShowAiTooltip(true);
+    }, 1000);
+  };
+
+  const handleAiTooltipEnd = () => {
+    if (aiTooltipTimeoutRef.current) {
+      clearTimeout(aiTooltipTimeoutRef.current);
+      aiTooltipTimeoutRef.current = null;
+    }
+    setShowAiTooltip(false);
+  };
+
+
+
   const enabledMealTypes = mealSettings.enabledMealTypes;
 
   const getVideoIcon = (day: string, mealType: string) => {
@@ -440,122 +511,148 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-          <h1 className="text-3xl font-bold text-gray-900">Weekly Meal Planner</h1>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            {aiStatus.canGenerate && (
-              <button
-                onClick={generateAIMeals}
-                disabled={loading}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                {loading ? 'Generating...' : 'Fill Food with AI'}
-              </button>
-            )}
-            
-              <button
-                onClick={clearMeals}
-                disabled={loading}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear Week
-              </button>
-            
-              <button
-                onClick={() => setShowDietaryPreferences(true)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                <Leaf className="w-4 h-4 mr-2" />
-                Dietary Preferences
-              </button>
-            <button
-              onClick={() => setShowMealSettings(true)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Meal Settings
-            </button>
-            <button
-              onClick={handleGeneratePDF}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              Download PDF
-            </button>
-            <button
-              onClick={handleGenerateShoppingList}
-              disabled={loading}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Shopping List
-            </button>
-            <button
-              onClick={() => setShowVideoURLManager(true)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              🎥
-              <span className="ml-2">Video URLs</span>
-            </button>
-          </div>
-            </div>
+        
             
         {/* Week Navigation */}
-        <div className="flex items-center justify-between bg-white rounded-lg shadow p-4">
-              <button
-                onClick={() => navigateWeek('prev')}
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+        <div className="flex items-center justify-between bg-white rounded-lg shadow p-4 border border-gray-200">
+          <button
+            onClick={() => navigateWeek('prev')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
             Previous Week
-              </button>
+          </button>
           
-          <h2 className="text-lg font-semibold text-gray-900">
-            {format(currentWeek, 'MMMM d')} - {format(addWeeks(currentWeek, 1), 'MMMM d, yyyy')}
-          </h2>
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-900">
+              {format(currentWeek, 'MMMM d')} - {format(addWeeks(currentWeek, 1), 'MMMM d, yyyy')}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Current Week</p>
+          </div>
           
-              <button
-                onClick={() => navigateWeek('next')}
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
+          <button
+            onClick={() => navigateWeek('next')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
             Next Week
-            <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </button>
         </div>
 
         {/* Status Messages */}
         {!aiStatus.hasHistory && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                  Welcome to AI Meal Planning!
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-blue-900">
+                  Welcome to AI Meal Planning! 🚀
                 </h3>
-                <div className="mt-2 text-sm text-blue-700">
-                  <p>
+                <div className="mt-2 text-blue-700">
+                  <p className="text-base">
                     Plan at least one week of meals to unlock AI suggestions that will help you create varied and delicious meal plans based on your preferences.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          )}
+        )}
 
         {/* Meal Table */}
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Weekly Meal Plan</h3>
+                <p className="text-sm text-gray-600 mt-1">Enter your meals for each day and meal type</p>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                {/* 1. Fill with AI */}
+                {aiStatus.canGenerate && (
+                  <div className="relative">
+                    <button
+                      onClick={generateAIMeals}
+                      onMouseEnter={handleAiTooltipStart}
+                      onMouseLeave={handleAiTooltipEnd}
+                      disabled={loading}
+                      className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                    </button>
+                    {showAiTooltip && (
+                      <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
+                        <div className="text-white">Fill with AI</div>
+                        <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* 2. Download PDF */}
+                <div className="relative">
+                  <button
+                    onClick={handleGeneratePDF}
+                    onMouseEnter={handlePdfTooltipStart}
+                    onMouseLeave={handlePdfTooltipEnd}
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <FileDown className="w-5 h-5" />
+                  </button>
+                  {showPdfTooltip && (
+                    <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
+                      <div className="text-white">Download PDF</div>
+                      <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 3. Shopping List */}
+                <div className="relative">
+                  <button
+                    onClick={handleGenerateShoppingList}
+                    onMouseEnter={handleShoppingTooltipStart}
+                    onMouseLeave={handleShoppingTooltipEnd}
+                    disabled={loading}
+                    className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                  </button>
+                  {showShoppingTooltip && (
+                    <div className="absolute top-full -left-20 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
+                      <div className="text-white">Generate Shopping List</div>
+                      <div className="absolute bottom-full left-24 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 4. Clear Week */}
+                <div className="relative">
+                  <button
+                    onClick={clearMeals}
+                    disabled={loading}
+                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Day
                   </th>
                   {enabledMealTypes.map(mealType => (
-                    <th key={mealType} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       {getMealDisplayName(mealType)}
                     </th>
                   ))}
@@ -568,11 +665,11 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                   
                   return (
                     <tr key={day} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap bg-gray-50">
+                        <div className="text-sm font-bold text-gray-900">
                           {day.charAt(0).toUpperCase() + day.slice(1)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-600 font-medium">
                           {format(dayDate, 'MMM d')}
                         </div>
                       </td>
@@ -591,10 +688,10 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                               })()}
                               onChange={(e) => updateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                              className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                                 savingMeals.has(`${day}-${mealType}`) 
-                                  ? 'border-blue-300 bg-blue-50' 
-                                  : 'border-gray-300'
+                                  ? 'border-blue-400 bg-blue-50 shadow-sm' 
+                                  : 'border-gray-300 hover:border-gray-400'
                               }`}
                             />
                             {(() => {
@@ -648,15 +745,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
         </div>
         
-        {/* Meal Settings Modal */}
-        {showMealSettings && (
-          <MealSettingsComponent
-            user={user}
-            onSettingsChange={handleMealSettingsChange}
-            onClose={() => setShowMealSettings(false)}
-          />
-        )}
-
         {showVideoModal && selectedMeal && (
           <VideoModal
             isOpen={showVideoModal}
@@ -666,20 +754,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             mealName={meals[selectedMeal.day]?.[selectedMeal.mealType]?.name || ''}
           />
         )}
-
-        {/* Dietary Preferences Modal */}
-        {showDietaryPreferences && (
-          <DietaryPreferences
-            user={user}
-            onClose={() => setShowDietaryPreferences(false)}
-          />
-        )}
-
-        {/* Video URL Manager */}
-        <VideoURLManager
-          isOpen={showVideoURLManager}
-          onClose={() => setShowVideoURLManager(false)}
-        />
       </div>
     </div>
   );
