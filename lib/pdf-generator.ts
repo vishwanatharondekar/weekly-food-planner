@@ -74,7 +74,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
 
     // Title
     doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFontSize(16);
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text('Weekly Meal Plan', pageWidth / 2, 18, { align: 'center' });
     
@@ -82,7 +82,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     const weekStart = new Date(mealPlan.weekStartDate);
     const weekDays = getWeekDays(weekStart);
     const weekEnd = weekDays[6];
-    doc.setFontSize(10);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
     doc.text(
       `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
@@ -130,7 +130,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     // Check if we have any data to display
     if (tableData.length === 0) {
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.setFontSize(12);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'normal');
       doc.text('No meals planned for this week.', pageWidth / 2, currentY + 20, { align: 'center' });
       doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
@@ -166,7 +166,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
         fillColor: colors.secondary,
         textColor: colors.white,
         fontStyle: 'bold',
-        fontSize: 10,
+        fontSize: 14,
         halign: 'center'
       },
       columnStyles: {
@@ -193,12 +193,12 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
           if (data.section === 'body') {
             const rowData = tableData[data.row.index];
             const cellData = rowData[data.column.index];
-            
+
             if (data.column.index === 0) {
               // Day column
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               doc.setFont('helvetica', 'bold');
-              doc.setFontSize(9);
+              doc.setFontSize(10);
               
               const lines = (cellData as string).split('\n');
               const lineHeight = 6;
@@ -212,7 +212,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
               });
             } else {
               // Meal columns
-              if (typeof cellData === 'object' && cellData.link) {
+              if (typeof cellData === 'object') {
                 // Clickable meal
                 try {
                   doc.link(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, { 
@@ -222,9 +222,14 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
                   console.warn('Failed to create link:', error);
                 }
                 
-                doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+                if(cellData.link) {
+                  doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+                } else {
+                  doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+                }
+
                 doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
+                doc.setFontSize(10);
                 
                 // Handle long meal names by wrapping text
                 const maxWidth = data.cell.width - 2;
@@ -258,7 +263,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
                 // Non-clickable meal
                 doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
                 doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
+                doc.setFontSize(10);
                 doc.text(cellData, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { 
                   align: 'center',
                   baseline: 'middle'
@@ -276,7 +281,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     const finalY = (doc as any).lastAutoTable?.finalY || currentY;
     if (finalY && finalY < pageHeight - 15) {
       doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-      doc.setFontSize(7);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.text('Note: Blue meal names are clickable and link to recipe videos', 20, finalY + 10);
     }
@@ -333,7 +338,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     const weekStart = new Date(mealPlan.weekStartDate);
     const weekDays = getWeekDays(weekStart);
     const weekEnd = weekDays[6];
-    doc.setFontSize(12);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'normal');
     doc.text(
       `For week: ${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
@@ -352,14 +357,14 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       doc.rect(15, currentY - 5, pageWidth - 30, 25, 'S');
       
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.setFontSize(11);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Shopping list for:', 20, currentY + 5);
       doc.setFont('helvetica', 'normal');
       doc.text(mealPlan.userInfo.name, 75, currentY + 5);
       
       doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-      doc.setFontSize(9);
+      doc.setFontSize(12);
       doc.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')}`, 20, currentY + 13);
       currentY += 35;
     }

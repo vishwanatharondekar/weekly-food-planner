@@ -91,13 +91,10 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       const weekStart = formatDate(currentWeek);
       const response = await mealsAPI.getWeekMeals(weekStart);
       
-      console.log('Raw meal data from API:', response.meals);
-      
       // Load user's video URLs
       let userVideoURLs: { [recipeName: string]: string } = {};
       try {
         userVideoURLs = await authAPI.getVideoURLs();
-        console.log('User video URLs loaded:', userVideoURLs);
       } catch (error) {
         console.warn('Failed to load user video URLs:', error);
       }
@@ -133,7 +130,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         });
       });
       
-      console.log('Converted meals:', convertedMeals);
       setMeals(convertedMeals);
     } catch (error) {
       console.error('Error loading meals:', error);

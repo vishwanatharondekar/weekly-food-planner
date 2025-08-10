@@ -44,6 +44,8 @@ export async function getVideoURLForRecipe(recipeName: string): Promise<string> 
     return videoURLs[normalizedRecipeName];
   }
 
+  return '';
+
   // Generate YouTube search URL as fallback
   return generateYouTubeSearchURL(recipeName);
 }
