@@ -76,7 +76,6 @@ class StorageManager {
       request.onsuccess = () => {
         this.db = request.result;
         this.isInitialized = true;
-        console.log('Storage manager initialized successfully');
         resolve();
       };
 

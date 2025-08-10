@@ -51,9 +51,13 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    console.log('Logout clicked - clearing data...');
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    setShowSettingsDropdown(false);
+    console.log('Logout completed - token and user cleared');
   };
 
   const toggleAuthMode = () => {
@@ -63,7 +67,10 @@ export default function Home() {
   // Close settings dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showSettingsDropdown) {
+      const target = event.target as Element;
+      const dropdown = document.querySelector('[data-dropdown="settings"]');
+      
+      if (showSettingsDropdown && dropdown && !dropdown.contains(target)) {
         setShowSettingsDropdown(false);
       }
     };
@@ -127,7 +134,7 @@ export default function Home() {
                   </button>
                   
                   {showSettingsDropdown && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                    <div data-dropdown="settings" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
                       <button
                         onClick={() => {
                           setShowDietaryPreferences(true);
@@ -164,9 +171,10 @@ export default function Home() {
                       <div className="border-t border-gray-200 my-1"></div>
                       
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           handleLogout();
-                          setShowSettingsDropdown(false);
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
