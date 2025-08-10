@@ -688,7 +688,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                               })()}
                               onChange={(e) => updateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                              className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                                 savingMeals.has(`${day}-${mealType}`) 
                                   ? 'border-blue-400 bg-blue-50 shadow-sm' 
                                   : 'border-gray-300 hover:border-gray-400'
