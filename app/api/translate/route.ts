@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const translateAPI = new TranslateAPI(apiKey);
+    const translateAPI = TranslateAPI.getInstance(apiKey);
     
     const result = await translateAPI.translate({
       text,
@@ -40,5 +40,54 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ message: 'Translation API endpoint' });
+  try {
+    const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+    
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Google Translate API key not configured' },
+        { status: 500 }
+      );
+    }
+
+    const translateAPI = TranslateAPI.getInstance(apiKey);
+    const cacheStats = translateAPI.getCacheStats();
+    
+    return NextResponse.json({ 
+      message: 'Translation API endpoint',
+      cacheStats 
+    });
+  } catch (error: any) {
+    console.error('Cache stats error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to get cache stats' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+    
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Google Translate API key not configured' },
+        { status: 500 }
+      );
+    }
+
+    const translateAPI = TranslateAPI.getInstance(apiKey);
+    translateAPI.clearCache();
+    
+    return NextResponse.json({ 
+      message: 'Translation cache cleared successfully' 
+    });
+  } catch (error: any) {
+    console.error('Cache clear error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to clear cache' },
+      { status: 500 }
+    );
+  }
 } 

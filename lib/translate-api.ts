@@ -36,16 +36,123 @@ export interface TranslationResponse {
   detectedLanguage?: string;
 }
 
+// Cache interface for storing translations
+interface TranslationCache {
+  [key: string]: {
+    translatedText: string;
+    detectedLanguage?: string;
+    timestamp: number;
+  };
+}
+
 export class TranslateAPI {
   private apiKey: string;
   private baseUrl: string;
+  private cache: TranslationCache = {};
+  private cacheExpiryMs: number = 24 * 60 * 60 * 1000; // 24 hours default
+  
+  // Singleton instance
+  private static instance: TranslateAPI | null = null;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, cacheExpiryMs?: number) {
     this.apiKey = apiKey;
     this.baseUrl = 'https://translation.googleapis.com/language/translate/v2';
+    if (cacheExpiryMs) {
+      this.cacheExpiryMs = cacheExpiryMs;
+    }
+  }
+
+  // Singleton getInstance method
+  public static getInstance(apiKey: string, cacheExpiryMs?: number): TranslateAPI {
+    if (!TranslateAPI.instance) {
+      TranslateAPI.instance = new TranslateAPI(apiKey, cacheExpiryMs);
+    }
+    return TranslateAPI.instance;
+  }
+
+  // Reset singleton instance (useful for testing or when API key changes)
+  public static resetInstance(): void {
+    TranslateAPI.instance = null;
+  }
+
+  // Generate cache key for a translation request
+  private getCacheKey(text: string, targetLanguage: string, sourceLanguage?: string): string {
+    const source = sourceLanguage || 'auto';
+    return `${text}:${targetLanguage}:${source}`;
+  }
+
+  // Check if cache entry is valid (not expired)
+  private isCacheValid(timestamp: number): boolean {
+    return Date.now() - timestamp < this.cacheExpiryMs;
+  }
+
+  // Get translation from cache if available and valid
+  private getFromCache(text: string, targetLanguage: string, sourceLanguage?: string): TranslationResponse | null {
+    const cacheKey = this.getCacheKey(text, targetLanguage, sourceLanguage);
+    const cached = this.cache[cacheKey];
+    
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return {
+        translatedText: cached.translatedText,
+        detectedLanguage: cached.detectedLanguage
+      };
+    }
+    
+    return null;
+  }
+
+  // Store translation in cache
+  private storeInCache(text: string, targetLanguage: string, sourceLanguage: string, response: TranslationResponse): void {
+    const cacheKey = this.getCacheKey(text, targetLanguage, sourceLanguage);
+    this.cache[cacheKey] = {
+      translatedText: response.translatedText,
+      detectedLanguage: response.detectedLanguage,
+      timestamp: Date.now()
+    };
+  }
+
+  // Clear expired cache entries
+  private cleanupCache(): void {
+    const now = Date.now();
+    const keysToDelete = Object.keys(this.cache).filter(key => 
+      now - this.cache[key].timestamp >= this.cacheExpiryMs
+    );
+    
+    keysToDelete.forEach(key => {
+      delete this.cache[key];
+    });
+    
+    if (keysToDelete.length > 0) {
+      console.log(`Cleaned up ${keysToDelete.length} expired cache entries`);
+    }
+  }
+
+  // Get cache statistics
+  public getCacheStats(): { totalEntries: number; expiredEntries: number; validEntries: number } {
+    this.cleanupCache();
+    const now = Date.now();
+    const totalEntries = Object.keys(this.cache).length;
+    const expiredEntries = Object.values(this.cache).filter(entry => 
+      now - entry.timestamp >= this.cacheExpiryMs
+    ).length;
+    const validEntries = totalEntries - expiredEntries;
+    
+    return { totalEntries, expiredEntries, validEntries };
+  }
+
+  // Clear entire cache
+  public clearCache(): void {
+    this.cache = {};
   }
 
   async translate(request: TranslationRequest): Promise<TranslationResponse> {
+    // Check cache first
+    const cached = this.getFromCache(request.text, request.targetLanguage, request.sourceLanguage);
+    
+    if (cached) {
+      return cached;
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
         method: 'POST',
@@ -67,11 +174,14 @@ export class TranslateAPI {
       const data = await response.json();
       
       if (data.data && data.data.translations && data.data.translations.length > 0) {
-        console.log('Translation successful:', data.data.translations[0].translatedText);
-        return {
+        const result = {
           translatedText: data.data.translations[0].translatedText,
           detectedLanguage: data.data.translations[0].detectedSourceLanguage
         };
+        
+        // Store in cache
+        this.storeInCache(request.text, request.targetLanguage, request.sourceLanguage || 'auto', result);
+        return result;
       }
 
       throw new Error('No translation data received');
@@ -82,35 +192,78 @@ export class TranslateAPI {
   }
 
   async translateBatch(texts: string[], targetLanguage: string, sourceLanguage?: string): Promise<string[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: texts,
-          target: targetLanguage,
-          source: sourceLanguage || 'auto',
-          format: 'text'
-        }),
-      });
+    // Check cache first for each text
+    const results: string[] = [];
+    const textsToTranslate: { text: string; index: number }[] = [];
+    
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i];
+      const cached = this.getFromCache(text, targetLanguage, sourceLanguage);
 
-      if (!response.ok) {
-        throw new Error(`Batch translation failed: ${response.statusText}`);
+      if (cached) {
+        results[i] = cached.translatedText;
+      } else {
+        textsToTranslate.push({ text, index: i });
       }
-
-      const data = await response.json();
-      
-      if (data.data && data.data.translations) {
-        return data.data.translations.map((translation: any) => translation.translatedText);
-      }
-
-      throw new Error('No batch translation data received');
-    } catch (error) {
-      console.error('Batch translation error:', error);
-      throw error;
     }
+    
+    // If all texts are cached, return immediately
+    if (textsToTranslate.length === 0) {
+      return results;
+    }
+    
+    // Translate only the texts that aren't cached
+    if (textsToTranslate.length > 0) {
+      try {
+        const textsToTranslateArray = textsToTranslate.map(item => item.text);
+        const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: textsToTranslateArray,
+            target: targetLanguage,
+            source: sourceLanguage || 'auto',
+            format: 'text'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Batch translation failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.data && data.data.translations) {
+          // Store new translations in cache and fill results
+          for (let i = 0; i < textsToTranslate.length; i++) {
+            const { text, index } = textsToTranslate[i];
+            const translation = data.data.translations[i];
+            
+            if (translation) {
+              const result = {
+                translatedText: translation.translatedText,
+                detectedLanguage: translation.detectedSourceLanguage
+              };
+              
+              // Store in cache
+              this.storeInCache(text, targetLanguage, sourceLanguage || 'auto', result);
+              
+              // Fill the result at the correct index
+              results[index] = result.translatedText;
+            }
+          }
+        } else {
+          throw new Error('No batch translation data received');
+        }
+      } catch (error) {
+        console.error('Batch translation error:', error);
+        throw error;
+      }
+    }
+    
+    return results;
   }
 }
 

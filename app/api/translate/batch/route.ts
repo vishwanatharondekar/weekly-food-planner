@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const translateAPI = new TranslateAPI(apiKey);
+    const translateAPI = TranslateAPI.getInstance(apiKey);
+
     
     const translatedTexts = await translateAPI.translateBatch(
       texts,
