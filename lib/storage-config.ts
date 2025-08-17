@@ -44,12 +44,10 @@ export const configureStorage = (config: StorageConfig) => {
   switch (config.provider) {
     case 'firebase':
       storageWrapper.setProvider(new FirebaseStorageProvider());
-      console.log('Storage configured: Firebase Firestore');
-      break;
+            break;
     case 'indexeddb':
       storageWrapper.setProvider(new IndexedDBStorageProvider());
-      console.log('Storage configured: IndexedDB (Local)');
-      break;
+            break;
     default:
       throw new Error(`Unknown storage provider: ${config.provider}`);
   }

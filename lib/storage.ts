@@ -352,14 +352,6 @@ class StorageManager {
         const referenceWeekStart = targetWeek ? new Date(targetWeek) : getWeekStartDate(new Date());
         const referenceWeekStartStr = formatDate(referenceWeekStart);
         
-        console.log('IndexedDB getMealHistory:', { 
-          userId, 
-          targetWeek,
-          referenceWeekStartStr, 
-          totalPlans: plans.length,
-          allWeeks: plans.map(p => p.weekStartDate)
-        });
-        
         // Filter for plans before the reference week and sort by weekStartDate descending
         const previousWeeks = plans
           .filter(plan => plan.weekStartDate < referenceWeekStartStr)

@@ -120,6 +120,57 @@ export const authAPI = {
     }
   },
 
+  getLanguagePreferences: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/language-preferences', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get language preferences');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateLanguagePreferences: async (preferences: { language: string }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/language-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update language preferences');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Video URL management
   getVideoURLs: async () => {
     try {
