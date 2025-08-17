@@ -539,29 +539,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </button>
         </div>
 
-        {/* Status Messages */}
-        {!aiStatus.hasHistory && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 shadow-sm">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-blue-900">
-                  Welcome to AI Meal Planning! 🚀
-                </h3>
-                <div className="mt-2 text-blue-700">
-                  <p className="text-base">
-                    Plan at least one week of meals to unlock AI suggestions that will help you create varied and delicious meal plans based on your preferences.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Meal Table */}
         <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
@@ -581,7 +558,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                       onMouseEnter={handleAiTooltipStart}
                       onMouseLeave={handleAiTooltipEnd}
                       disabled={loading}
-                      className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 text-gray-600 hover:text-purple-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Sparkles className="w-5 h-5" />
                     </button>
@@ -600,7 +577,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                     onClick={handleGeneratePDF}
                     onMouseEnter={handlePdfTooltipStart}
                     onMouseLeave={handlePdfTooltipEnd}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    className="p-2 text-gray-600 hover:text-blue-600 bg-gray-100 rounded-md transition-colors"
                   >
                     <FileDown className="w-5 h-5" />
                   </button>
@@ -619,7 +596,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                     onMouseEnter={handleShoppingTooltipStart}
                     onMouseLeave={handleShoppingTooltipEnd}
                     disabled={loading}
-                    className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 text-gray-600 hover:text-green-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart className="w-5 h-5" />
                   </button>
@@ -636,7 +613,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                   <button
                     onClick={clearMeals}
                     disabled={loading}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 text-gray-600 hover:text-red-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
