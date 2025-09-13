@@ -294,8 +294,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
       doc.text('Note: Blue meal names are clickable and link to recipe videos', 20, finalY + 10);
     }
 
+    const weekDetails = `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d')}`;
     // Save the PDF
-    doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
+    doc.save(`Meal Plan ${weekDetails}.pdf`);
   } catch (error) {
     console.error('Error generating PDF:', error);
     alert('Failed to generate PDF. Please try again.');
@@ -384,8 +385,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     } else {
       try {
         // Use AI to extract ingredients
-        const result = await extractIngredientsFromMeals(allMeals);
-        // const result = {"grouped":[{"Poha":["flattened rice","onions","potatoes","peanuts"]},{"Mug Matki Suki Bhaji":["moong beans","moth beans","onions","tomatoes"]},{"Godi Dal":["toor dal","jaggery","tamarind"]},{"Chapati":["wheat flour"]},{"Rice":["rice"]},{"Vanga Fry":["brinjal"]},{"Sabudana Khichdi":["sago","potatoes","peanuts"]},{"Tomato Bhaji":["tomatoes","onions"]},{"Godi Dal rice chapati":["toor dal","rice","wheat flour","jaggery"]},{"Suran Fry":["elephant foot yam"]},{"Half Fry Chapati":["eggs","wheat flour"]},{"Kolambi Bhaji":["prawns","onions","tomatoes","coconut"]},{"Tikhat Dal":["toor dal","onions","tomatoes"]},{"Papad":["papad"]},{"Egg Shakshuka":["eggs","tomatoes","onions","bell peppers"]},{"Sandwich":["bread","cucumber","tomatoes","onions","potatoes"]},{"Aaloo Palak":["potatoes","spinach","onions","tomatoes"]},{"Kadi":["yogurt","gram flour"]},{"Koshimbir":["cucumber","tomatoes","onions","yogurt"]},{"Loncha":["pickle"]},{"Besan Poli Chapati":["gram flour","jaggery","wheat flour"]},{"Tondli":["ivy gourd","potatoes"]},{"Kakadi Salad":["cucumber","peanuts"]},{"Idli Chutney":["idli rice","urad dal","coconut"]},{"Masala Khichdi":["rice","moong dal","mixed vegetables","onions","tomatoes"]},{"Pav Bhaji":["pav","potatoes","onions","tomatoes","mixed vegetables","butter"]},{"Misal Pav":["pav","moth beans","onions","tomatoes","farsan"]},{"Chicken Biryani":["chicken","basmati rice","onions","tomatoes","yogurt"]},{"Raita":["yogurt","cucumber","onions"]}],"consolidated":["basmati rice","bell peppers","bread","brinjal","butter","chicken","coconut","cucumber","eggs","elephant foot yam","farsan","flattened rice","gram flour","idli rice","ivy gourd","jaggery","mixed vegetables","moong beans","moong dal","moth beans","onions","papad","pav","peanuts","pickle","potatoes","prawns","rice","sago","spinach","tamarind","tomatoes","toor dal","urad dal","wheat flour","yogurt"]}
+        // const result = await extractIngredientsFromMeals(allMeals);
+        const result = {"grouped":[{"Poha":["flattened rice","onions","potatoes","peanuts"]},{"Mug Matki Suki Bhaji":["moong beans","moth beans","onions","tomatoes"]},{"Godi Dal":["toor dal","jaggery","tamarind"]},{"Chapati":["wheat flour"]},{"Rice":["rice"]},{"Vanga Fry":["brinjal"]},{"Sabudana Khichdi":["sago","potatoes","peanuts"]},{"Tomato Bhaji":["tomatoes","onions"]},{"Godi Dal rice chapati":["toor dal","rice","wheat flour","jaggery"]},{"Suran Fry":["elephant foot yam"]},{"Half Fry Chapati":["eggs","wheat flour"]},{"Kolambi Bhaji":["prawns","onions","tomatoes","coconut"]},{"Tikhat Dal":["toor dal","onions","tomatoes"]},{"Papad":["papad"]},{"Egg Shakshuka":["eggs","tomatoes","onions","bell peppers"]},{"Sandwich":["bread","cucumber","tomatoes","onions","potatoes"]},{"Aaloo Palak":["potatoes","spinach","onions","tomatoes"]},{"Kadi":["yogurt","gram flour"]},{"Koshimbir":["cucumber","tomatoes","onions","yogurt"]},{"Loncha":["pickle"]},{"Besan Poli Chapati":["gram flour","jaggery","wheat flour"]},{"Tondli":["ivy gourd","potatoes"]},{"Kakadi Salad":["cucumber","peanuts"]},{"Idli Chutney":["idli rice","urad dal","coconut"]},{"Masala Khichdi":["rice","moong dal","mixed vegetables","onions","tomatoes"]},{"Pav Bhaji":["pav","potatoes","onions","tomatoes","mixed vegetables","butter"]},{"Misal Pav":["pav","moth beans","onions","tomatoes","farsan"]},{"Chicken Biryani":["chicken","basmati rice","onions","tomatoes","yogurt"]},{"Raita":["yogurt","cucumber","onions"]}],"consolidated":["basmati rice","bell peppers","bread","brinjal","butter","chicken","coconut","cucumber","eggs","elephant foot yam","farsan","flattened rice","gram flour","idli rice","ivy gourd","jaggery","mixed vegetables","moong beans","moong dal","moth beans","onions","papad","pav","peanuts","pickle","potatoes","prawns","rice","sago","spinach","tamarind","tomatoes","toor dal","urad dal","wheat flour","yogurt"]}
 
         // Create organized layout with modern cards
         if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
@@ -443,6 +444,16 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           // Add new section: Ingredients by Meal - with pagination
           let remainingMeals = [...result.grouped];
           let pageIndex = 0;
+
+
+          const perMealHeight = 14;
+          const totalMeals = result.grouped.length;
+          const currentPageHeightRemaining  = pageHeight - currentY - 50;
+          const currentPageMeals = Math.floor(currentPageHeightRemaining / perMealHeight);
+          const remainingMealsCount = totalMeals - currentPageMeals;
+          const remainingPages = Math.ceil(remainingMealsCount / perMealHeight);
+          const totalPages = remainingPages + 1;
+
           
           while (remainingMeals.length > 0) {
             // Add new page if not the first page
@@ -457,7 +468,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             const mealsToShow = Math.min(mealsPerPage, remainingMeals.length);
             
             const pageMeals = remainingMeals.splice(0, mealsToShow);
-            const totalPages = Math.ceil(result.grouped.length / mealsPerPage);
             
             const ingredientsByMealHeight = 15 + (pageMeals.length * 14);
             doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
@@ -683,9 +693,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   );
 
   // Enhanced filename
-  const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
-  const userName = mealPlan.userInfo?.name ? `-${mealPlan.userInfo.name.replace(/\s+/g, '-')}` : '';
-  const filename = `smart-shopping-list-${weekStartFormatted}${userName}.pdf`;
+  const weekDetails = `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d')}`;
+  const filename = `Shopping List ${weekDetails}.pdf`;
   
   // Save the PDF
   doc.save(filename);
