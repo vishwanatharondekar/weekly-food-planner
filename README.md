@@ -8,6 +8,7 @@ A modern web application for planning weekly meals with AI-powered suggestions u
 1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
 2. **Firebase Project**: Set up Firebase Firestore
 3. **Google AI Studio**: Get Gemini API key
+4. **Google Cloud Console**: Set up Google Translate API
 
 ### **Environment Variables Setup**
 
@@ -24,6 +25,9 @@ FIREBASE_APP_ID=your_app_id
 
 # Google Gemini AI (Server-side)
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Google Translate API (Server-side)
+GOOGLE_TRANSLATE_API_KEY=your_google_translate_api_key_here
 ```
 
 ### **Deployment Steps**
@@ -47,6 +51,33 @@ GEMINI_API_KEY=your_gemini_api_key_here
    - Add all variables from `.env.local`
    - Redeploy after adding variables
 
+### **Google Translate API Setup**
+
+1. **Go to Google Cloud Console**:
+   - Visit [console.cloud.google.com](https://console.cloud.google.com)
+   - Create a new project or select existing one
+
+2. **Enable Translation API**:
+   - Go to "APIs & Services" → "Library"
+   - Search for "Cloud Translation API"
+   - Click "Enable"
+
+3. **Create API Key**:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "API Key"
+   - Copy the generated API key
+
+4. **Restrict API Key** (Recommended):
+   - Click on the created API key
+   - Under "Application restrictions", select "HTTP referrers"
+   - Under "API restrictions", select "Cloud Translation API"
+   - Save changes
+
+5. **Add to Environment Variables**:
+   ```bash
+   GOOGLE_TRANSLATE_API_KEY=your_api_key_here
+   ```
+
 ### **Security Benefits**
 
 ✅ **API Keys Hidden**: All sensitive keys are server-side only
@@ -54,6 +85,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ✅ **Token-based Auth**: JWT-like tokens for session management
 ✅ **Server-side AI**: Gemini API calls happen on server
 ✅ **Firebase Security**: Direct database access only from server
+✅ **Translation Security**: Google Translate API calls happen server-side
 
 ## Features
 
@@ -87,6 +119,14 @@ GEMINI_API_KEY=your_gemini_api_key_here
 - 📋 **Centralized Management**: Manage all recipe videos in one place
 - 🔗 **Smart Fallback**: YouTube search URLs generated for recipes without saved videos
 - 📄 **PDF Integration**: Video URLs included in meal plan PDFs
+
+### **Multi-Language PDF Generation**
+- 🌍 **Indian Languages First**: Priority support for Indian languages (Hindi, Marathi, Bengali, Telugu, Tamil, Gujarati, Kannada, Malayalam, Punjabi, Urdu, Odia, Assamese, Nepali, Sinhala, Burmese, Khmer, Lao)
+- 🔄 **Automatic Translation**: Google Translate API integration for accurate translations
+- 📄 **Localized PDFs**: Generate meal plans and shopping lists in your preferred language
+- 🎯 **Smart Fallbacks**: Comprehensive fallback translations for common meal planning terms in Indian languages
+- ⚡ **Batch Translation**: Efficient translation of multiple texts at once
+- 🎯 **User Preferences**: Language selection integrated into user preferences alongside dietary preferences and meal settings
 
 ## Tech Stack
 

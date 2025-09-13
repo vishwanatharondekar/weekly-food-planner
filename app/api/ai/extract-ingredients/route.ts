@@ -74,7 +74,7 @@ Example response format:
 Return only the JSON object, nothing else.
 `;
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const text = response.text();

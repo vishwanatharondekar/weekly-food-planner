@@ -38,6 +38,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   const [savingMeals, setSavingMeals] = useState<Set<string>>(new Set()); // Track which meals are being saved
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
+  const [userLanguage, setUserLanguage] = useState<string>('en'); // Default to English
   
   // Full screen loader states
   const [showLoader, setShowLoader] = useState(false);
@@ -55,6 +56,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
   useEffect(() => {
     loadMealSettings();
+    loadUserLanguagePreferences();
   }, []);
 
   useEffect(() => {
@@ -121,6 +123,24 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       }
     } catch (error) {
       console.error('Error loading meal settings:', error);
+    }
+  };
+
+  const loadUserLanguagePreferences = async () => {
+    try {
+      console.log('Loading user language preferences...');
+      const preferences = await authAPI.getLanguagePreferences();
+      console.log('Language preferences loaded:', preferences);
+      
+      if (preferences && preferences.language) {
+        console.log('Setting user language to:', preferences.language);
+        setUserLanguage(preferences.language);
+      } else {
+        console.log('No language preferences found, keeping default English');
+      }
+    } catch (error) {
+      console.error('Error loading language preferences:', error);
+      // Keep default English
     }
   };
 
@@ -438,7 +458,9 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         meals: pdfMeals,
         userInfo: user,
         mealSettings,
-        videoURLs
+        videoURLs,
+        targetLanguage: userLanguage
+
       });
       
       hideFullScreenLoader();
@@ -480,7 +502,9 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         meals: pdfMeals,
         userInfo: user,
         mealSettings,
-        videoURLs
+        videoURLs,
+        targetLanguage: userLanguage
+
       });
       
       hideFullScreenLoader();
@@ -490,6 +514,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       hideFullScreenLoader();
       toast.error('Failed to generate shopping list');
     }
+
   };
 
   // Tooltip handlers with 2-second delay
@@ -612,6 +637,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                 <p className="text-sm text-gray-600 mt-1">Enter your meals for each day and meal type</p>
               </div>
               
+
+
               {/* Action Buttons */}
               <div className="flex items-center space-x-3">
                 {/* 1. Fill with AI */}
