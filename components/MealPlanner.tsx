@@ -8,6 +8,7 @@ import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayNam
 import toast from 'react-hot-toast';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
+import FullScreenLoader from './FullScreenLoader';
 
 interface MealData {
   [day: string]: {
@@ -37,6 +38,12 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   const [savingMeals, setSavingMeals] = useState<Set<string>>(new Set()); // Track which meals are being saved
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
+  
+  // Full screen loader states
+  const [showLoader, setShowLoader] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState('');
+  const [loaderSubMessage, setLoaderSubMessage] = useState('');
+  const [currentOperation, setCurrentOperation] = useState<'ai' | 'pdf' | 'shopping' | null>(null);
   
   // Tooltip delay states
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
@@ -69,6 +76,27 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       }
     };
   }, []);
+
+  // Helper functions for loader management
+  const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string) => {
+    setCurrentOperation(operation);
+    setLoaderMessage(message);
+    setLoaderSubMessage(subMessage || '');
+    setShowLoader(true);
+  };
+
+  const hideFullScreenLoader = () => {
+    setShowLoader(false);
+    setCurrentOperation(null);
+    setLoaderMessage('');
+    setLoaderSubMessage('');
+  };
+
+  const handleLoaderCancel = () => {
+    hideFullScreenLoader();
+    setLoading(false);
+    toast('Operation cancelled', { icon: 'ℹ️' });
+  };
 
   const loadMealSettings = async () => {
     try {
@@ -288,8 +316,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     console.log('Generating AI meals');
     try {
       setLoading(true);
+      showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
+      
       const weekStart = formatDate(currentWeek);
       const suggestions = await aiAPI.generateMeals(weekStart);
+      
+      // Update loader message
+      setLoaderMessage('Processing AI Results');
+      setLoaderSubMessage('Applying suggestions to your meal plan...');
       
       // Prepare updated meals with AI suggestions for empty slots
       const updatedMeals = { ...meals };
@@ -332,10 +366,12 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         setMeals(updatedMeals);
       }
       
+      hideFullScreenLoader();
       toast.success('AI meal suggestions applied to empty slots!');
       await checkAIStatus();
     } catch (error: any) {
       console.error('Error generating AI meals:', error);
+      hideFullScreenLoader();
       toast.error(error.message || 'Failed to generate AI suggestions');
     } finally {
       setLoading(false);
@@ -373,59 +409,87 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   };
 
   const handleGeneratePDF = async () => {
-    // Convert to format expected by PDF generator
-    const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
-    const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
-    
-    DAYS_OF_WEEK.forEach(day => {
-      pdfMeals[day] = {};
-      videoURLs[day] = {};
-      mealSettings.enabledMealTypes.forEach(mealType => {
-        const meal = meals[day]?.[mealType];
-        if (meal) {
-          pdfMeals[day][mealType] = meal.name;
-          if (meal.videoUrl) {
-            videoURLs[day][mealType] = meal.videoUrl;
+    try {
+      showFullScreenLoader('pdf', 'Generating PDF', 'Preparing your meal plan document...');
+      
+      // Convert to format expected by PDF generator
+      const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
+      const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      
+      DAYS_OF_WEEK.forEach(day => {
+        pdfMeals[day] = {};
+        videoURLs[day] = {};
+        mealSettings.enabledMealTypes.forEach(mealType => {
+          const meal = meals[day]?.[mealType];
+          if (meal) {
+            pdfMeals[day][mealType] = meal.name;
+            if (meal.videoUrl) {
+              videoURLs[day][mealType] = meal.videoUrl;
+            }
           }
-        }
+        });
       });
-    });
 
-    await generateMealPlanPDF({
-      weekStartDate: formatDate(currentWeek),
-      meals: pdfMeals,
-      userInfo: user,
-      mealSettings,
-      videoURLs
-    });
+      setLoaderMessage('Creating PDF');
+      setLoaderSubMessage('Formatting your weekly meal plan...');
+
+      await generateMealPlanPDF({
+        weekStartDate: formatDate(currentWeek),
+        meals: pdfMeals,
+        userInfo: user,
+        mealSettings,
+        videoURLs
+      });
+      
+      hideFullScreenLoader();
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      hideFullScreenLoader();
+      toast.error('Failed to generate PDF');
+    }
   };
 
   const handleGenerateShoppingList = async () => {
-    // Convert to format expected by PDF generator
-    const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
-    const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
-    
-    DAYS_OF_WEEK.forEach(day => {
-      pdfMeals[day] = {};
-      videoURLs[day] = {};
-      mealSettings.enabledMealTypes.forEach(mealType => {
-        const meal = meals[day]?.[mealType];
-        if (meal) {
-          pdfMeals[day][mealType] = meal.name;
-          if (meal.videoUrl) {
-            videoURLs[day][mealType] = meal.videoUrl;
+    try {
+      showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
+      
+      // Convert to format expected by PDF generator
+      const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
+      const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      
+      DAYS_OF_WEEK.forEach(day => {
+        pdfMeals[day] = {};
+        videoURLs[day] = {};
+        mealSettings.enabledMealTypes.forEach(mealType => {
+          const meal = meals[day]?.[mealType];
+          if (meal) {
+            pdfMeals[day][mealType] = meal.name;
+            if (meal.videoUrl) {
+              videoURLs[day][mealType] = meal.videoUrl;
+            }
           }
-        }
+        });
       });
-    });
 
-    await generateShoppingListPDF({
-      weekStartDate: formatDate(currentWeek),
-      meals: pdfMeals,
-      userInfo: user,
-      mealSettings,
-      videoURLs
-    });
+      setLoaderMessage('Creating Shopping List');
+      setLoaderSubMessage('Organizing ingredients and quantities...');
+
+      await generateShoppingListPDF({
+        weekStartDate: formatDate(currentWeek),
+        meals: pdfMeals,
+        userInfo: user,
+        mealSettings,
+        videoURLs
+      });
+      
+      hideFullScreenLoader();
+      toast.success('Shopping list downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating shopping list:', error);
+      hideFullScreenLoader();
+      toast.error('Failed to generate shopping list');
+    }
   };
 
   // Tooltip handlers with 2-second delay
@@ -732,6 +796,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           />
         )}
       </div>
+      
+      {/* Full Screen Loader */}
+      <FullScreenLoader
+        isVisible={showLoader}
+        onCancel={handleLoaderCancel}
+        message={loaderMessage}
+        subMessage={loaderSubMessage}
+      />
     </div>
   );
 }
