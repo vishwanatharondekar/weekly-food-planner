@@ -66,7 +66,6 @@ async function getVideoURL(meal: any): Promise<string> {
 
 // Helper function to translate text
 async function translateText(text: string, targetLanguage?: string): Promise<string> {
-  console.log('Translating text:', text, 'to language:', targetLanguage);
   
   if (!targetLanguage || targetLanguage === 'en') {
     return text;
@@ -89,7 +88,6 @@ async function translateText(text: string, targetLanguage?: string): Promise<str
     if (response.ok) {
       const result = await response.json();
       if (result.translatedText) {
-        console.log('Translation successful:', text, '->', result.translatedText);
         return result.translatedText;
       }
     }
@@ -98,7 +96,6 @@ async function translateText(text: string, targetLanguage?: string): Promise<str
   }
 
   // Fallback to basic translations if API fails
-  console.log('Using fallback translation for:', text);
   return fallbackTranslate(text, targetLanguage);
 }
 
@@ -107,7 +104,6 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     // Create PDF in landscape orientation
     const doc = new jsPDF('landscape');
 
-    console.log("font list", doc.getFontList());
 
     // doc.addFont("NotoSansDevanagari-Regular.ttf", "NotoSans", "normal");
     let fontName = 'helvetica';
@@ -115,10 +111,6 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       fontName = 'NotoSans'
     }
-
-
-    console.log("added font NotoSans");
-    console.log("mealPlan.targetLanguage", doc.getFontList());
     
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
@@ -127,7 +119,6 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     if (mealPlan.targetLanguage && mealPlan.targetLanguage == 'en') {
       try {
         // Use Noto Sans font for proper Unicode support
-        console.log('Setting up Noto Sans font for Unicode support in language:', mealPlan.targetLanguage);
         
         // Add the Noto Sans font to jsPDF
         // Note: This is a simplified approach - in production you might want to load the actual font file
@@ -138,11 +129,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
           
           // Test if we can render Unicode characters
           const testText = 'अबक'; // Hindi test characters
-          console.log('Testing Unicode support with text:', testText);
           
           // The real fix is to ensure the font actually contains the glyphs
           // For now, let's try to handle this at the text level
-          console.log('Font setup complete - will attempt Unicode rendering');
         } catch (fontError) {
           console.warn('Font setup failed, using default:', fontError);
         }
@@ -165,7 +154,6 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
       });
     });
 
-    console.log('Meal plan - Meal names to translate:', mealNamesToTranslate);
 
     // Pre-translate all texts that need translation
     const textsToTranslate = [
@@ -199,10 +187,8 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
           if (result.translatedTexts && result.translatedTexts.length === textsToTranslate.length) {
             textsToTranslate.forEach((text, index) => {
               const translatedText = result.translatedTexts[index];
-              console.log(`Batch translation result: "${text}" -> "${translatedText}"`);
               translations[text] = translatedText;
             });
-            console.log('Batch translation successful:', translations);
           }
         }
       } catch (error) {
@@ -217,14 +203,12 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     // Helper function to get translated text
     const getTranslatedText = (text: string): string => {
       const translated = translations[text] || text;
-      console.log(`getTranslatedText: "${text}" -> "${translated}"`);
       
       // Ensure proper text encoding for PDF generation
       if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
         try {
           // Normalize Unicode characters and ensure proper encoding
           const normalized = translated.normalize('NFC');
-          console.log(`Normalized text: "${translated}" -> "${normalized}"`);
           return normalized;
         } catch (error) {
           console.warn('Text normalization failed, using original:', error);
@@ -254,12 +238,10 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     doc.setFontSize(20);
     doc.setFont(fontName, 'bold');
     const titleText = 'Weekly Meal Plan';
-    console.log(`Rendering title: "${titleText}"`);
     
     // Try different text rendering methods for Unicode support
     try {
       doc.text(titleText, pageWidth / 2, 18, { align: 'center' });
-      console.log('Title rendered successfully with standard method');
     } catch (textError) {
       console.warn('Standard text rendering failed, trying alternative method:', textError);
       try {
@@ -313,11 +295,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
           
           // Get translated meal name
           const translatedMealName = getTranslatedText(meal.trim());
-          console.log(`Translating meal "${meal.trim()}" to "${translatedMealName}"`);
           
           // Debug: Check if the translated text contains non-ASCII characters
           const hasNonAscii = /[^\x00-\x7F]/.test(translatedMealName);
-          console.log(`Meal "${translatedMealName}" has non-ASCII characters: ${hasNonAscii}`);
           
           row.push({
             content: translatedMealName,
@@ -502,7 +482,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   try {
     const doc = new jsPDF();
 
-    console.log("NotoSansDevanagari-Regular-normal.ttf", "NotoSans");
     doc.setFont("NotoSans");
     
     let fontName = 'helvetica';
@@ -519,7 +498,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       try {
         // Use Noto Sans font for proper Unicode support
-        console.log('Setting up Noto Sans font for Unicode support in language:', mealPlan.targetLanguage);
         
         // Add the Noto Sans font to jsPDF
         // Note: This is a simplified approach - in production you might want to load the actual font file
@@ -530,11 +508,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           
           // Test if we can render Unicode characters
           const testText = 'अबक'; // Hindi test characters
-          console.log('Testing Unicode support with text:', testText);
           
           // The real fix is to ensure the font actually contains the glyphs
           // For now, let's try to handle this at the text level
-          console.log('Font setup complete - will attempt Unicode rendering');
         } catch (fontError) {
           console.warn('Font setup failed, using default:', fontError);
         }
@@ -557,7 +533,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       });
     });
 
-    console.log('Shopping list - Meal names to translate:', mealNamesToTranslate);
 
     // Pre-translate all texts that need translation
     const textsToTranslate = [
@@ -593,10 +568,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           if (result.translatedTexts && result.translatedTexts.length === textsToTranslate.length) {
             textsToTranslate.forEach((text, index) => {
               const translatedText = result.translatedTexts[index];
-              console.log(`Shopping list batch translation result: "${text}" -> "${translatedText}"`);
               translations[text] = translatedText;
             });
-            console.log('Shopping list batch translation successful:', translations);
           }
         }
       } catch (error) {
@@ -611,14 +584,12 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     // Helper function to get translated text
     const getTranslatedText = (text: string): string => {
       const translated = translations[text] || text;
-      console.log(`getTranslatedText: "${text}" -> "${translated}"`);
       
       // Ensure proper text encoding for PDF generation
       if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
         try {
           // Normalize Unicode characters and ensure proper encoding
           const normalized = translated.normalize('NFC');
-          console.log(`Normalized text: "${translated}" -> "${normalized}"`);
           return normalized;
         } catch (error) {
           console.warn('Text normalization failed, using original:', error);
