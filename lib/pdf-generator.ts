@@ -294,8 +294,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
       doc.text('Note: Blue meal names are clickable and link to recipe videos', 20, finalY + 10);
     }
 
+    const weekDetails = `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d')}`;
     // Save the PDF
-    doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
+    doc.save(`Meal Plan ${weekDetails}.pdf`);
   } catch (error) {
     console.error('Error generating PDF:', error);
     alert('Failed to generate PDF. Please try again.');
@@ -443,6 +444,16 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           // Add new section: Ingredients by Meal - with pagination
           let remainingMeals = [...result.grouped];
           let pageIndex = 0;
+
+
+          const perMealHeight = 14;
+          const totalMeals = result.grouped.length;
+          const currentPageHeightRemaining  = pageHeight - currentY - 50;
+          const currentPageMeals = Math.floor(currentPageHeightRemaining / perMealHeight);
+          const remainingMealsCount = totalMeals - currentPageMeals;
+          const remainingPages = Math.ceil(remainingMealsCount / perMealHeight);
+          const totalPages = remainingPages + 1;
+
           
           while (remainingMeals.length > 0) {
             // Add new page if not the first page
@@ -457,7 +468,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             const mealsToShow = Math.min(mealsPerPage, remainingMeals.length);
             
             const pageMeals = remainingMeals.splice(0, mealsToShow);
-            const totalPages = Math.ceil(result.grouped.length / mealsPerPage);
             
             const ingredientsByMealHeight = 15 + (pageMeals.length * 14);
             doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
@@ -683,9 +693,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   );
 
   // Enhanced filename
-  const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
-  const userName = mealPlan.userInfo?.name ? `-${mealPlan.userInfo.name.replace(/\s+/g, '-')}` : '';
-  const filename = `smart-shopping-list-${weekStartFormatted}${userName}.pdf`;
+  const weekDetails = `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d')}`;
+  const filename = `Shopping List ${weekDetails}.pdf`;
   
   // Save the PDF
   doc.save(filename);
