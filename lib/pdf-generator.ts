@@ -332,7 +332,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('Smart Shopping List', pageWidth / 2, 25, { align: 'center' });
+    doc.text('Shopping List', pageWidth / 2, 25, { align: 'center' });
   
     // Subtitle
     const weekStart = new Date(mealPlan.weekStartDate);
@@ -341,33 +341,13 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     doc.setFontSize(16);
     doc.setFont('helvetica', 'normal');
     doc.text(
-      `For week: ${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
+      `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
       pageWidth / 2,
       40,
       { align: 'center' }
     );
 
-    // User info card
     let currentY = 70;
-    if (mealPlan.userInfo?.name) {
-      doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-      doc.rect(15, currentY - 5, pageWidth - 30, 25, 'F');
-      doc.setDrawColor(colors.lightBlue[0], colors.lightBlue[1], colors.lightBlue[2]);
-      doc.setLineWidth(1);
-      doc.rect(15, currentY - 5, pageWidth - 30, 25, 'S');
-      
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Shopping list for:', 20, currentY + 5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(mealPlan.userInfo.name, 75, currentY + 5);
-      
-      doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-      doc.setFontSize(12);
-      doc.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')}`, 20, currentY + 13);
-      currentY += 35;
-    }
 
     // Extract all meals (only from enabled meal types)
     const allMeals: string[] = [];
@@ -401,13 +381,10 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       try {
         // Use AI to extract ingredients
         const result = await extractIngredientsFromMeals(allMeals);
-        
-        // Modern shopping list title
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Your Organized Shopping List', 20, currentY);
-        currentY += 20;
+        // const result = {"grouped":[{"Poha":["flattened rice","onions","potatoes","peanuts"]},{"Mug Matki Suki Bhaji":["moong beans","moth beans","onions","tomatoes"]},{"Godi Dal":["toor dal","jaggery","tamarind"]},{"Chapati":["wheat flour"]},{"Rice":["rice"]},{"Vanga Fry":["brinjal"]},{"Sabudana Khichdi":["sago","potatoes","peanuts"]},{"Tomato Bhaji":["tomatoes","onions"]},{"Godi Dal rice chapati":["toor dal","rice","wheat flour","jaggery"]},{"Suran Fry":["elephant foot yam"]},{"Half Fry Chapati":["eggs","wheat flour"]},{"Kolambi Bhaji":["prawns","onions","tomatoes","coconut"]},{"Tikhat Dal":["toor dal","onions","tomatoes"]},{"Papad":["papad"]},{"Egg Shakshuka":["eggs","tomatoes","onions","bell peppers"]},{"Sandwich":["bread","cucumber","tomatoes","onions","potatoes"]},{"Aaloo Palak":["potatoes","spinach","onions","tomatoes"]},{"Kadi":["yogurt","gram flour"]},{"Koshimbir":["cucumber","tomatoes","onions","yogurt"]},{"Loncha":["pickle"]},{"Besan Poli Chapati":["gram flour","jaggery","wheat flour"]},{"Tondli":["ivy gourd","potatoes"]},{"Kakadi Salad":["cucumber","peanuts"]},{"Idli Chutney":["idli rice","urad dal","coconut"]},{"Masala Khichdi":["rice","moong dal","mixed vegetables","onions","tomatoes"]},{"Pav Bhaji":["pav","potatoes","onions","tomatoes","mixed vegetables","butter"]},{"Misal Pav":["pav","moth beans","onions","tomatoes","farsan"]},{"Chicken Biryani":["chicken","basmati rice","onions","tomatoes","yogurt"]},{"Raita":["yogurt","cucumber","onions"]}],"consolidated":["basmati rice","bell peppers","bread","brinjal","butter","chicken","coconut","cucumber","eggs","elephant foot yam","farsan","flattened rice","gram flour","idli rice","ivy gourd","jaggery","mixed vegetables","moong beans","moong dal","moth beans","onions","papad","pav","peanuts","pickle","potatoes","prawns","rice","sago","spinach","tamarind","tomatoes","toor dal","urad dal","wheat flour","yogurt"]}
+
+        console.log('result : ')
+        console.log(JSON.stringify(result));
         
         // Create organized layout with modern cards
         if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
@@ -424,7 +401,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
-          doc.text('Complete Ingredients List', 25, currentY + 13);
+          doc.text('Ingredients List', 25, currentY + 13);
           
           // Shopping list content
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
@@ -514,21 +491,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         currentY += 70;
       }
     }
-
-    // Modern tips section
-  const tipsY = Math.min(currentY + 20, pageHeight - 80);
-  
-  doc.setFillColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-  doc.rect(20, tipsY, pageWidth - 40, 35, 'F');
-  
-  doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Smart Shopping Tips', pageWidth / 2, tipsY + 12, { align: 'center' });
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Check items off as you shop • Buy fresh produce last • Compare prices for deals', pageWidth / 2, tipsY + 25, { align: 'center' });
 
   // Modern footer
   doc.setFillColor(colors.text[0], colors.text[1], colors.text[2]);
