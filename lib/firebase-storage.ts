@@ -213,14 +213,6 @@ export class FirebaseStorageProvider {
     // Use target week if provided, otherwise use current week
     const referenceWeekStart = targetWeek ? new Date(targetWeek) : getWeekStartDate(new Date());
     const referenceWeekStartStr = formatDate(referenceWeekStart);
-    
-    console.log('Firebase getMealHistory:', { 
-      userId, 
-      targetWeek,
-      referenceWeekStartStr, 
-      limitCount 
-    });
-    
     // Query for meal plans that are before the reference week
     const q = query(
       mealPlansRef,
@@ -242,12 +234,6 @@ export class FirebaseStorageProvider {
         updatedAt: this.convertTimestamp(data.updatedAt),
       } as MealPlan);
     });
-
-    console.log('Firebase meal history result:', {
-      totalFound: mealPlans.length,
-      weeks: mealPlans.map(p => p.weekStartDate)
-    });
-
     return mealPlans;
   }
 
@@ -269,13 +255,11 @@ export class FirebaseStorageProvider {
         );
       });
 
-      console.log('history : ', history);
-      
+            
       const hasHistory = history.length >= 1; // Changed from 2 to 1 for new users
       const canGenerate = hasHistory; // Allow generation even with limited data
       
-      console.log('Firebase AI Status Result:', { hasHistory, hasMealData, canGenerate });
-      
+            
       return { hasHistory, canGenerate };
     } catch (error) {
       console.error('Error checking AI status:', error);

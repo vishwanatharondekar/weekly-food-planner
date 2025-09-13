@@ -4,6 +4,13 @@ import { format } from 'date-fns';
 import { MealData } from './storage';
 import { DAYS_OF_WEEK, ALL_MEAL_TYPES, getWeekDays, getMealDisplayName, DEFAULT_MEAL_SETTINGS, type MealSettings } from './utils';
 import { getVideoURLForRecipe } from './video-url-utils';
+import { fallbackTranslate } from './translate-api';
+
+import "./../components/fonts/generated/NotoSans-normal"; // the generated file
+import "./../components/fonts/generated/NotoSans-bold"; // the generated file
+
+
+// Note: Font imports removed - will use alternative approach for Unicode support
 
 // Helper function to capitalize first letter of each word
 function capitalizeWords(text: string): string {
@@ -41,6 +48,7 @@ export interface PDFMealPlan {
   };
   mealSettings?: MealSettings;
   videoURLs?: { [day: string]: { [mealType: string]: string } };
+  targetLanguage?: string; // Language code for translation
 }
 
 // Helper function to get video URL from meal data
@@ -56,15 +64,160 @@ async function getVideoURL(meal: any): Promise<string> {
   return await getVideoURLForRecipe(mealName);
 }
 
+// Helper function to translate text
+async function translateText(text: string, targetLanguage?: string): Promise<string> {
+  
+  if (!targetLanguage || targetLanguage === 'en') {
+    return text;
+  }
+
+  try {
+    // Try to use Google Translate API first
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        targetLanguage,
+        sourceLanguage: 'en'
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.translatedText) {
+        return result.translatedText;
+      }
+    }
+  } catch (error) {
+    console.warn('Google Translate API failed, using fallback:', error);
+  }
+
+  // Fallback to basic translations if API fails
+  return fallbackTranslate(text, targetLanguage);
+}
+
 export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> {
   try {
     // Create PDF in landscape orientation
     const doc = new jsPDF('landscape');
+
+
+    // doc.addFont("NotoSansDevanagari-Regular.ttf", "NotoSans", "normal");
+    let fontName = 'helvetica';
+
+    if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      fontName = 'NotoSans'
+    }
+    
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
+    // Add font support for multi-language characters
+    if (mealPlan.targetLanguage && mealPlan.targetLanguage == 'en') {
+      try {
+        // Use Noto Sans font for proper Unicode support
+        
+        // Add the Noto Sans font to jsPDF
+        // Note: This is a simplified approach - in production you might want to load the actual font file
+        try {
+          // Try to use a font that supports Unicode characters
+          // For now, we'll use the default font but ensure proper text handling
+          doc.setFont(fontName);
+          
+          // Test if we can render Unicode characters
+          const testText = 'अबक'; // Hindi test characters
+          
+          // The real fix is to ensure the font actually contains the glyphs
+          // For now, let's try to handle this at the text level
+        } catch (fontError) {
+          console.warn('Font setup failed, using default:', fontError);
+        }
+      } catch (error) {
+        console.warn('Font/encoding setup failed, using default:', error);
+      }
+    }
+    
     // Get enabled meal types from settings or use all meal types as fallback
     const enabledMealTypes = mealPlan.mealSettings?.enabledMealTypes || ALL_MEAL_TYPES;
+
+    // Collect all meal names that need translation
+    const mealNamesToTranslate: string[] = [];
+    DAYS_OF_WEEK.forEach(day => {
+      enabledMealTypes.forEach(mealType => {
+        const meal = mealPlan.meals[day]?.[mealType];
+        if (meal && meal.trim()) {
+          mealNamesToTranslate.push(meal.trim());
+        }
+      });
+    });
+
+
+    // Pre-translate all texts that need translation
+    const textsToTranslate = [
+      'Weekly Meal Plan',
+      'Day',
+      'No meals planned for this week.',
+      'Note: Blue meal names are clickable and link to recipe videos',
+      ...enabledMealTypes.map(mealType => getMealDisplayName(mealType)),
+      ...mealNamesToTranslate
+    ];
+
+    let translations: { [key: string]: string } = {};
+    
+    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      try {
+        // Use batch translation API for efficiency
+        const response = await fetch('/api/translate/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            texts: textsToTranslate,
+            targetLanguage: mealPlan.targetLanguage,
+            sourceLanguage: 'en'
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.translatedTexts && result.translatedTexts.length === textsToTranslate.length) {
+            textsToTranslate.forEach((text, index) => {
+              const translatedText = result.translatedTexts[index];
+              translations[text] = translatedText;
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Batch translation failed, using individual translations:', error);
+        // Fall back to individual translations
+        for (const text of textsToTranslate) {
+          translations[text] = await translateText(text, mealPlan.targetLanguage);
+        }
+      }
+    }
+
+    // Helper function to get translated text
+    const getTranslatedText = (text: string): string => {
+      const translated = translations[text] || text;
+      
+      // Ensure proper text encoding for PDF generation
+      if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+        try {
+          // Normalize Unicode characters and ensure proper encoding
+          const normalized = translated.normalize('NFC');
+          return normalized;
+        } catch (error) {
+          console.warn('Text normalization failed, using original:', error);
+          return translated;
+        }
+      }
+      
+      return translated;
+    };
   
     // Simple color palette
     const colors = {
@@ -83,15 +236,32 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     // Title
     doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Weekly Meal Plan', pageWidth / 2, 18, { align: 'center' });
+    doc.setFont(fontName, 'bold');
+    const titleText = 'Weekly Meal Plan';
+    
+    // Try different text rendering methods for Unicode support
+    try {
+      doc.text(titleText, pageWidth / 2, 18, { align: 'center' });
+    } catch (textError) {
+      console.warn('Standard text rendering failed, trying alternative method:', textError);
+      try {
+        // Try using a different approach - split text into characters if needed
+        if (titleText.length > 0) {
+          doc.text(titleText, pageWidth / 2, 18, { align: 'center' });
+        }
+      } catch (altError) {
+        console.error('Alternative text rendering also failed:', altError);
+        // Fall back to English text
+        doc.text('Weekly Meal Plan', pageWidth / 2, 18, { align: 'center' });
+      }
+    }
     
     // Week range
     const weekStart = new Date(mealPlan.weekStartDate);
     const weekDays = getWeekDays(weekStart);
     const weekEnd = weekDays[6];
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontName, 'normal');
     doc.text(
       `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
       pageWidth / 2,
@@ -123,8 +293,14 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
           const storedVideoUrl = mealPlan.videoURLs?.[day]?.[mealType];
           const youtubeURL = storedVideoUrl || await getVideoURL(meal);
           
+          // Get translated meal name
+          const translatedMealName = getTranslatedText(meal.trim());
+          
+          // Debug: Check if the translated text contains non-ASCII characters
+          const hasNonAscii = /[^\x00-\x7F]/.test(translatedMealName);
+          
           row.push({
-            content: meal.trim(),
+            content: translatedMealName,
             link: youtubeURL
           });
         } else {
@@ -139,8 +315,8 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     if (tableData.length === 0) {
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       doc.setFontSize(20);
-      doc.setFont('helvetica', 'normal');
-      doc.text('No meals planned for this week.', pageWidth / 2, currentY + 20, { align: 'center' });
+      doc.setFont(fontName, 'normal');
+      doc.text(getTranslatedText('No meals planned for this week.'), pageWidth / 2, currentY + 20, { align: 'center' });
       doc.save(`meal-plan-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
       return;
     }
@@ -205,7 +381,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
             if (data.column.index === 0) {
               // Day column
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-              doc.setFont('helvetica', 'bold');
+              doc.setFont(fontName, 'bold');
               doc.setFontSize(10);
               
               const lines = (cellData as string).split('\n');
@@ -236,7 +412,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
                   doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
                 }
 
-                doc.setFont('helvetica', 'normal');
+                doc.setFont(fontName, 'normal');
                 doc.setFontSize(10);
                 
                 // Handle long meal names by wrapping text
@@ -270,7 +446,7 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
               } else if (typeof cellData === 'string' && cellData.trim()) {
                 // Non-clickable meal
                 doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-                doc.setFont('helvetica', 'normal');
+                doc.setFont(fontName, 'normal');
                 doc.setFontSize(10);
                 doc.text(cellData, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { 
                   align: 'center',
@@ -290,8 +466,8 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     if (finalY && finalY < pageHeight - 15) {
       doc.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Note: Blue meal names are clickable and link to recipe videos', 20, finalY + 10);
+      doc.setFont(fontName, 'normal');
+      doc.text(getTranslatedText('Note: Blue meal names are clickable and link to recipe videos'), 20, finalY + 10);
     }
 
     const weekDetails = `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d')}`;
@@ -306,11 +482,124 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
 export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<void> {
   try {
     const doc = new jsPDF();
+
+    doc.setFont("NotoSans");
+    
+    let fontName = 'helvetica';
+
+    if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      fontName = 'NotoSansDevanagari-Regular'
+    }
+
+
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
+    
+    // Add font support for multi-language characters
+    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      try {
+        // Use Noto Sans font for proper Unicode support
+        
+        // Add the Noto Sans font to jsPDF
+        // Note: This is a simplified approach - in production you might want to load the actual font file
+        try {
+          // Try to use a font that supports Unicode characters
+          // For now, we'll use the default font but ensure proper text handling
+          doc.setFont(fontName);
+          
+          // Test if we can render Unicode characters
+          const testText = 'अबक'; // Hindi test characters
+          
+          // The real fix is to ensure the font actually contains the glyphs
+          // For now, let's try to handle this at the text level
+        } catch (fontError) {
+          console.warn('Font setup failed, using default:', fontError);
+        }
+      } catch (error) {
+        console.warn('Font/encoding setup failed, using default:', error);
+      }
+    }
   
     // Get enabled meal types from settings or use all meal types as fallback
     const enabledMealTypes = mealPlan.mealSettings?.enabledMealTypes || ALL_MEAL_TYPES;
+
+    // Collect all meal names that need translation
+    const mealNamesToTranslate: string[] = [];
+    DAYS_OF_WEEK.forEach(day => {
+      enabledMealTypes.forEach(mealType => {
+        const meal = mealPlan.meals[day]?.[mealType];
+        if (meal && meal.trim()) {
+          mealNamesToTranslate.push(meal.trim());
+        }
+      });
+    });
+
+
+    // Pre-translate all texts that need translation
+    const textsToTranslate = [
+      'Smart Shopping List',
+      'Shopping list for:',
+      'No Meals Planned',
+      'Note: Blue meal names are clickable and link to recipe videos',
+      'Your Organized Shopping List',
+      'Complete Ingredients List',
+      'Plan some meals first to generate your shopping list!',
+      ...mealNamesToTranslate
+    ];
+
+    let translations: { [key: string]: string } = {};
+    
+    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      try {
+        // Use batch translation API for efficiency
+        const response = await fetch('/api/translate/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            texts: textsToTranslate,
+            targetLanguage: mealPlan.targetLanguage,
+            sourceLanguage: 'en'
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.translatedTexts && result.translatedTexts.length === textsToTranslate.length) {
+            textsToTranslate.forEach((text, index) => {
+              const translatedText = result.translatedTexts[index];
+              translations[text] = translatedText;
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Shopping list batch translation failed, using individual translations:', error);
+        // Fall back to individual translations
+        for (const text of textsToTranslate) {
+          translations[text] = await translateText(text, mealPlan.targetLanguage);
+        }
+      }
+    }
+
+    // Helper function to get translated text
+    const getTranslatedText = (text: string): string => {
+      const translated = translations[text] || text;
+      
+      // Ensure proper text encoding for PDF generation
+      if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+        try {
+          // Normalize Unicode characters and ensure proper encoding
+          const normalized = translated.normalize('NFC');
+          return normalized;
+        } catch (error) {
+          console.warn('Text normalization failed, using original:', error);
+          return translated;
+        }
+      }
+      
+      return translated;
+    };
   
     // Modern color palette (same as meal plan)
     const colors = {
@@ -354,13 +643,15 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
     let currentY = 30;
 
-    // Extract all meals (only from enabled meal types)
+    // Extract all meals (only from enabled meal types) - use translated versions
     const allMeals: string[] = [];
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
         if (meal && meal.trim()) {
-          allMeals.push(meal);
+          // Use translated meal name if available
+          const translatedMealName = getTranslatedText(meal.trim());
+          allMeals.push(translatedMealName);
         }
       });
     });
@@ -376,12 +667,12 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('No Meals Planned', pageWidth / 2, currentY + 35, { align: 'center' });
+      doc.setFont(fontName, 'bold');
+      doc.text(getTranslatedText('No Meals Planned'), pageWidth / 2, currentY + 35, { align: 'center' });
       
       doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Plan some meals first to generate your shopping list!', pageWidth / 2, currentY + 55, { align: 'center' });
+      doc.setFont(fontName, 'normal');
+      doc.text(getTranslatedText('Plan some meals first to generate your shopping list!'), pageWidth / 2, currentY + 55, { align: 'center' });
     } else {
       try {
         // Use AI to extract ingredients
@@ -661,11 +952,11 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fontName, 'bold');
         doc.text('Your Planned Meals', 25, currentY + 15);
         
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont(fontName, 'normal');
         let mealY = currentY + 25;
         allMeals.slice(0, 6).forEach((meal, index) => {
           if (mealY < currentY + 55) {
@@ -684,9 +975,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   
   doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontName, 'normal');
   doc.text(
-    'Generated by Weekly Food Planner App - Shop Smart, Save Time!',
+    'Generated by Weekly Food Planner App!',
     pageWidth / 2,
     pageHeight - 12,
     { align: 'center' }
