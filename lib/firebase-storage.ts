@@ -213,13 +213,6 @@ export class FirebaseStorageProvider {
     // Use target week if provided, otherwise use current week
     const referenceWeekStart = targetWeek ? new Date(targetWeek) : getWeekStartDate(new Date());
     const referenceWeekStartStr = formatDate(referenceWeekStart);
-    
-          userId, 
-      targetWeek,
-      referenceWeekStartStr, 
-      limitCount 
-    });
-    
     // Query for meal plans that are before the reference week
     const q = query(
       mealPlansRef,
@@ -241,11 +234,6 @@ export class FirebaseStorageProvider {
         updatedAt: this.convertTimestamp(data.updatedAt),
       } as MealPlan);
     });
-
-          totalFound: mealPlans.length,
-      weeks: mealPlans.map(p => p.weekStartDate)
-    });
-
     return mealPlans;
   }
 

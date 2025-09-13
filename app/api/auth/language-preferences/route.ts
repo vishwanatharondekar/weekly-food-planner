@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import Error from 'next/error';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -135,11 +136,11 @@ export async function PUT(request: NextRequest) {
         languagePreferences: userData?.languagePreferences,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update language preferences error:', error);
     
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error?.message },
       { status: 500 }
     );
   }
