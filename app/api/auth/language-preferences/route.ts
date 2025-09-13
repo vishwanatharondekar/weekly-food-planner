@@ -80,10 +80,10 @@ export async function GET(request: NextRequest) {
 
     console.log('Returning language preferences:', languagePreferences);
     return NextResponse.json(languagePreferences);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get language preferences error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error?.message },
       { status: 500 }
     );
   }
