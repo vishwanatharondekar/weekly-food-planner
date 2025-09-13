@@ -8,8 +8,9 @@ import FirebaseSetup from '@/components/FirebaseSetup';
 import DietaryPreferences from '@/components/DietaryPreferences';
 import MealSettingsComponent from '@/components/MealSettings';
 import VideoURLManager from '@/components/VideoURLManager';
+import LanguagePreferences from '@/components/LanguagePreferences';
 import { authAPI } from '@/lib/api';
-import { ChevronDown, Settings, Leaf, Video } from 'lucide-react';
+import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -21,6 +22,7 @@ export default function Home() {
   const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
   const [showMealSettings, setShowMealSettings] = useState(false);
   const [showVideoURLManager, setShowVideoURLManager] = useState(false);
+  const [showLanguagePreferences, setShowLanguagePreferences] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -51,13 +53,11 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    console.log('Logout clicked - clearing data...');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     setShowSettingsDropdown(false);
-    console.log('Logout completed - token and user cleared');
   };
 
   const toggleAuthMode = () => {
@@ -168,6 +168,17 @@ export default function Home() {
                         Video URLs
                       </button>
                       
+                      <button
+                        onClick={() => {
+                          setShowLanguagePreferences(true);
+                          setShowSettingsDropdown(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <Globe className="w-4 h-4 mr-3 text-indigo-600" />
+                        Language Preferences
+                      </button>
+                      
                       <div className="border-t border-gray-200 my-1"></div>
                       
                       <button
@@ -210,6 +221,13 @@ export default function Home() {
           <VideoURLManager
             isOpen={showVideoURLManager}
             onClose={() => setShowVideoURLManager(false)}
+          />
+        )}
+        
+        {showLanguagePreferences && (
+          <LanguagePreferences
+            user={user}
+            onClose={() => setShowLanguagePreferences(false)}
           />
         )}
       </div>
