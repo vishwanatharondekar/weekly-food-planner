@@ -58,8 +58,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userRef = doc(db, 'users', userId);
-    console.log('Fetching user document for ID:', userId);
-    console.log('Database reference created:', userRef);
     
     const userDoc = await getDoc(userRef);
 
@@ -72,14 +70,9 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = userDoc.data();
-    console.log('User data retrieved:', { 
-      hasLanguagePreferences: !!userData?.languagePreferences,
-      languagePreferences: userData?.languagePreferences 
-    });
     
     const languagePreferences = userData?.languagePreferences || { language: 'en' };
 
-    console.log('Returning language preferences:', languagePreferences);
     return NextResponse.json(languagePreferences);
   } catch (error: any) {
     console.error('Get language preferences error:', error);

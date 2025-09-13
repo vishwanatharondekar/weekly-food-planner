@@ -153,8 +153,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   const loadMeals = async () => {
     try {
       setLoading(true);
+      showFullScreenLoader('ai', 'Loading Weekly Plan', 'Fetching your meal plan from the server...');
+      
       const weekStart = formatDate(currentWeek);
       const response = await mealsAPI.getWeekMeals(weekStart);
+      
+      // Update loader message
+      setLoaderMessage('Processing Meal Data');
+      setLoaderSubMessage('Loading video URLs and organizing your meals...');
       
       // Load user's video URLs
       let userVideoURLs: { [recipeName: string]: string } = {};
@@ -196,8 +202,10 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       });
       
       setMeals(convertedMeals);
+      hideFullScreenLoader();
     } catch (error) {
       console.error('Error loading meals:', error);
+      hideFullScreenLoader();
       toast.error('Failed to load meals');
     } finally {
       setLoading(false);
@@ -407,13 +415,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
     try {
       setLoading(true);
+      showFullScreenLoader('ai', 'Clearing Meals', 'Removing all meals from this week...');
+      
       const weekStart = formatDate(currentWeek);
       await mealsAPI.clearWeekMeals(weekStart);
       setMeals({});
+      
+      hideFullScreenLoader();
       toast.success('All meals cleared for this week!');
       await checkAIStatus(); // Re-check AI status after clearing
     } catch (error) {
       console.error('Error clearing meals:', error);
+      hideFullScreenLoader();
       toast.error('Failed to clear meals');
     } finally {
       setLoading(false);
