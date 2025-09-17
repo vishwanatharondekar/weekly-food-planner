@@ -7,8 +7,13 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Weekly Food Planner',
-  description: 'Plan your weekly meals with AI-powered suggestions',
+  title: 'खाना क्या बनाऊं - Indian Meal Planning',
+  description: 'Plan your weekly Indian meals with AI-powered suggestions and smart shopping lists',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
