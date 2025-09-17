@@ -11,11 +11,10 @@ export const metadata: Metadata = {
   description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
       { url: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.svg',
+    shortcut: '/favicon-192x192.png',
     apple: '/apple-touch-icon.png',
   },
 }
