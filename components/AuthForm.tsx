@@ -48,41 +48,61 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Navigation Header */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                <img 
+                  src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
+                  alt="खाना क्या बनाऊं Logo" 
+                  className="w-10 h-10 object-contain"
+                />
+              </div>
+              <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Auth Form Content */}
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">
+            {mode === 'login' ? 'Sign In' : 'Create Account'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="text-slate-600">
             {mode === 'login' 
-              ? 'Welcome back! Sign in to continue planning your meals.'
-              : 'Start planning your weekly meals with AI-powered suggestions.'
+              ? 'Sign in to continue planning your meals'
+              : 'Create your account to start meal planning'
             }
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        <form className="bg-white rounded-2xl shadow-xl p-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label htmlFor="name" className="sr-only">
-                  Name
+                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
+                  Full Name
                 </label>
                 <input
                   id="name"
                   name="name"
                   type="text"
                   required={mode === 'register'}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                  placeholder="Full name"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 placeholder-slate-400"
+                  placeholder="Enter your full name"
                   value={formData.name}
                   onChange={handleChange}
                 />
               </div>
             )}
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                Email Address
               </label>
               <input
                 id="email"
@@ -90,16 +110,14 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 ${
-                  mode === 'register' ? '' : 'rounded-t-md'
-                } focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
-                placeholder="Email address"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 placeholder-slate-400"
+                placeholder="Enter your email address"
                 value={formData.email}
                 onChange={handleChange}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
                 Password
               </label>
               <input
@@ -108,8 +126,8 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-slate-900 placeholder-slate-400"
+                placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
               />
@@ -120,9 +138,16 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Loading...' : mode === 'login' ? 'Sign in' : 'Sign up'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                </div>
+              ) : (
+                mode === 'login' ? 'Sign In' : 'Create Account'
+              )}
             </button>
           </div>
 
@@ -130,7 +155,7 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
             <button
               type="button"
               onClick={onToggleMode}
-              className="text-primary-600 hover:text-primary-500"
+              className="text-slate-600 hover:text-blue-600 transition-colors duration-200 font-medium"
             >
               {mode === 'login' 
                 ? "Don't have an account? Sign up" 
@@ -140,6 +165,7 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
           </div>
 
         </form>
+        </div>
       </div>
     </div>
   );

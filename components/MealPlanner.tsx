@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, addWeeks, subWeeks } from 'date-fns';
+import { format, addWeeks, subWeeks, addDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
@@ -611,12 +611,13 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br ">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
         
             
         {/* Week Navigation */}
-        <div className="flex items-center justify-between bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
           <button
             onClick={() => navigateWeek('prev')}
             className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
@@ -627,7 +628,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-900">
-              {format(currentWeek, 'MMMM d')} - {format(addWeeks(currentWeek, 1), 'MMMM d, yyyy')}
+              {format(currentWeek, 'MMMM d')} - {format(addDays(currentWeek, 6), 'MMMM d, yyyy')}
             </h2>
             <p className="text-sm text-gray-500 mt-1">Current Week</p>
           </div>
@@ -642,8 +643,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         </div>
 
         {/* Meal Table */}
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+        <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden border border-slate-200">
+          <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Weekly Meal Plan</h3>
@@ -727,7 +728,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Day
@@ -739,14 +740,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white/50 divide-y divide-slate-200">
                 {DAYS_OF_WEEK.map((day, index) => {
                   const dayDate = new Date(currentWeek);
                   dayDate.setDate(currentWeek.getDate() + index);
                   
                   return (
-                    <tr key={day} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap bg-gray-50">
+                    <tr key={day} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 whitespace-nowrap bg-slate-50">
                         <div className="text-sm font-bold text-gray-900">
                           {day.charAt(0).toUpperCase() + day.slice(1)}
                         </div>
@@ -844,6 +845,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
         message={loaderMessage}
         subMessage={loaderSubMessage}
       />
+      </div>
     </div>
   );
 }
