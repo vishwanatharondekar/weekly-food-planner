@@ -170,8 +170,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Dietary Preferences</h3>
               <p className="text-slate-600 leading-relaxed">
-                Customize meal plans for vegetarian, vegan, Jain, or non-vegetarian preferences. 
-                Support for regional cuisines and traditional cooking methods.
+                Customize the meals you want to plan for - Breakfast, Lunch, Snacks, and Dinner. 
+                Select your preferred days for vegetarian or non-vegetarian meals.
               </p>
             </div>
 
@@ -232,7 +232,6 @@ export default function LandingPage() {
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Shop & Cook</h3>
               <p className="text-slate-600">
                 Generate your shopping list, export to PDF, and start cooking! 
-                Follow video tutorials and enjoy your perfectly planned meals.
               </p>
             </div>
           </div>
@@ -245,10 +244,6 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-slate-800 mb-6">
             Save Time, Reduce Stress, Cook Better
           </h2>
-          <p className="text-xl text-slate-600 mb-12 max-w-3xl mx-auto">
-            Join thousands of families who have transformed their meal planning experience 
-            with our comprehensive platform designed for home cooking.
-          </p>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <div className="text-center">
@@ -284,10 +279,6 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Transform Your Meal Planning?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of families who have simplified their cooking routine. 
-            Start planning your perfect meals today!
-          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/app"
@@ -296,9 +287,6 @@ export default function LandingPage() {
                 <span>Get Started Free</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
-            <button className="px-8 py-4 border-2 border-white text-white rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-200">
-              Learn More
-            </button>
           </div>
         </div>
       </section>
