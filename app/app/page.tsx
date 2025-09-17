@@ -112,16 +112,20 @@ export default function Home() {
 
   return (
     <StorageInitializer>
-      <div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         {/* Header with logout */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg border-b">
+        <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
+            <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">🍽️</span>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                  <img 
+                    src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
+                    alt="खाना क्या बनाऊं Logo" 
+                    className="w-10 h-10 object-contain"
+                  />
                 </div>
-                <h1 className="text-2xl font-bold text-white">Weekly Food Planner</h1>
+                <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
               </div>
               <div className="flex items-center space-x-4">
 
@@ -130,7 +134,7 @@ export default function Home() {
                 <div className="relative">
                   <button
                     onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                    className="flex items-center space-x-2 text-sm text-white hover:text-blue-100 px-3 py-2 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+                    className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <span>{user.name}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
@@ -200,7 +204,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </nav>
         
         <MealPlanner user={user} />
         
