@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { format, addWeeks, subWeeks } from 'date-fns';
+import { format, addWeeks, subWeeks, addDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
@@ -611,7 +611,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
         
@@ -628,7 +628,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-900">
-              {format(currentWeek, 'MMMM d')} - {format(addWeeks(currentWeek, 1), 'MMMM d, yyyy')}
+              {format(currentWeek, 'MMMM d')} - {format(addDays(currentWeek, 6), 'MMMM d, yyyy')}
             </h2>
             <p className="text-sm text-gray-500 mt-1">Current Week</p>
           </div>
