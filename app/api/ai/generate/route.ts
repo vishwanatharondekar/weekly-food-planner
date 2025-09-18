@@ -3,6 +3,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { formatDate } from '@/lib/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -129,25 +130,45 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
     `Dietary Preferences: ${dietaryPreferences.isVegetarian ? 'Vegetarian' : 'Non-vegetarian'}, Non-veg days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}` :
     'No specific dietary preferences';
 
-  // Prepare cuisine preferences
-  const cuisineInfo = cuisinePreferences.length > 0 ? 
-    `Preferred Cuisines: ${cuisinePreferences.join(', ')}` :
-    'No specific cuisine preferences';
+  // Prepare cuisine preferences and get available dishes
+  let cuisineInfo = 'No specific cuisine preferences';
+  let availableDishes = '';
+  
+  if (cuisinePreferences.length > 0) {
+    cuisineInfo = `Preferred Cuisines: ${cuisinePreferences.join(', ')}`;
+    
+    // Get dishes from selected cuisines
+    const cuisineDishes = getDishesForCuisines(cuisinePreferences);
+    
+    // Create a comprehensive list of available dishes
+    const breakfastDishes = cuisineDishes.breakfast.slice(0, 15); // Limit to avoid token limits
+    const lunchDinnerDishes = cuisineDishes.lunch_dinner.slice(0, 20);
+    const snackDishes = cuisineDishes.snacks.slice(0, 15);
+    
+    availableDishes = `
+Available dishes from selected cuisines:
+Breakfast: ${breakfastDishes.join(', ')}
+Lunch/Dinner: ${lunchDinnerDishes.join(', ')}
+Snacks: ${snackDishes.join(', ')}`;
+  }
 
   const prompt = `Based on the following meal history, dietary preferences, and cuisine preferences, suggest meals for the week of ${weekStartDate}.
 
 ${dietaryInfo}
 ${cuisineInfo}
+${availableDishes}
 
 Meal History:
 ${historyText}
 
 Please suggest meals for each day (breakfast, morning snack, lunch, evening snack, dinner) that are:
-1. Similar to the user's historical preferences
+${history.length > 0 ? '1. Similar to the user\'s historical preferences' : '1. Based on their cuisine preferences and dietary restrictions'}
 2. Respect their dietary restrictions
 3. Focus on their preferred cuisines: ${cuisinePreferences.length > 0 ? cuisinePreferences.join(', ') : 'any cuisine'}
 4. Varied and healthy
 5. Easy to prepare
+${cuisinePreferences.length > 0 ? `6. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
+${history.length === 0 && cuisinePreferences.length > 0 ? '7. Select dishes primarily from the available dishes list provided above' : ''}
 
 Return the suggestions in this exact JSON format:
 {

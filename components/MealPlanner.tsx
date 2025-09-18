@@ -356,7 +356,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
       
       const weekStart = formatDate(currentWeek);
       const suggestions = await aiAPI.generateMeals(weekStart);
-      
+      const userVideoURLs = await authAPI.getVideoURLs();
+
       // Update loader message
       setLoaderMessage('Processing AI Results');
       setLoaderSubMessage('Applying suggestions to your meal plan...');
@@ -375,7 +376,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
             // Check if there's a saved video URL for this recipe
             let videoUrl: string | undefined = undefined;
             try {
-              const userVideoURLs = await authAPI.getVideoURLs();
               const normalizedRecipeName = (mealName as string).toLowerCase().trim();
               videoUrl = userVideoURLs[normalizedRecipeName];
             } catch (error) {

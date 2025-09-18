@@ -37,9 +37,9 @@ export const INDIAN_CUISINES: Cuisine[] = [
   {
     name: "Gujarati",
     dishes: {
-      breakfast: ["Dhokla", "Thepla", "Fafda", "Khandvi", "Handvo"],
-      lunch_dinner: ["Dal Dhokli", "Undhiyu", "Kadhi", "Sabzi", "Khichdi", "Gujarati Thali"],
-      snacks: ["Fafda", "Gathiya", "Chakri", "Mathiya", "Gujarati Samosa"]
+      breakfast: ["Dhokla", "Thepla", "Fafda", "Khandvi", "Handvo", "Idli Sambaar", "Poha"],
+      lunch_dinner: ["Dal Dhokli", "Undhiyu", "Kadhi", "Sabzi", "Khichdi", "Gujarati Thali", "Sev Tameta", "Vagharela Bhaat", "Pulaav"],
+      snacks: ["Fafda", "Gathiya", "Chakri", "Mathiya", "Gujarati Samosa", "Ragda Petis"]
     }
   },
   {
@@ -47,7 +47,7 @@ export const INDIAN_CUISINES: Cuisine[] = [
     dishes: {
       breakfast: ["Luchi", "Aloo Dum", "Puri", "Kochuri", "Poha"],
       lunch_dinner: ["Fish Curry", "Chicken Curry", "Dal", "Rice", "Biryani", "Mutton Curry", "Vegetable Curry"],
-      snacks: ["Singara", "Jhal Muri", "Tele Bhaja", "Rasgulla", "Sandesh", "Mishti Doi"]
+      snacks: ["Singara", "Jhal Muri", "Tele Bhaja", "Rasgulla", "Sandesh", "Mishti Doi", "Ragda Petis"]
     }
   },
   {

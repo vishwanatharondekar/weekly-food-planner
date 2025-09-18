@@ -93,7 +93,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
 
         {/* Footer */}
         <div className="border-t bg-gray-50 p-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-end items-center">
             <button
               onClick={handleSubmit}
               disabled={selectedCuisines.length === 0 || isSubmitting}

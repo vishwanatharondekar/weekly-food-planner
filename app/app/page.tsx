@@ -88,9 +88,6 @@ export default function Home() {
       
       setShowCuisineOnboarding(false);
       setContinueFromOnboarding(true);
-      
-      // Show success message
-      toast.success('Cuisine preferences saved! Your personalized meal plan will be generated automatically.');
     } catch (error) {
       console.error('Error updating cuisine preferences:', error);
       toast.error('Failed to save preferences. Please try again.');
