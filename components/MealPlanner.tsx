@@ -623,21 +623,20 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
-            Previous Week
+            Previous
           </button>
           
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-900">
               {format(currentWeek, 'MMMM d')} - {format(addDays(currentWeek, 6), 'MMMM d, yyyy')}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">Current Week</p>
           </div>
           
           <button
             onClick={() => navigateWeek('next')}
             className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
-            Next Week
+            Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
         </div>
@@ -648,7 +647,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Weekly Meal Plan</h3>
-                <p className="text-sm text-gray-600 mt-1">Enter your meals for each day and meal type</p>
+                <p className="text-sm text-gray-600 mt-1 hidden md:block">Enter your meals for each day and meal type</p>
               </div>
               
 
@@ -726,7 +725,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-slate-50">
                 <tr>
@@ -824,6 +824,99 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {DAYS_OF_WEEK.map((day, index) => {
+              const dayDate = new Date(currentWeek);
+              dayDate.setDate(currentWeek.getDate() + index);
+              
+              return (
+                <div key={day} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  {/* Day Header */}
+                  <div className="mb-4 pb-3 border-b border-gray-200">
+                    <div className="text-lg font-bold text-gray-900">
+                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">
+                      {format(dayDate, 'MMM d')}
+                    </div>
+                  </div>
+                  
+                  {/* Meals */}
+                  <div className="space-y-3">
+                    {enabledMealTypes.map(mealType => (
+                      <div key={mealType} className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          {getMealDisplayName(mealType)}
+                        </label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            value={(() => {
+                              const meal = meals[day]?.[mealType];
+                              if (!meal) return '';
+                              if (typeof meal === 'string') return meal;
+                              if (typeof meal === 'object' && meal.name) return meal.name;
+                              if (typeof meal === 'object' && meal.name === '') return '';
+                              return '';
+                            })()}
+                            onChange={(e) => updateMeal(day, mealType, e.target.value)}
+                            placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                            className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                              savingMeals.has(`${day}-${mealType}`) 
+                                ? 'border-blue-400 bg-blue-50 shadow-sm' 
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          />
+                          {(() => {
+                            const meal = meals[day]?.[mealType];
+                            if (!meal) return null;
+                            const mealName = typeof meal === 'string' ? meal : (meal.name || '');
+                            // Show tooltip for any non-empty meal name
+                            if (mealName.trim()) {
+                              return (
+                                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
+                                  <div className="text-white">
+                                    {mealName}
+                                  </div>
+                                  <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                          {savingMeals.has(`${day}-${mealType}`) && (
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            </div>
+                          )}
+                          {(() => {
+                            const meal = meals[day]?.[mealType];
+                            if (!meal) return false;
+                            const mealName = typeof meal === 'string' ? meal : (meal.name || '');
+                            return mealName && !savingMeals.has(`${day}-${mealType}`);
+                          })() && (
+                            <button
+                              type="button"
+                              onClick={() => updateMeal(day, mealType, '')}
+                              className="absolute inset-y-0 right-8 pr-2 flex items-center hover:text-gray-600 transition-colors"
+                              title="Clear meal"
+                            >
+                              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            </button>
+                          )}
+                          <div className="absolute inset-y-0 right-2 flex items-center">
+                            {getVideoIcon(day, mealType)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
         
