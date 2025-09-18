@@ -612,12 +612,12 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
         <div className="space-y-6">
         
             
-        {/* Week Navigation */}
-        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
+        {/* Week Navigation - Desktop */}
+        <div className="hidden md:flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
           <button
             onClick={() => navigateWeek('prev')}
             className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
@@ -639,6 +639,38 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
+        </div>
+
+        {/* Week Navigation - Mobile */}
+        <div className="md:hidden bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigateWeek('prev')}
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Previous
+            </button>
+            
+            <button
+              onClick={() => navigateWeek('next')}
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </button>
+          </div>
+          
+          {/* Separator */}
+          <div className="border-t border-gray-200 mb-4"></div>
+          
+          {/* Week Dates Header */}
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-900">
+              {format(currentWeek, 'MMM d')} - {format(addDays(currentWeek, 6), 'MMM d, yyyy')}
+            </h2>
+          </div>
         </div>
 
         {/* Meal Table */}
