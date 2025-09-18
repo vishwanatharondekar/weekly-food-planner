@@ -13,7 +13,7 @@ export const INDIAN_CUISINES: Cuisine[] = [
   {
     name: "Maharashtrian",
     dishes: {
-      breakfast: ["Poha", "Sabudana Khichdi", "Thalipeeth", "Misal Pav", "Upma"],
+      breakfast: ["Poha", "Sabudana Khichdi", "Thalipeeth", "Misal Pav", "Upma", "Idli Sambaar", "Sandwich"],
       lunch_dinner: ["Puran Poli", "Varan-Bhaat", "Zunka-Bhakar", "Bharli Vangi", "Kolhapuri Chicken", "Malvani Fish Curry", "Pav Bhaji"],
       snacks: ["Vada Pav", "Bhakarwadi", "Kothimbir Vadi"]
     }
