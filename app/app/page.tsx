@@ -28,6 +28,7 @@ export default function Home() {
   const [showVideoURLManager, setShowVideoURLManager] = useState(false);
   const [showLanguagePreferences, setShowLanguagePreferences] = useState(false);
   const [showCuisineOnboarding, setShowCuisineOnboarding] = useState(false);
+  const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -75,7 +76,7 @@ export default function Home() {
     try {
       await authAPI.updateCuisinePreferences({
         cuisinePreferences: selectedCuisines,
-        onboardingCompleted: false,
+        onboardingCompleted: true,
       });
       
       // Update local user state
@@ -86,6 +87,7 @@ export default function Home() {
       }));
       
       setShowCuisineOnboarding(false);
+      setContinueFromOnboarding(true);
       
       // Show success message
       toast.success('Cuisine preferences saved! Your personalized meal plan will be generated automatically.');
@@ -239,11 +241,12 @@ export default function Home() {
           </div>
         </nav>
         
-        <MealPlanner 
-          user={user} 
-          shouldAutoGenerate={!user.onboardingCompleted && user.cuisinePreferences?.length > 0}
-        />
-        
+        {
+          user.onboardingCompleted && (<MealPlanner 
+            user={user} 
+            continueFromOnboarding={continueFromOnboarding}
+          />)
+        }
         {/* Settings Modals */}
         {showMealSettings && (
           <MealSettingsComponent

@@ -27,10 +27,10 @@ interface MealDataWithVideos {
 
 interface MealPlannerProps {
   user: any;
-  shouldAutoGenerate?: boolean;
+  continueFromOnboarding?: boolean;
 }
 
-export default function MealPlanner({ user, shouldAutoGenerate = false }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function MealPlanner({ user, shouldAutoGenerate = false }: MealPl
 
   // Auto-generate meals for new users with cuisine preferences
   useEffect(() => {
-    if (shouldAutoGenerate && aiStatus.canGenerate && !loading) {
+    if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
         generateAIMeals();
@@ -75,7 +75,7 @@ export default function MealPlanner({ user, shouldAutoGenerate = false }: MealPl
       
       return () => clearTimeout(timer);
     }
-  }, [shouldAutoGenerate, aiStatus.canGenerate, loading]);
+  }, [continueFromOnboarding]);
 
   // Cleanup tooltip timeouts on unmount
   useEffect(() => {
@@ -141,15 +141,10 @@ export default function MealPlanner({ user, shouldAutoGenerate = false }: MealPl
 
   const loadUserLanguagePreferences = async () => {
     try {
-      console.log('Loading user language preferences...');
       const preferences = await authAPI.getLanguagePreferences();
-      console.log('Language preferences loaded:', preferences);
       
       if (preferences && preferences.language) {
-        console.log('Setting user language to:', preferences.language);
         setUserLanguage(preferences.language);
-      } else {
-        console.log('No language preferences found, keeping default English');
       }
     } catch (error) {
       console.error('Error loading language preferences:', error);

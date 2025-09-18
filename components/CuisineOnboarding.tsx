@@ -154,9 +154,9 @@ function CuisineCard({ cuisine, isSelected, onToggle }: CuisineCardProps) {
 
   return (
     <div className="relative" ref={tooltipRef}>
-      <button
+      <div
         onClick={onToggle}
-        className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left w-full ${
+        className={`cursor-pointer relative p-4 rounded-xl border-2 transition-all duration-200 text-left w-full ${
           isSelected
             ? 'border-orange-500 bg-orange-50 shadow-md'
             : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
@@ -186,7 +186,7 @@ function CuisineCard({ cuisine, isSelected, onToggle }: CuisineCardProps) {
             {cuisine.dishes.breakfast[0]} • {cuisine.dishes.lunch_dinner[0]} • {cuisine.dishes.snacks[0]}
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Tooltip */}
       {showTooltip && (
