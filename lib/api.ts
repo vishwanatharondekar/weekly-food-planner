@@ -171,6 +171,37 @@ export const authAPI = {
     }
   },
 
+  // Cuisine preferences management
+  updateCuisinePreferences: async (preferences: {
+    cuisinePreferences: string[];
+    onboardingCompleted: boolean;
+  }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/cuisine-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update cuisine preferences');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Video URL management
   getVideoURLs: async () => {
     try {
@@ -447,8 +478,12 @@ export const aiAPI = {
       // Get meal history to check AI status
       const history = await mealsAPI.getMealHistory();
       
+      // Get user profile to check cuisine preferences
+      const profile = await authAPI.getProfile();
+      const hasCuisinePreferences = profile.user.cuisinePreferences && profile.user.cuisinePreferences.length > 0;
+      
       const hasHistory = history.length >= 1;
-      const canGenerate = hasHistory;
+      const canGenerate = hasHistory || hasCuisinePreferences;
 
       return { hasHistory, canGenerate };
     } catch (error) {

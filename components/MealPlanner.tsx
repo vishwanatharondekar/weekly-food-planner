@@ -27,9 +27,10 @@ interface MealDataWithVideos {
 
 interface MealPlannerProps {
   user: any;
+  shouldAutoGenerate?: boolean;
 }
 
-export default function MealPlanner({ user }: MealPlannerProps) {
+export default function MealPlanner({ user, shouldAutoGenerate = false }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
@@ -63,6 +64,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     loadMeals();
     checkAIStatus();
   }, [currentWeek]);
+
+  // Auto-generate meals for new users with cuisine preferences
+  useEffect(() => {
+    if (shouldAutoGenerate && aiStatus.canGenerate && !loading) {
+      // Small delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        generateAIMeals();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldAutoGenerate, aiStatus.canGenerate, loading]);
 
   // Cleanup tooltip timeouts on unmount
   useEffect(() => {

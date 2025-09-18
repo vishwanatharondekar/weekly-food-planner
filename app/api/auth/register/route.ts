@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
       name,
       password: hashedPassword,
       createdAt: new Date(),
+      onboardingCompleted: false,
+      cuisinePreferences: [],
     };
 
     await setDoc(userRef, user);

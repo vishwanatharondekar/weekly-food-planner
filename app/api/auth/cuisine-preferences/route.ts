@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
 
 // Initialize Firebase on server side
 const firebaseConfig = {
@@ -19,7 +19,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-export async function GET(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.get('authorization');
@@ -33,34 +33,33 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
 
-    // Get user from database
-    const userRef = doc(db, 'users', tokenData.userId);
-    const userDoc = await getDoc(userRef);
+    const { cuisinePreferences, onboardingCompleted } = await request.json();
 
-    if (!userDoc.exists()) {
+    // Validate input
+    if (!Array.isArray(cuisinePreferences)) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Cuisine preferences must be an array' },
+        { status: 400 }
       );
     }
 
-    const userData = userDoc.data();
+    // Update user document
+    const userRef = doc(db, 'users', tokenData.userId);
+    await updateDoc(userRef, {
+      cuisinePreferences,
+      onboardingCompleted: onboardingCompleted || false,
+      updatedAt: new Date(),
+    });
 
     return NextResponse.json({
-      user: {
-        id: userDoc.id,
-        email: userData.email,
-        name: userData.name,
-        dietaryPreferences: userData.dietaryPreferences,
-        onboardingCompleted: userData.onboardingCompleted || false,
-        cuisinePreferences: userData.cuisinePreferences || [],
-      },
+      success: true,
+      message: 'Cuisine preferences updated successfully',
     });
   } catch (error) {
-    console.error('Profile error:', error);
+    console.error('Cuisine preferences update error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-} 
+}
