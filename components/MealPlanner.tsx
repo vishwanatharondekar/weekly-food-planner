@@ -861,13 +861,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             {DAYS_OF_WEEK.map((day, index) => {
               const dayDate = new Date(currentWeek);
               dayDate.setDate(currentWeek.getDate() + index);
+              const isLastDay = index === DAYS_OF_WEEK.length - 1;
               
               return (
-                <div key={day} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div key={day} className={isLastDay ? '' : 'border-b border-gray-200'}>
                   {/* Day Header */}
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-lg font-bold text-gray-900">
@@ -880,13 +881,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                   
                   {/* Meals Table-like Layout */}
                   <div className="divide-y divide-gray-200">
-                    {enabledMealTypes.map(mealType => {
+                    {enabledMealTypes.map((mealType, mealIndex) => {
                       const meal = meals[day]?.[mealType];
                       const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
                       const hasText = mealName.trim().length > 0;
+                      const isLastMeal = mealIndex === enabledMealTypes.length - 1;
                       
                       return (
-                        <div key={mealType} className="px-4 py-3 hover:bg-gray-50/50">
+                        <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <label className="block text-sm font-medium text-gray-700 mb-1">
