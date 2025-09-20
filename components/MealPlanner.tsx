@@ -588,6 +588,12 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
   const getVideoIcon = (day: string, mealType: string) => {
     const meal = meals[day]?.[mealType];
+    const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+    const hasText = mealName.trim().length > 0;
+    
+    // Only show video icon if there's text
+    if (!hasText) return null;
+    
     if (meal?.videoUrl) {
       return (
         <span 
@@ -759,27 +765,27 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
                     Day
                   </th>
                   {enabledMealTypes.map(mealType => (
-                    <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                    <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
                       {getMealDisplayName(mealType)}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white/50 divide-y divide-slate-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {DAYS_OF_WEEK.map((day, index) => {
                   const dayDate = new Date(currentWeek);
                   dayDate.setDate(currentWeek.getDate() + index);
                   
                   return (
-                    <tr key={day} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 whitespace-nowrap bg-slate-50">
+                    <tr key={day} className="hover:bg-gray-50/50">
+                      <td className="px-6 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">
                         <div className="text-sm font-bold text-gray-900">
                           {day.charAt(0).toUpperCase() + day.slice(1)}
                         </div>
@@ -787,70 +793,66 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                           {format(dayDate, 'MMM d')}
                         </div>
                       </td>
-                      {enabledMealTypes.map(mealType => (
-                        <td key={mealType} className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative group">
-                            <input
-                              type="text"
-                              value={(() => {
-                                const meal = meals[day]?.[mealType];
-                                if (!meal) return '';
-                                if (typeof meal === 'string') return meal;
-                                if (typeof meal === 'object' && meal.name) return meal.name;
-                                if (typeof meal === 'object' && meal.name === '') return '';
-                                return '';
-                              })()}
-                              onChange={(e) => updateMeal(day, mealType, e.target.value)}
-                              placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
-                                savingMeals.has(`${day}-${mealType}`) 
-                                  ? 'border-blue-400 bg-blue-50 shadow-sm' 
-                                  : 'border-gray-300 hover:border-gray-400'
-                              }`}
-                            />
-                            {(() => {
-                              const meal = meals[day]?.[mealType];
-                              if (!meal) return null;
-                              const mealName = typeof meal === 'string' ? meal : (meal.name || '');
-                              // Show tooltip for any non-empty meal name
-                              if (mealName.trim()) {
-                                return (
-                                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                                    <div className="text-white">
-                                      {mealName}
-                                    </div>
-                                    <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      {enabledMealTypes.map(mealType => {
+                        const meal = meals[day]?.[mealType];
+                        const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                        const hasText = mealName.trim().length > 0;
+                        
+                        return (
+                          <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-100 last:border-r-0">
+                            <div className="relative group h-full">
+                              <input
+                                type="text"
+                                value={mealName}
+                                onChange={(e) => updateMeal(day, mealType, e.target.value)}
+                                placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                                className={`w-full h-full px-6 py-4 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                                  savingMeals.has(`${day}-${mealType}`) 
+                                    ? 'bg-blue-50' 
+                                    : ''
+                                }`}
+                              />
+                              
+                              {/* Loading spinner */}
+                              {savingMeals.has(`${day}-${mealType}`) && (
+                                <div className="absolute inset-y-0 right-4 flex items-center">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                </div>
+                              )}
+                              
+                              {/* Action buttons - only show when there's text */}
+                              {hasText && !savingMeals.has(`${day}-${mealType}`) && (
+                                <div className="absolute inset-y-0 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  {/* Clear button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => updateMeal(day, mealType, '')}
+                                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                    title="Clear meal"
+                                  >
+                                    <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                  </button>
+                                  
+                                  {/* Video button */}
+                                  <div className="p-1">
+                                    {getVideoIcon(day, mealType)}
                                   </div>
-                                );
-                              }
-                              return null;
-                            })()}
-                            {savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                              </div>
-                            )}
-                            {(() => {
-                              const meal = meals[day]?.[mealType];
-                              if (!meal) return false;
-                              const mealName = typeof meal === 'string' ? meal : (meal.name || '');
-                              return mealName && !savingMeals.has(`${day}-${mealType}`);
-                            })() && (
-                              <button
-                                type="button"
-                                onClick={() => updateMeal(day, mealType, '')}
-                                className="absolute inset-y-0 right-8 pr-2 flex items-center hover:text-gray-600 transition-colors"
-                                title="Clear meal"
-                              >
-                                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                              </button>
-                            )}
-                            <div className="absolute inset-y-0 right-2 flex items-center">
-                              {getVideoIcon(day, mealType)}
+                                </div>
+                              )}
+                              
+                              {/* Tooltip for meal name */}
+                              {hasText && (
+                                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
+                                  <div className="text-white">
+                                    {mealName}
+                                  </div>
+                                  <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </td>
-                      ))}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -859,15 +861,16 @@ export default function MealPlanner({ user }: MealPlannerProps) {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
+          <div className="md:hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             {DAYS_OF_WEEK.map((day, index) => {
               const dayDate = new Date(currentWeek);
               dayDate.setDate(currentWeek.getDate() + index);
+              const isLastDay = index === DAYS_OF_WEEK.length - 1;
               
               return (
-                <div key={day} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div key={day} className={isLastDay ? '' : 'border-b border-gray-200'}>
                   {/* Day Header */}
-                  <div className="mb-4 pb-3 border-b border-gray-200">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-lg font-bold text-gray-900">
                       {day.charAt(0).toUpperCase() + day.slice(1)}
                     </div>
@@ -876,75 +879,76 @@ export default function MealPlanner({ user }: MealPlannerProps) {
                     </div>
                   </div>
                   
-                  {/* Meals */}
-                  <div className="space-y-3">
-                    {enabledMealTypes.map(mealType => (
-                      <div key={mealType} className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">
-                          {getMealDisplayName(mealType)}
-                        </label>
-                        <div className="relative group">
-                          <input
-                            type="text"
-                            value={(() => {
-                              const meal = meals[day]?.[mealType];
-                              if (!meal) return '';
-                              if (typeof meal === 'string') return meal;
-                              if (typeof meal === 'object' && meal.name) return meal.name;
-                              if (typeof meal === 'object' && meal.name === '') return '';
-                              return '';
-                            })()}
-                            onChange={(e) => updateMeal(day, mealType, e.target.value)}
-                            placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`w-full px-4 py-3 pr-16 border-2 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
-                              savingMeals.has(`${day}-${mealType}`) 
-                                ? 'border-blue-400 bg-blue-50 shadow-sm' 
-                                : 'border-gray-300 hover:border-gray-400'
-                            }`}
-                          />
-                          {(() => {
-                            const meal = meals[day]?.[mealType];
-                            if (!meal) return null;
-                            const mealName = typeof meal === 'string' ? meal : (meal.name || '');
-                            // Show tooltip for any non-empty meal name
-                            if (mealName.trim()) {
-                              return (
-                                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                                  <div className="text-white">
-                                    {mealName}
+                  {/* Meals Table-like Layout */}
+                  <div className="divide-y divide-gray-200">
+                    {enabledMealTypes.map((mealType, mealIndex) => {
+                      const meal = meals[day]?.[mealType];
+                      const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                      const hasText = mealName.trim().length > 0;
+                      const isLastMeal = mealIndex === enabledMealTypes.length - 1;
+                      
+                      return (
+                        <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {getMealDisplayName(mealType)}
+                              </label>
+                              <div className="relative group">
+                                <input
+                                  type="text"
+                                  value={mealName}
+                                  onChange={(e) => updateMeal(day, mealType, e.target.value)}
+                                  placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                                  className={`w-full px-0 py-1 pr-12 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                                    savingMeals.has(`${day}-${mealType}`) 
+                                      ? 'bg-blue-50' 
+                                      : ''
+                                  }`}
+                                />
+                                
+                                {/* Loading spinner */}
+                                {savingMeals.has(`${day}-${mealType}`) && (
+                                  <div className="absolute inset-y-0 right-0 flex items-center">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                                   </div>
-                                  <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                          {savingMeals.has(`${day}-${mealType}`) && (
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                )}
+                                
+                                {/* Action buttons - only show when there's text */}
+                                {hasText && !savingMeals.has(`${day}-${mealType}`) && (
+                                  <div className="absolute inset-y-0 right-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    {/* Clear button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => updateMeal(day, mealType, '')}
+                                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                      title="Clear meal"
+                                    >
+                                      <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                    </button>
+                                    
+                                    {/* Video button */}
+                                    <div className="p-1">
+                                      {getVideoIcon(day, mealType)}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Tooltip for meal name */}
+                                {hasText && (
+                                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
+                                    <div className="text-white">
+                                      {mealName}
+                                    </div>
+                                    <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          {(() => {
-                            const meal = meals[day]?.[mealType];
-                            if (!meal) return false;
-                            const mealName = typeof meal === 'string' ? meal : (meal.name || '');
-                            return mealName && !savingMeals.has(`${day}-${mealType}`);
-                          })() && (
-                            <button
-                              type="button"
-                              onClick={() => updateMeal(day, mealType, '')}
-                              className="absolute inset-y-0 right-8 pr-2 flex items-center hover:text-gray-600 transition-colors"
-                              title="Clear meal"
-                            >
-                              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                            </button>
-                          )}
-                          <div className="absolute inset-y-0 right-2 flex items-center">
-                            {getVideoIcon(day, mealType)}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
