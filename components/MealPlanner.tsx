@@ -43,6 +43,7 @@ export default function MealPlanner({ user }: MealPlannerProps) {
   // Mode switching state
   const [currentMode, setCurrentMode] = useState<'plan' | 'cook'>('plan');
   const [hasTodaysMeals, setHasTodaysMeals] = useState(false);
+  const [todaysMeals, setTodaysMeals] = useState({});
   const [initialModeSet, setInitialModeSet] = useState(false);
   
   // Full screen loader states
@@ -102,13 +103,14 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       setHasTodaysMeals(false);
       return;
     }
-
+    
     const hasAnyMeal = mealSettings.enabledMealTypes.some(mealType => {
       const meal = todaysMeals[mealType];
       const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
       return mealName.trim().length > 0;
     });
-
+    
+    setTodaysMeals(todaysMeals);
     setHasTodaysMeals(hasAnyMeal);
   };
 
@@ -679,7 +681,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     const today = new Date();
     const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // Convert Sunday=0 to Sunday=6
     const todayDay = DAYS_OF_WEEK[todayIndex];
-    const todaysMeals = meals[todayDay] || {};
     
     return {
       day: todayDay,
