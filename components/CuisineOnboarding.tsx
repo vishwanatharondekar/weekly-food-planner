@@ -1,16 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, X, ChefHat, Sparkles, HelpCircle } from 'lucide-react';
+import { Check, HelpCircle, ArrowRight } from 'lucide-react';
 import { INDIAN_CUISINES, type Cuisine } from '@/lib/cuisine-data';
+import BreakfastSelection from './BreakfastSelection';
+import LunchDinnerSelection from './LunchDinnerSelection';
 import toast from 'react-hot-toast';
 
 interface CuisineOnboardingProps {
-  onComplete: (selectedCuisines: string[]) => void;
+  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }) => void;
 }
 
 export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
+  const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState<'cuisine' | 'breakfast' | 'lunch_dinner'>('cuisine');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCuisineToggle = (cuisineName: string) => {
@@ -23,7 +27,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     });
   };
 
-  const handleSubmit = async () => {
+  const handleCuisineSubmit = async () => {
     if (selectedCuisines.length === 0) {
       toast.error('Please select at least one cuisine preference');
       return;
@@ -32,9 +36,9 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     setIsSubmitting(true);
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      onComplete(selectedCuisines);
-      toast.success('Cuisine preferences saved! Generating your personalized meal plan...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setCurrentStep('breakfast');
+      toast.success('Cuisine preferences saved! Now select your breakfast options...');
     } catch (error) {
       toast.error('Failed to save preferences. Please try again.');
     } finally {
@@ -42,24 +46,100 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     }
   };
 
+  const handleBreakfastComplete = (breakfast: string[]) => {
+    setSelectedBreakfast(breakfast);
+    setCurrentStep('lunch_dinner');
+  };
+
+  const handleLunchDinnerComplete = async (lunchDinner: string[]) => {
+    try {
+      // Save dish preferences to backend
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Authentication required. Please login again.');
+        return;
+      }
+
+      const response = await fetch('/api/auth/dish-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          dishPreferences: {
+            breakfast: selectedBreakfast,
+            lunch_dinner: lunchDinner
+          },
+          onboardingCompleted: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save preferences');
+      }
+
+      // Call the completion handler with the data
+      onComplete(selectedCuisines, { breakfast: selectedBreakfast, lunch_dinner: lunchDinner });
+    } catch (error) {
+      console.error('Error saving dish preferences:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save preferences');
+    }
+  };
+
+  const handleBackToCuisines = () => {
+    setCurrentStep('cuisine');
+  };
+
+  const handleBackToBreakfast = () => {
+    setCurrentStep('breakfast');
+  };
+
+  // Show breakfast selection if user has completed cuisine selection
+  if (currentStep === 'breakfast') {
+    return (
+      <BreakfastSelection
+        selectedCuisines={selectedCuisines}
+        initialBreakfast={selectedBreakfast}
+        onComplete={handleBreakfastComplete}
+        onBack={handleBackToCuisines}
+      />
+    );
+  }
+
+  // Show lunch/dinner selection if user has completed breakfast selection
+  if (currentStep === 'lunch_dinner') {
+    return (
+      <LunchDinnerSelection
+        selectedCuisines={selectedCuisines}
+        selectedBreakfast={selectedBreakfast}
+        onComplete={handleLunchDinnerComplete}
+        onBack={handleBackToBreakfast}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <ChefHat className="h-8 w-8" />
+              <div className="bg-white bg-opacity-20 rounded-full p-2">
+                <span className="text-lg font-bold">1</span>
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Welcome to Your Food Journey!</h2>
-                <p className="text-orange-100">Tell us about your cuisine preferences</p>
+                <h2 className="text-2xl font-bold">Select Your Cuisines</h2>
+                <p className="text-orange-100">Choose your favorite cuisine types</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           <div className="text-center mb-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
               What cuisines do you enjoy?
@@ -70,7 +150,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
           </div>
 
           {/* Cuisine Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             {INDIAN_CUISINES.map((cuisine) => (
               <CuisineCard
                 key={cuisine.name}
@@ -81,33 +161,25 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
             ))}
           </div>
 
-          {/* Selected Count */}
-          {selectedCuisines.length > 0 && (
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-600">
-                {selectedCuisines.length} cuisine{selectedCuisines.length !== 1 ? 's' : ''} selected
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-gray-50 p-6">
+        <div className="border-t bg-gray-50 p-4 sm:p-6 flex-shrink-0">
           <div className="flex justify-end items-center">
             <button
-              onClick={handleSubmit}
+              onClick={handleCuisineSubmit}
               disabled={selectedCuisines.length === 0 || isSubmitting}
               className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
             >
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  <span>Generating...</span>
+                  <span>Loading...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Generate My Meal Plan</span>
+                  <ArrowRight className="h-4 w-4" />
+                  <span>Next: Select Breakfast</span>
                 </>
               )}
             </button>
@@ -156,36 +228,27 @@ function CuisineCard({ cuisine, isSelected, onToggle }: CuisineCardProps) {
     <div className="relative" ref={tooltipRef}>
       <div
         onClick={onToggle}
-        className={`cursor-pointer relative p-4 rounded-xl border-2 transition-all duration-200 text-left w-full ${
+        className={`cursor-pointer relative px-4 py-3 rounded-xl border-2 transition-all duration-200 text-center inline-flex items-center gap-2 ${
           isSelected
             ? 'border-orange-500 bg-orange-50 shadow-md'
             : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
         }`}
       >
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-semibold text-gray-800 text-sm">{cuisine.name}</h4>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowTooltip(!showTooltip);
-              }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </button>
-            {isSelected && (
-              <div className="bg-orange-500 text-white rounded-full p-1">
-                <Check className="h-3 w-3" />
-              </div>
-            )}
+        <h4 className="font-semibold text-gray-800 text-sm whitespace-nowrap">{cuisine.name}</h4>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowTooltip(!showTooltip);
+          }}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
+        {isSelected && (
+          <div className="bg-orange-500 text-white rounded-full p-1">
+            <Check className="h-3 w-3" />
           </div>
-        </div>
-        <div className="mt-2 text-xs text-gray-400">
-          <div className="truncate">
-            {cuisine.dishes.breakfast[0]} • {cuisine.dishes.lunch_dinner[0]} • {cuisine.dishes.snacks[0]}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Tooltip */}

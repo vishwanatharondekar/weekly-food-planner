@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
         dietaryPreferences: userData.dietaryPreferences,
         onboardingCompleted: userData.onboardingCompleted || false,
         cuisinePreferences: userData.cuisinePreferences || [],
+        dishPreferences: userData.dishPreferences || { breakfast: [], lunch_dinner: [] },
       },
     });
   } catch (error) {

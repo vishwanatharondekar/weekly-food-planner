@@ -68,6 +68,16 @@ export const INDIAN_CUISINES: Cuisine[] = [
   }
 ];
 
+export const UNIVERSAL_CUISINES = {
+  dishes: {
+    breakfast: ["Idli", "Dosa", "Poha", "Upma", "Paratha", "Puri", "Bread Toast", "Cornflakes", "Oats", "Sandwich", "Khichdi", "Egg recipes", "Cereal with Milk", "Fruit Salad"],
+    lunch_dinner_veg: ["Biryani", "Khichdi", "Rajma", "Chole", "Chana Masala", "Dal Makhani", "Sambar", "Rasam", "Vegetable Curry", "Mixed Vegetable", "Aloo Gobi", "Aloo Matar", "Palak Paneer", "Pasta", "Maggi"],
+    lunch_dinner_non_veg: ["Chicken Curry", "Butter Chicken", "Fish Curry", "Egg Curry", "Mutton Curry"],
+    snacks: ["Samosa", "Pakora", "Kachori", "Vada", "Bonda", "Bajji", "Jalebi", "Gulab Jamun", "Rasgulla", "Ladoo", "Besan Ladoo", "Coconut Ladoo", "Gajar Halwa", "Sooji Halwa", "Kheer", "Rice Kheer", "Dry Fruits", "Nuts", "Almonds", "Cashews", "Pistachios", "Walnuts", "Raisins", "Banana Chips", "Potato Chips", "Popcorn", "Biscuits", "Cookies", "Namkeen", "Mixture", "Dhokla", "Dahi Vada", "Dahi Puri", "Sev Puri", "Bhel Puri", "Pani Puri", "Chaat", "Aloo Chaat", "Fruit Chaat", "Boiled Corn", "Potato", "Boiled Potato", "French Fries", "Egg", "Boiled Egg", "Fried Egg", "Scrambled Egg", "Omelette", "Egg Sandwich", "Chicken Sandwich", "Veg Sandwich", "Paneer Sandwich", "Burger", "Veg Burger", "Chicken Burger", "Pizza", "Veg Pizza", "Chicken Pizza", "Pasta", "Spaghetti", "Macaroni", "Noodles", "Fried Rice", "Chicken Fried Rice", "Veg Fried Rice", "Egg Fried Rice", "Biryani", "Chicken Biryani", "Mutton Biryani", "Veg Biryani", "Pulao", "Chicken Pulao", "Mutton Pulao", "Veg Pulao", "Jeera Rice", "Curd Rice", "Khichdi", "Dal Khichdi", "Vegetable Khichdi", "Mixed Vegetable Khichdi", "Aloo Khichdi", "Paneer Khichdi", "Chicken Khichdi", "Mutton Khichdi", "Egg Khichdi"]
+  }
+}
+
+
 // Helper function to get all cuisine names
 export function getAllCuisineNames(): string[] {
   return INDIAN_CUISINES.map(cuisine => cuisine.name);

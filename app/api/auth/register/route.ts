@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
       onboardingCompleted: false,
       cuisinePreferences: [],
+      dishPreferences: {
+        breakfast: [],
+        lunch_dinner: []
+      },
     };
 
     await setDoc(userRef, user);
