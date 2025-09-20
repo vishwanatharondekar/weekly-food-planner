@@ -1168,7 +1168,7 @@ function PlanModeView({
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                             placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`w-full h-full px-6 py-4 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                            className={`text-black w-full h-full px-6 py-4 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
                               savingMeals.has(`${day}-${mealType}`) 
                                 ? 'bg-blue-50' 
                                 : ''
@@ -1262,7 +1262,7 @@ function PlanModeView({
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`w-full px-0 py-1 pr-12 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                              className={`text-black w-full px-0 py-1 pr-12 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
                                 savingMeals.has(`${day}-${mealType}`) 
                                   ? 'bg-blue-50' 
                                   : ''
