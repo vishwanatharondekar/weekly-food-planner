@@ -27,9 +27,10 @@ interface MealDataWithVideos {
 
 interface MealPlannerProps {
   user: any;
+  continueFromOnboarding?: boolean;
 }
 
-export default function MealPlanner({ user }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,18 @@ export default function MealPlanner({ user }: MealPlannerProps) {
     checkAIStatus();
   }, [currentWeek]);
 
+  // Auto-generate meals for new users with cuisine preferences
+  useEffect(() => {
+    if (continueFromOnboarding) {
+      // Small delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        generateAIMeals();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [continueFromOnboarding]);
+  
   // Check if there are meals planned for today
   // useEffect(() => {
   //   checkTodaysMeals();
@@ -178,15 +191,10 @@ export default function MealPlanner({ user }: MealPlannerProps) {
 
   const loadUserLanguagePreferences = async () => {
     try {
-      console.log('Loading user language preferences...');
       const preferences = await authAPI.getLanguagePreferences();
-      console.log('Language preferences loaded:', preferences);
       
       if (preferences && preferences.language) {
-        console.log('Setting user language to:', preferences.language);
         setUserLanguage(preferences.language);
-      } else {
-        console.log('No language preferences found, keeping default English');
       }
     } catch (error) {
       console.error('Error loading language preferences:', error);
@@ -399,7 +407,8 @@ export default function MealPlanner({ user }: MealPlannerProps) {
       
       const weekStart = formatDate(currentWeek);
       const suggestions = await aiAPI.generateMeals(weekStart);
-      
+      const userVideoURLs = await authAPI.getVideoURLs();
+
       // Update loader message
       setLoaderMessage('Processing AI Results');
       setLoaderSubMessage('Applying suggestions to your meal plan...');
@@ -418,7 +427,6 @@ export default function MealPlanner({ user }: MealPlannerProps) {
             // Check if there's a saved video URL for this recipe
             let videoUrl: string | undefined = undefined;
             try {
-              const userVideoURLs = await authAPI.getVideoURLs();
               const normalizedRecipeName = (mealName as string).toLowerCase().trim();
               videoUrl = userVideoURLs[normalizedRecipeName];
             } catch (error) {

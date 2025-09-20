@@ -10,8 +10,10 @@ import DietaryPreferences from '@/components/DietaryPreferences';
 import MealSettingsComponent from '@/components/MealSettings';
 import VideoURLManager from '@/components/VideoURLManager';
 import LanguagePreferences from '@/components/LanguagePreferences';
+import CuisineOnboarding from '@/components/CuisineOnboarding';
 import { authAPI } from '@/lib/api';
 import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Home() {
   const router = useRouter();
@@ -25,6 +27,8 @@ export default function Home() {
   const [showMealSettings, setShowMealSettings] = useState(false);
   const [showVideoURLManager, setShowVideoURLManager] = useState(false);
   const [showLanguagePreferences, setShowLanguagePreferences] = useState(false);
+  const [showCuisineOnboarding, setShowCuisineOnboarding] = useState(false);
+  const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -41,6 +45,11 @@ export default function Home() {
     try {
       const response = await authAPI.getProfile();
       setUser(response.user);
+      
+      // Show onboarding if user hasn't completed it
+      if (!response.user.onboardingCompleted) {
+        setShowCuisineOnboarding(true);
+      }
     } catch (error) {
       console.error('Error loading user profile:', error);
       localStorage.removeItem('token');
@@ -62,6 +71,29 @@ export default function Home() {
     setUser(null);
     setShowSettingsDropdown(false);
   };
+
+  const handleCuisineOnboardingComplete = async (selectedCuisines: string[]) => {
+    try {
+      await authAPI.updateCuisinePreferences({
+        cuisinePreferences: selectedCuisines,
+        onboardingCompleted: true,
+      });
+      
+      // Update local user state
+      setUser((prev: any) => ({
+        ...prev,
+        cuisinePreferences: selectedCuisines,
+        onboardingCompleted: true,
+      }));
+      
+      setShowCuisineOnboarding(false);
+      setContinueFromOnboarding(true);
+    } catch (error) {
+      console.error('Error updating cuisine preferences:', error);
+      toast.error('Failed to save preferences. Please try again.');
+    }
+  };
+
 
   const toggleAuthMode = () => {
     setAuthMode(prev => prev === 'login' ? 'register' : 'login');
@@ -206,8 +238,12 @@ export default function Home() {
           </div>
         </nav>
         
-        <MealPlanner user={user} />
-        
+        {
+          user.onboardingCompleted && (<MealPlanner 
+            user={user} 
+            continueFromOnboarding={continueFromOnboarding}
+          />)
+        }
         {/* Settings Modals */}
         {showMealSettings && (
           <MealSettingsComponent
@@ -235,6 +271,12 @@ export default function Home() {
           <LanguagePreferences
             user={user}
             onClose={() => setShowLanguagePreferences(false)}
+          />
+        )}
+        
+        {showCuisineOnboarding && (
+          <CuisineOnboarding
+            onComplete={handleCuisineOnboardingComplete}
           />
         )}
       </div>
