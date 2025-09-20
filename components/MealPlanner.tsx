@@ -84,9 +84,11 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
   }, [continueFromOnboarding]);
   
   // Check if there are meals planned for today
-  // useEffect(() => {
-  //   checkTodaysMeals();
-  // }, [meals, currentWeek]);
+  useEffect(() => {
+    if (meals && Object.keys(meals).length > 0 && mealSettings.enabledMealTypes.length > 0) {
+      checkTodaysMeals(meals);
+    }
+  }, [meals, currentWeek, mealSettings.enabledMealTypes]);
 
   // Set default mode to Cook if there are meals planned for today
   useEffect(() => {
@@ -260,7 +262,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
       });
       
       setMeals(convertedMeals);
-      checkTodaysMeals(convertedMeals);
       hideFullScreenLoader();
     } catch (error) {
       console.error('Error loading meals:', error);
@@ -703,7 +704,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
         <div className="space-y-6">
 
         {/* Mode Switcher - Chrome-like Full Width Tabs */}
-        <div className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-slate-200 border-b-0">
+        {!continueFromOnboarding && <div className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-slate-200 border-b-0">
           <div className="flex">
             {/* Cook Mode Tab - Left Side */}
             <button
@@ -748,9 +749,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
             </button>
           </div>
         </div>
+        }
 
         {/* Cook Mode View */}
-        {currentMode === 'cook' && hasTodaysMeals && (
+        {(!continueFromOnboarding && currentMode === 'cook') && hasTodaysMeals && (
           <CookModeView 
             todaysData={getTodaysMeals()}
             mealSettings={mealSettings}
@@ -759,7 +761,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
         )}
 
         {/* Plan Mode View */}
-        {currentMode === 'plan' && (
+        {(continueFromOnboarding || currentMode === 'plan') && (
           <PlanModeView
             currentWeek={currentWeek}
             meals={meals}
