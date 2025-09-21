@@ -57,6 +57,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
   const [showShoppingTooltip, setShowShoppingTooltip] = useState(false);
   const [showAiTooltip, setShowAiTooltip] = useState(false);
+  const [showOnboardingTooltip, setShowOnboardingTooltip] = useState(true);
   const pdfTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shoppingTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const aiTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -703,6 +704,41 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
         <div className="space-y-6">
 
+        {/* Onboarding Tooltip */}
+        {continueFromOnboarding && showOnboardingTooltip && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm relative">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-blue-900">
+                  Your meal plan is ready!
+                </h3>
+                <p className="mt-1 text-sm text-blue-700">
+                  You're free to edit/delete any meal in the plan below. Click on any meal to modify it, or use the AI assistant to fill the empty slots.
+                </p>
+              </div>
+              <div className="ml-4 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowOnboardingTooltip(false)}
+                  className="bg-blue-50 rounded-md p-1.5 text-blue-400 hover:bg-blue-100 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-blue-50"
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mode Switcher - Chrome-like Full Width Tabs */}
         {!continueFromOnboarding && <div className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-slate-200 border-b-0">
           <div className="flex">
@@ -1178,7 +1214,7 @@ function PlanModeView({
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                             placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`text-black w-full h-full px-6 py-4 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                            className={`text-black w-full h-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
                               savingMeals.has(`${day}-${mealType}`) 
                                 ? 'bg-blue-50' 
                                 : ''
@@ -1194,21 +1230,21 @@ function PlanModeView({
                           
                           {/* Action buttons - only show when there's text */}
                           {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                            <div className="absolute inset-y-0 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              {/* Clear button */}
+                            <div className="absolute inset-y-0 right-2 flex items-center space-x-1">
+                              {/* Video button - only visible on hover */}
+                              <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                {onGetVideoIcon(day, mealType)}
+                              </div>
+                              
+                              {/* Clear button - always visible when text exists */}
                               <button
                                 type="button"
                                 onClick={() => onUpdateMeal(day, mealType, '')}
-                                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                 title="Clear meal"
                               >
                                 <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                               </button>
-                              
-                              {/* Video button */}
-                              <div className="p-1">
-                                {onGetVideoIcon(day, mealType)}
-                              </div>
                             </div>
                           )}
                           
@@ -1272,7 +1308,7 @@ function PlanModeView({
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`text-black w-full px-0 py-1 pr-12 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                              className={`text-black w-full px-0 py-1 pr-16 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
                                 savingMeals.has(`${day}-${mealType}`) 
                                   ? 'bg-blue-50' 
                                   : ''
@@ -1288,21 +1324,21 @@ function PlanModeView({
                             
                             {/* Action buttons - only show when there's text */}
                             {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                {/* Clear button */}
+                              <div className="absolute inset-y-0 right-0 flex items-center space-x-1">
+                                {/* Video button - only visible on hover */}
+                                <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  {onGetVideoIcon(day, mealType)}
+                                </div>
+                                
+                                {/* Clear button - always visible when text exists */}
                                 <button
                                   type="button"
                                   onClick={() => onUpdateMeal(day, mealType, '')}
-                                  className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                  className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                   title="Clear meal"
                                 >
                                   <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                 </button>
-                                
-                                {/* Video button */}
-                                <div className="p-1">
-                                  {onGetVideoIcon(day, mealType)}
-                                </div>
                               </div>
                             )}
                             
