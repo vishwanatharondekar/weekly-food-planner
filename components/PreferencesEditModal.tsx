@@ -268,9 +268,9 @@ export default function PreferencesEditModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Sparkles className="w-6 h-6" />
@@ -288,9 +288,8 @@ export default function PreferencesEditModal({
           </p>
         </div>
 
-
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 flex-shrink-0">
           <div className="flex space-x-8 px-6">
             {[
               { id: 'ingredients', label: 'Ingredients', count: preferences.ingredients.length },
@@ -317,59 +316,20 @@ export default function PreferencesEditModal({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 min-h-0">
-          {/* Search Bar - Only for dishes, not ingredients */}
-          {activeTab !== 'ingredients' && (
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder={`Search ${activeTab === 'breakfast' ? 'breakfast' : 'lunch & dinner'} options...`}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {activeTab === 'ingredients' ? 'Available Ingredients' : activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'} Options
-            </h3>
-            <div className="flex space-x-2">
-              {activeTab !== 'ingredients' && (
-                <button
-                  onClick={handleSelectAll}
-                  className="px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
-                >
-                  Select All
-                </button>
-              )}
-              <button
-                onClick={handleClearAll}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Ingredients Input - Only for ingredients tab */}
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Custom Ingredients Input - Only for ingredients tab, moved to top */}
           {activeTab === 'ingredients' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Add your own ingredients (comma-separated)
               </label>
-              <input
-                type="text"
+              <textarea
                 placeholder="e.g., Turmeric, Red Chili Powder, Garam Masala, Salt, Sugar..."
                 value={customIngredientsInput}
                 onChange={(e) => handleCustomIngredientsChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-black"
               />
               {preferences.customIngredients.length > 0 && (
                 <div className="mt-2">
@@ -388,6 +348,57 @@ export default function PreferencesEditModal({
               )}
             </div>
           )}
+
+          {/* Search Bar - Only for dishes, not ingredients */}
+          {activeTab !== 'ingredients' && (
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab === 'breakfast' ? 'breakfast' : 'lunch & dinner'} options...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* OR text for ingredients */}
+          {activeTab === 'ingredients' && (
+            <div className="text-center mb-4">
+              <div className="text-lg font-bold text-gray-600">OR</div>
+              <div className="text-sm text-gray-500 font-medium">select from the list below</div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center mb-4">
+            {activeTab !== 'ingredients' ? (
+              <h3 className="text-lg font-semibold text-gray-900">
+                {activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'} Options
+              </h3>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex space-x-2">
+              {activeTab !== 'ingredients' && (
+                <button
+                  onClick={handleSelectAll}
+                  className="px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+                >
+                  Select All
+                </button>
+              )}
+              <button
+                onClick={handleClearAll}
+                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
 
           {/* Items Grid */}
           <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -417,8 +428,8 @@ export default function PreferencesEditModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+        {/* Footer - Fixed at bottom */}
+        <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 flex-shrink-0 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
