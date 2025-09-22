@@ -202,6 +202,40 @@ export const authAPI = {
     }
   },
 
+  // Dish preferences management
+  updateDishPreferences: async (preferences: {
+    dishPreferences: {
+      breakfast: string[];
+      lunch_dinner: string[];
+    };
+    onboardingCompleted: boolean;
+  }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/dish-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update dish preferences');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Video URL management
   getVideoURLs: async () => {
     try {
