@@ -268,13 +268,13 @@ export default function PreferencesEditModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white flex-shrink-0">
+        <div className="rounded-t-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Sparkles className="w-6 h-6" />
-              <h2 className="text-xl font-bold">Edit Your Preferences</h2>
+              <h2 className="text-xl font-bold">Customize Your AI Meal Plan</h2>
             </div>
             <button
               onClick={onClose}
@@ -284,7 +284,7 @@ export default function PreferencesEditModal({
             </button>
           </div>
           <p className="text-purple-100 mt-2">
-            Review and update your preferences before generating AI meal suggestions
+            Tell us what you have and what you like to eat for personalized meal suggestions
           </p>
         </div>
 
@@ -322,10 +322,10 @@ export default function PreferencesEditModal({
           {activeTab === 'ingredients' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add your own ingredients (comma-separated)
+                Add ingredients you have at home (comma-separated)
               </label>
               <textarea
-                placeholder="e.g., Turmeric, Red Chili Powder, Garam Masala, Salt, Sugar..."
+                placeholder="Karela, Basmati Rice, Paneer, etc..."
                 value={customIngredientsInput}
                 onChange={(e) => handleCustomIngredientsChange(e.target.value)}
                 rows={2}
@@ -377,20 +377,12 @@ export default function PreferencesEditModal({
           <div className="flex justify-between items-center mb-4">
             {activeTab !== 'ingredients' ? (
               <h3 className="text-lg font-semibold text-gray-900">
-                {activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'} Options
+                {activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'}
               </h3>
             ) : (
               <div></div>
             )}
             <div className="flex space-x-2">
-              {activeTab !== 'ingredients' && (
-                <button
-                  onClick={handleSelectAll}
-                  className="px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
-                >
-                  Select All
-                </button>
-              )}
               <button
                 onClick={handleClearAll}
                 className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
@@ -429,7 +421,7 @@ export default function PreferencesEditModal({
         </div>
 
         {/* Footer - Fixed at bottom */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 flex-shrink-0 border-t border-gray-200">
+        <div className="rounded-b-2xl bg-gray-50 px-6 py-4 flex justify-end space-x-3 flex-shrink-0 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
