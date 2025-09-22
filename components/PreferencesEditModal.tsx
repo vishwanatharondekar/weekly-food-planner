@@ -164,8 +164,8 @@ export default function PreferencesEditModal({
   useEffect(() => {
     if (isOpen && user) {
       setPreferences({
-        ingredients: user.ingredients || [],
-        customIngredients: user.customIngredients || [],
+        ingredients: [],
+        customIngredients: [],
         dishPreferences: user.dishPreferences || { breakfast: [], lunch_dinner: [] }
       });
     }
@@ -182,20 +182,17 @@ export default function PreferencesEditModal({
 
   const handleCustomIngredientsChange = (value: string) => {
     setCustomIngredientsInput(value);
-    // Parse comma-separated ingredients
-    const customIngredients = value
+    // Don't update preferences.customIngredients here - only update on confirm
+  };
+
+  const getAllIngredients = () => {
+    // Parse current custom ingredients input
+    const currentCustomIngredients = customIngredientsInput
       .split(',')
       .map(ingredient => ingredient.trim())
       .filter(ingredient => ingredient.length > 0);
     
-    setPreferences(prev => ({
-      ...prev,
-      customIngredients
-    }));
-  };
-
-  const getAllIngredients = () => {
-    return [...preferences.ingredients, ...preferences.customIngredients];
+    return [...preferences.ingredients, ...currentCustomIngredients];
   };
 
   const handleDishToggle = (dish: string) => {
@@ -224,23 +221,6 @@ export default function PreferencesEditModal({
         dishPreferences: {
           ...prev.dishPreferences,
           [activeTab]: []
-        }
-      }));
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (activeTab === 'ingredients') {
-      setPreferences(prev => ({
-        ...prev,
-        ingredients: [...COMMON_INGREDIENTS]
-      }));
-    } else if (activeTab === 'breakfast' || activeTab === 'lunch_dinner') {
-      setPreferences(prev => ({
-        ...prev,
-        dishPreferences: {
-          ...prev.dishPreferences,
-          [activeTab]: [...availableDishes[activeTab]]
         }
       }));
     }
@@ -331,18 +311,22 @@ export default function PreferencesEditModal({
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-black"
               />
-              {preferences.customIngredients.length > 0 && (
+              {customIngredientsInput.trim().length > 0 && (
                 <div className="mt-2">
                   <p className="text-sm text-gray-600 mb-2">Your custom ingredients:</p>
                   <div className="flex flex-wrap gap-2">
-                    {preferences.customIngredients.map((ingredient, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-md"
-                      >
-                        {ingredient}
-                      </span>
-                    ))}
+                    {customIngredientsInput
+                      .split(',')
+                      .map(ingredient => ingredient.trim())
+                      .filter(ingredient => ingredient.length > 0)
+                      .map((ingredient, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-md"
+                        >
+                          {ingredient}
+                        </span>
+                      ))}
                   </div>
                 </div>
               )}
