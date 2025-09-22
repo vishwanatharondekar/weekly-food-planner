@@ -236,6 +236,36 @@ export const authAPI = {
     }
   },
 
+  // Ingredients management
+  updateIngredients: async (preferences: {
+    ingredients: string[];
+  }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/ingredients', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update ingredients');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Video URL management
   getVideoURLs: async () => {
     try {
@@ -475,7 +505,7 @@ export const mealsAPI = {
 
 // AI API - using server routes
 export const aiAPI = {
-  generateMeals: async (weekStartDate: string) => {
+  generateMeals: async (weekStartDate: string, ingredients?: string[]) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -488,7 +518,10 @@ export const aiAPI = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ weekStartDate }),
+        body: JSON.stringify({ 
+          weekStartDate,
+          ingredients: ingredients || []
+        }),
       });
 
       if (!response.ok) {

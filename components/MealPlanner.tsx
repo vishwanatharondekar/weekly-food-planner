@@ -427,7 +427,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       if (onUserUpdate) {
         const updatedUser = {
           ...user,
-          dishPreferences: preferences.dishPreferences
+          dishPreferences: preferences.dishPreferences,
+          ingredients: preferences.ingredients || [],
+          customIngredients: preferences.customIngredients || []
         };
         onUserUpdate(updatedUser);
       }
@@ -435,8 +437,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       // Close modal
       setShowPreferencesModal(false);
       
-      // Now generate AI meals
-      await performAIGeneration();
+      // Now generate AI meals with ingredients
+      await performAIGeneration(preferences.ingredients);
       
     } catch (error: any) {
       console.error('Error updating preferences:', error);
@@ -446,13 +448,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     }
   };
 
-  const performAIGeneration = async () => {
+  const performAIGeneration = async (ingredients?: string[]) => {
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
       
       const weekStart = formatDate(currentWeek);
-      const suggestions = await aiAPI.generateMeals(weekStart);
+      const suggestions = await aiAPI.generateMeals(weekStart, ingredients);
       const userVideoURLs = await authAPI.getVideoURLs();
 
       // Update loader message

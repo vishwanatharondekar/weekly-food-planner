@@ -6,6 +6,8 @@ import { INDIAN_CUISINES, UNIVERSAL_CUISINES, getDishesForCuisines } from '@/lib
 import toast from 'react-hot-toast';
 
 interface UserPreferences {
+  ingredients: string[];
+  customIngredients: string[];
   dishPreferences: {
     breakfast: string[];
     lunch_dinner: string[];
@@ -20,6 +22,47 @@ interface PreferencesEditModalProps {
   isLoading?: boolean;
 }
 
+const INGREDIENT_GROUPS = {
+  vegetables: {
+    color: 'green',
+    items: [
+      'Onion', 'Tomato', 'Potato', 'Carrot', 'Capsicum', 'Cabbage', 'Cauliflower', 'Broccoli', 'Spinach', 'Lettuce',
+      'Cucumber', 'Radish', 'Beetroot', 'Brinjal', 'Okra', 'Green Beans', 'Peas', 'Corn', 'Mushroom'
+    ]
+  },
+  grains: {
+    color: 'yellow',
+    items: [
+      'Rice', 'Wheat Flour', 'Basmati Rice', 'Quinoa', 'Oats', 'Barley', 'Dal (Lentils)', 'Chana Dal',
+      'Moong Dal', 'Toor Dal', 'Rajma', 'Chickpeas', 'Black Gram', 'Green Gram', 'Red Lentils'
+    ]
+  },
+  dairy: {
+    color: 'blue',
+    items: [
+      'Milk', 'Yogurt', 'Paneer', 'Cheese', 'Butter', 'Ghee', 'Cream',  'Coconut Milk'
+    ]
+  },
+  meat: {
+    color: 'red',
+    items: [
+      'Chicken', 'Mutton', 'Fish', 'Prawns', 'Eggs'
+    ]
+  }
+};
+
+// Flatten all ingredients for easy access
+const COMMON_INGREDIENTS = Object.values(INGREDIENT_GROUPS).flatMap(group => group.items);
+
+// Function to get the color for an ingredient
+const getIngredientColor = (ingredient: string): string => {
+  for (const [groupName, group] of Object.entries(INGREDIENT_GROUPS)) {
+    if (group.items.includes(ingredient)) {
+      return group.color;
+    }
+  }
+  return 'gray'; // Default color for custom ingredients
+};
 
 export default function PreferencesEditModal({
   isOpen,
@@ -29,13 +72,16 @@ export default function PreferencesEditModal({
   isLoading = false
 }: PreferencesEditModalProps) {
   const [preferences, setPreferences] = useState<UserPreferences>({
+    ingredients: [],
+    customIngredients: [],
     dishPreferences: {
       breakfast: [],
       lunch_dinner: []
     }
   });
-  const [activeTab, setActiveTab] = useState<'breakfast' | 'lunch_dinner'>('breakfast');
+  const [activeTab, setActiveTab] = useState<'ingredients' | 'breakfast' | 'lunch_dinner'>('ingredients');
   const [searchTerm, setSearchTerm] = useState('');
+  const [customIngredientsInput, setCustomIngredientsInput] = useState('');
 
   // Get all available dishes from user's cuisines + universal
   const availableDishes = React.useMemo(() => {
@@ -68,11 +114,20 @@ export default function PreferencesEditModal({
 
   // Get initial dish order with previously selected items first
   const initialDishOrder = React.useMemo(() => {
+    // Handle ingredients tab separately
+    if (activeTab === 'ingredients') {
+      return COMMON_INGREDIENTS;
+    }
+    
     const dishes = availableDishes[activeTab];
+    if (!dishes || !Array.isArray(dishes)) {
+      return [];
+    }
+    
     const initialSelected = user?.dishPreferences?.[activeTab] || [];
     
-    // Sort so that initially selected dishes appear first
-    return dishes.sort((a, b) => {
+    // Create a new array and sort so that initially selected dishes appear first
+    return [...dishes].sort((a, b) => {
       const aInitiallySelected = initialSelected.includes(a);
       const bInitiallySelected = initialSelected.includes(b);
       
@@ -82,6 +137,14 @@ export default function PreferencesEditModal({
     });
   }, [availableDishes, activeTab, user?.dishPreferences]);
 
+  // Filter ingredients based on search term
+  const filteredIngredients = React.useMemo(() => {
+    if (!searchTerm) return COMMON_INGREDIENTS;
+    return COMMON_INGREDIENTS.filter(ingredient => 
+      ingredient.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
   // Filter dishes based on search term (no real-time sorting)
   const filteredDishes = React.useMemo(() => {
     if (!searchTerm) return initialDishOrder;
@@ -90,44 +153,97 @@ export default function PreferencesEditModal({
     );
   }, [initialDishOrder, searchTerm]);
 
+  // Get the appropriate data source based on active tab
+  const currentData = React.useMemo(() => {
+    if (activeTab === 'ingredients') {
+      return filteredIngredients;
+    }
+    return filteredDishes;
+  }, [activeTab, filteredIngredients, filteredDishes]);
+
   useEffect(() => {
     if (isOpen && user) {
       setPreferences({
+        ingredients: user.ingredients || [],
+        customIngredients: user.customIngredients || [],
         dishPreferences: user.dishPreferences || { breakfast: [], lunch_dinner: [] }
       });
     }
   }, [isOpen, user]);
 
-  const handleDishToggle = (dish: string) => {
+  const handleIngredientToggle = (ingredient: string) => {
     setPreferences(prev => ({
       ...prev,
-      dishPreferences: {
-        ...prev.dishPreferences,
-        [activeTab]: prev.dishPreferences[activeTab].includes(dish)
-          ? prev.dishPreferences[activeTab].filter(d => d !== dish)
-          : [...prev.dishPreferences[activeTab], dish]
-      }
+      ingredients: prev.ingredients.includes(ingredient)
+        ? prev.ingredients.filter(i => i !== ingredient)
+        : [...prev.ingredients, ingredient]
     }));
   };
 
-  const handleSelectAll = () => {
+  const handleCustomIngredientsChange = (value: string) => {
+    setCustomIngredientsInput(value);
+    // Parse comma-separated ingredients
+    const customIngredients = value
+      .split(',')
+      .map(ingredient => ingredient.trim())
+      .filter(ingredient => ingredient.length > 0);
+    
     setPreferences(prev => ({
       ...prev,
-      dishPreferences: {
-        ...prev.dishPreferences,
-        [activeTab]: [...availableDishes[activeTab]]
-      }
+      customIngredients
     }));
+  };
+
+  const getAllIngredients = () => {
+    return [...preferences.ingredients, ...preferences.customIngredients];
+  };
+
+  const handleDishToggle = (dish: string) => {
+    if (activeTab === 'breakfast' || activeTab === 'lunch_dinner') {
+      setPreferences(prev => ({
+        ...prev,
+        dishPreferences: {
+          ...prev.dishPreferences,
+          [activeTab]: prev.dishPreferences[activeTab].includes(dish)
+            ? prev.dishPreferences[activeTab].filter(d => d !== dish)
+            : [...prev.dishPreferences[activeTab], dish]
+        }
+      }));
+    }
   };
 
   const handleClearAll = () => {
-    setPreferences(prev => ({
-      ...prev,
-      dishPreferences: {
-        ...prev.dishPreferences,
-        [activeTab]: []
-      }
-    }));
+    if (activeTab === 'ingredients') {
+      setPreferences(prev => ({
+        ...prev,
+        ingredients: []
+      }));
+    } else if (activeTab === 'breakfast' || activeTab === 'lunch_dinner') {
+      setPreferences(prev => ({
+        ...prev,
+        dishPreferences: {
+          ...prev.dishPreferences,
+          [activeTab]: []
+        }
+      }));
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (activeTab === 'ingredients') {
+      setPreferences(prev => ({
+        ...prev,
+        ingredients: [...COMMON_INGREDIENTS]
+      }));
+    } else if (activeTab === 'breakfast' || activeTab === 'lunch_dinner') {
+      setPreferences(prev => ({
+        ...prev,
+        dishPreferences: {
+          ...prev.dishPreferences,
+          [activeTab]: [...availableDishes[activeTab]]
+        }
+      }));
+    }
   };
 
   const handleConfirm = () => {
@@ -139,7 +255,13 @@ export default function PreferencesEditModal({
       toast.error('Please select at least one lunch/dinner option');
       return;
     }
-    onConfirm(preferences);
+    
+    // Combine selected ingredients with custom ingredients
+    const allIngredients = getAllIngredients();
+    onConfirm({
+      ...preferences,
+      ingredients: allIngredients
+    });
   };
 
   if (!isOpen) return null;
@@ -171,6 +293,7 @@ export default function PreferencesEditModal({
         <div className="border-b border-gray-200">
           <div className="flex space-x-8 px-6">
             {[
+              { id: 'ingredients', label: 'Ingredients', count: preferences.ingredients.length },
               { id: 'breakfast', label: 'Breakfast', count: preferences.dishPreferences.breakfast.length },
               { id: 'lunch_dinner', label: 'Lunch & Dinner', count: preferences.dishPreferences.lunch_dinner.length }
             ].map(tab => (
@@ -196,32 +319,36 @@ export default function PreferencesEditModal({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab === 'breakfast' ? 'breakfast' : 'lunch & dinner'} options...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
+          {/* Search Bar - Only for dishes, not ingredients */}
+          {activeTab !== 'ingredients' && (
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab === 'breakfast' ? 'breakfast' : 'lunch & dinner'} options...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              {activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'} Options
+              {activeTab === 'ingredients' ? 'Available Ingredients' : activeTab === 'breakfast' ? 'Breakfast' : 'Lunch & Dinner'} Options
             </h3>
             <div className="flex space-x-2">
-              <button
-                onClick={handleSelectAll}
-                className="px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
-              >
-                Select All
-              </button>
+              {activeTab !== 'ingredients' && (
+                <button
+                  onClick={handleSelectAll}
+                  className="px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+                >
+                  Select All
+                </button>
+              )}
               <button
                 onClick={handleClearAll}
                 className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
@@ -231,21 +358,61 @@ export default function PreferencesEditModal({
             </div>
           </div>
 
-          {/* Dishes Grid */}
+          {/* Custom Ingredients Input - Only for ingredients tab */}
+          {activeTab === 'ingredients' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Add your own ingredients (comma-separated)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Turmeric, Red Chili Powder, Garam Masala, Salt, Sugar..."
+                value={customIngredientsInput}
+                onChange={(e) => handleCustomIngredientsChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              {preferences.customIngredients.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600 mb-2">Your custom ingredients:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {preferences.customIngredients.map((ingredient, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-md"
+                      >
+                        {ingredient}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Items Grid */}
           <div className="flex flex-wrap justify-center gap-3 mb-6">
-            {filteredDishes.map((dish) => (
+            {currentData.map((item) => (
               <DishCard
-                key={dish}
-                dish={dish}
-                isSelected={preferences.dishPreferences[activeTab].includes(dish)}
-                onToggle={() => handleDishToggle(dish)}
+                key={item}
+                dish={item}
+                isSelected={
+                  activeTab === 'ingredients' 
+                    ? preferences.ingredients.includes(item)
+                    : preferences.dishPreferences[activeTab].includes(item)
+                }
+                onToggle={() => 
+                  activeTab === 'ingredients' 
+                    ? handleIngredientToggle(item)
+                    : handleDishToggle(item)
+                }
+                color={activeTab === 'ingredients' ? getIngredientColor(item) : 'purple'}
               />
             ))}
           </div>
 
-          {filteredDishes.length === 0 && searchTerm && (
+          {currentData.length === 0 && searchTerm && (
             <div className="text-center py-8 text-gray-500">
-              No dishes found matching "{searchTerm}"
+              No {activeTab === 'ingredients' ? 'ingredients' : 'dishes'} found matching "{searchTerm}"
             </div>
           )}
         </div>
@@ -285,21 +452,54 @@ interface DishCardProps {
   dish: string;
   isSelected: boolean;
   onToggle: () => void;
+  color?: string;
 }
 
-function DishCard({ dish, isSelected, onToggle }: DishCardProps) {
+function DishCard({ dish, isSelected, onToggle, color = 'purple' }: DishCardProps) {
+  const getColorClasses = (color: string, isSelected: boolean) => {
+    const colorMap = {
+      green: isSelected 
+        ? 'border-green-500 bg-green-50 text-green-800' 
+        : 'border-green-200 hover:border-green-300 text-green-700',
+      yellow: isSelected 
+        ? 'border-yellow-500 bg-yellow-50 text-yellow-800' 
+        : 'border-yellow-200 hover:border-yellow-300 text-yellow-700',
+      blue: isSelected 
+        ? 'border-blue-500 bg-blue-50 text-blue-800' 
+        : 'border-blue-200 hover:border-blue-300 text-blue-700',
+      red: isSelected 
+        ? 'border-red-500 bg-red-50 text-red-800' 
+        : 'border-red-200 hover:border-red-300 text-red-700',
+      gray: isSelected 
+        ? 'border-gray-500 bg-gray-50 text-gray-800' 
+        : 'border-gray-200 hover:border-gray-300 text-gray-700',
+      purple: isSelected 
+        ? 'border-purple-500 bg-purple-50 text-purple-800' 
+        : 'border-purple-200 hover:border-purple-300 text-purple-700'
+    };
+    return colorMap[color as keyof typeof colorMap] || colorMap.purple;
+  };
+
+  const getCheckIconColor = (color: string) => {
+    const colorMap = {
+      green: 'bg-green-500',
+      yellow: 'bg-yellow-500',
+      blue: 'bg-blue-500',
+      red: 'bg-red-500',
+      gray: 'bg-gray-500',
+      purple: 'bg-purple-500'
+    };
+    return colorMap[color as keyof typeof colorMap] || 'bg-purple-500';
+  };
+
   return (
     <div
       onClick={onToggle}
-      className={`cursor-pointer px-4 py-2 rounded-lg border-2 transition-all duration-200 text-center inline-flex items-center gap-2 ${
-        isSelected
-          ? 'border-purple-500 bg-purple-50 shadow-md'
-          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-      }`}
+      className={`cursor-pointer px-4 py-2 rounded-lg border-2 transition-all duration-200 text-center inline-flex items-center gap-2 ${getColorClasses(color, isSelected)}`}
     >
-      <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{dish}</span>
+      <span className="text-sm font-medium whitespace-nowrap">{dish}</span>
       {isSelected && (
-        <div className="bg-purple-500 text-white rounded-full p-1">
+        <div className={`${getCheckIconColor(color)} text-white rounded-full p-1`}>
           <Check className="h-3 w-3" />
         </div>
       )}

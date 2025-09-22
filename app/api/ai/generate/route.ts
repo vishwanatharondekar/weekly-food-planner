@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { weekStartDate } = await request.json();
+    const { weekStartDate, ingredients = [] } = await request.json();
 
     // Get meal history for the target week
     const referenceWeekStart = new Date(weekStartDate);
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate AI suggestions
-    const suggestions = await generateAISuggestions(history, weekStartDate, dietaryPreferences, cuisinePreferences, dishPreferences);
+    const suggestions = await generateAISuggestions(history, weekStartDate, dietaryPreferences, cuisinePreferences, dishPreferences, ingredients);
 
     return NextResponse.json(suggestions);
   } catch (error: any) {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }) {
+async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = []) {
   // Prepare history for AI
   const historyText = history.length > 0 ? history.map(plan => {
     const meals = plan.meals;
@@ -131,6 +131,11 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   const dietaryInfo = dietaryPreferences ? 
     `Dietary Preferences: ${dietaryPreferences.isVegetarian ? 'Vegetarian' : 'Non-vegetarian'}, Non-veg days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}` :
     'No specific dietary preferences';
+
+  // Prepare ingredients information
+  const ingredientsInfo = ingredients.length > 0 ? 
+    `Available Ingredients: ${ingredients.join(', ')}` :
+    'No specific ingredients available';
 
   // Prepare cuisine preferences and get available dishes
   let cuisineInfo = 'No specific cuisine preferences';
@@ -165,9 +170,10 @@ Lunch/Dinner: ${lunchDinnerDishes.join(', ')}
 Snacks: ${snackDishes.join(', ')}`;
   }
 
-  const prompt = `Based on the following meal history, dietary preferences, and preferences, suggest meals for the week of ${weekStartDate}.
+  const prompt = `Based on the following meal history, dietary preferences, available ingredients, and preferences, suggest meals for the week of ${weekStartDate}.
 
 ${dietaryInfo}
+${ingredientsInfo}
 ${cuisineInfo}
 ${availableDishes}
 
@@ -177,11 +183,12 @@ ${historyText}
 Please suggest meals for each day (breakfast, morning snack, lunch, evening snack, dinner) that are:
 ${history.length > 0 ? '1. Similar to the user\'s historical preferences' : hasDishPreferences ? '1. Based on their specific dish preferences from onboarding' : '1. Based on their cuisine preferences and dietary restrictions'}
 2. Respect their dietary restrictions
-3. ${hasDishPreferences ? 'Focus on their selected dish preferences' : cuisinePreferences.length > 0 ? `Focus on their preferred cuisines: ${cuisinePreferences.join(', ')}` : 'Use any appropriate cuisine'}
-4. Varied and healthy
-5. Easy to prepare
-${hasDishPreferences ? '6. Select dishes primarily from their preferred dishes list provided above' : cuisinePreferences.length > 0 ? `6. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
-${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) ? '7. Select dishes primarily from the available dishes list provided above' : ''}
+3. ${ingredients.length > 0 ? 'Prioritize using the available ingredients listed above' : 'Use common ingredients that are easily available'}
+4. ${hasDishPreferences ? 'Focus on their selected dish preferences' : cuisinePreferences.length > 0 ? `Focus on their preferred cuisines: ${cuisinePreferences.join(', ')}` : 'Use any appropriate cuisine'}
+5. Varied and healthy
+6. Easy to prepare
+${hasDishPreferences ? '7. Select dishes primarily from their preferred dishes list provided above' : cuisinePreferences.length > 0 ? `7. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
+${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) ? '8. Select dishes primarily from the available dishes list provided above' : ''}
 
 Return the suggestions in this exact JSON format:
 {
