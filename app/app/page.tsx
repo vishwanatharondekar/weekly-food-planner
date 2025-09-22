@@ -243,6 +243,7 @@ export default function Home() {
           <MealPlanner 
             user={user} 
             continueFromOnboarding={continueFromOnboarding}
+            onUserUpdate={setUser}
           />
         ) : (
           <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">

@@ -29,9 +29,10 @@ interface MealDataWithVideos {
 interface MealPlannerProps {
   user: any;
   continueFromOnboarding?: boolean;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-export default function MealPlanner({ user, continueFromOnboarding = false }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
@@ -421,6 +422,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
         dishPreferences: preferences.dishPreferences,
         onboardingCompleted: true,
       });
+
+      // Update the user data in parent component
+      if (onUserUpdate) {
+        const updatedUser = {
+          ...user,
+          dishPreferences: preferences.dishPreferences
+        };
+        onUserUpdate(updatedUser);
+      }
 
       // Close modal
       setShowPreferencesModal(false);
