@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 // Initialize Firebase on server side
 const firebaseConfig = {
@@ -19,50 +19,58 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-export async function GET(request: NextRequest) {
+// Helper function to get user ID from token
+function getUserIdFromToken(request: NextRequest): string | null {
   try {
-    // Get token from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
+      return null;
     }
 
     const token = authHeader.substring(7);
     const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
+    return tokenData.userId;
+  } catch (error) {
+    return null;
+  }
+}
 
-    // Get user from database
-    const userRef = doc(db, 'users', tokenData.userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
+export async function PUT(request: NextRequest) {
+  try {
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    const userData = userDoc.data();
+    const { ingredients } = await request.json();
+
+    // Validate input
+    if (!Array.isArray(ingredients)) {
+      return NextResponse.json(
+        { error: 'Ingredients must be an array' },
+        { status: 400 }
+      );
+    }
+
+    // Update user document
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      ingredients,
+      updatedAt: serverTimestamp(),
+    });
 
     return NextResponse.json({
-      user: {
-        id: userDoc.id,
-        email: userData.email,
-        name: userData.name,
-        dietaryPreferences: userData.dietaryPreferences,
-        onboardingCompleted: userData.onboardingCompleted || false,
-        cuisinePreferences: userData.cuisinePreferences || [],
-        dishPreferences: userData.dishPreferences || { breakfast: [], lunch_dinner: [] },
-        ingredients: userData.ingredients || [],
-      },
+      success: true,
+      message: 'Ingredients updated successfully',
     });
   } catch (error) {
-    console.error('Profile error:', error);
+    console.error('Update ingredients error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-} 
+}

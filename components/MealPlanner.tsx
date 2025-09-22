@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
+import PreferencesEditModal from './PreferencesEditModal';
 
 interface MealData {
   [day: string]: {
@@ -28,9 +29,10 @@ interface MealDataWithVideos {
 interface MealPlannerProps {
   user: any;
   continueFromOnboarding?: boolean;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-export default function MealPlanner({ user, continueFromOnboarding = false }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate }: MealPlannerProps) {
   const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
   const pdfTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shoppingTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const aiTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Preferences modal state
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
   useEffect(() => {
     loadMealSettings();
@@ -401,14 +407,54 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
     closeVideoModal();
   };
 
-  const generateAIMeals = async () => {
-    console.log('Generating AI meals');
+  const generateAIMeals = () => {
+    console.log('Opening preferences modal for AI generation');
+    setShowPreferencesModal(true);
+  };
+
+  const handlePreferencesConfirm = async (preferences: any) => {
+    console.log('Updating preferences and generating AI meals');
+    setIsUpdatingPreferences(true);
+    
+    try {
+      // Update user preferences
+      await authAPI.updateDishPreferences({
+        dishPreferences: preferences.dishPreferences,
+        onboardingCompleted: true,
+      });
+
+      // Update the user data in parent component
+      if (onUserUpdate) {
+        const updatedUser = {
+          ...user,
+          dishPreferences: preferences.dishPreferences,
+          ingredients: preferences.ingredients || [],
+          customIngredients: preferences.customIngredients || []
+        };
+        onUserUpdate(updatedUser);
+      }
+
+      // Close modal
+      setShowPreferencesModal(false);
+      
+      // Now generate AI meals with ingredients
+      await performAIGeneration(preferences.ingredients);
+      
+    } catch (error: any) {
+      console.error('Error updating preferences:', error);
+      toast.error(error.message || 'Failed to update preferences');
+    } finally {
+      setIsUpdatingPreferences(false);
+    }
+  };
+
+  const performAIGeneration = async (ingredients?: string[]) => {
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
       
       const weekStart = formatDate(currentWeek);
-      const suggestions = await aiAPI.generateMeals(weekStart);
+      const suggestions = await aiAPI.generateMeals(weekStart, ingredients);
       const userVideoURLs = await authAPI.getVideoURLs();
 
       // Update loader message
@@ -843,6 +889,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false }: Me
         onCancel={handleLoaderCancel}
         message={loaderMessage}
         subMessage={loaderSubMessage}
+      />
+
+      {/* Preferences Edit Modal */}
+      <PreferencesEditModal
+        isOpen={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
+        onConfirm={handlePreferencesConfirm}
+        user={user}
+        isLoading={isUpdatingPreferences}
       />
       </div>
     </div>
