@@ -116,21 +116,37 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function getDietaryInfo(dietaryPreferences: any) {
+  if (!dietaryPreferences) {
+    return 'No specific dietary preferences';
+  }
+
+  let returnString  = `Dietary Preferences: `
+  
+  if (dietaryPreferences.isVegetarian) {
+    returnString += `The user is strictly vegetarian. Never suggest non-vegetarian meals.
+Exclude any dish with meat, fish, or eggs. 
+If uncertain, default to a vegetarian option.`;
+  } else {
+    returnString += `Non-vegetarian, Non-veg days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}`;
+  }
+
+  return returnString;
+}
+
 async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = []) {
   // Prepare history for AI
   const historyText = history.length > 0 ? history.map(plan => {
     const meals = plan.meals;
     const weekInfo = `Week of ${plan.weekStartDate}:\n`;
     const mealsText = Object.entries(meals).map(([day, dayMeals]: [string, any]) => {
-      return `  ${day}: ${dayMeals.breakfast || 'empty'} / ${dayMeals.morningSnack || 'empty'} / ${dayMeals.lunch || 'empty'} / ${dayMeals.eveningSnack || 'empty'} / ${dayMeals.dinner || 'empty'}`;
+      return `  ${day}: ${dayMeals?.breakfast?.name || 'empty'} / ${dayMeals?.morningSnack?.name || 'empty'} / ${dayMeals?.lunch?.name || 'empty'} / ${dayMeals?.eveningSnack?.name || 'empty'} / ${dayMeals?.dinner?.name || 'empty'}`;
     }).join('\n');
     return weekInfo + mealsText;
   }).join('\n\n') : 'No previous meal history available.';
 
   // Prepare dietary preferences
-  const dietaryInfo = dietaryPreferences ? 
-    `Dietary Preferences: ${dietaryPreferences.isVegetarian ? 'Vegetarian' : 'Non-vegetarian'}, Non-veg days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}` :
-    'No specific dietary preferences';
+  const dietaryInfo = getDietaryInfo(dietaryPreferences);
 
   // Prepare ingredients information
   const ingredientsInfo = ingredients.length > 0 ? 
@@ -189,6 +205,18 @@ ${history.length > 0 ? '1. Similar to the user\'s historical preferences' : hasD
 6. Easy to prepare
 ${hasDishPreferences ? '7. Select dishes primarily from their preferred dishes list provided above' : cuisinePreferences.length > 0 ? `7. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
 ${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) ? '8. Select dishes primarily from the available dishes list provided above' : ''}
+8. Do not repeat the suggestions. Provide new suggestions for each day.
+9. Provide a variety of dishes for each meal.
+10. Provide a variety of cuisines.
+11. Provide a variety of ingredients.
+12. Provide a variety of dishes for each day.
+13. Provide a variety of cuisines for each day.
+14. Provide a variety of ingredients for each day.
+15. Provide a variety of dishes for each meal.
+16. Provide a variety of cuisines for each meal.
+17. Provide a variety of ingredients for each meal.
+18. Provide a variety of cuisines for each day.
+19. Provide a variety of ingredients for each day.
 
 Return the suggestions in this exact JSON format:
 {
@@ -205,6 +233,12 @@ Return the suggestions in this exact JSON format:
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const text = response.text();
+
+  console.log('\n\n\n\nPrompt:\n\n\n\n', prompt);
+  console.log('\n\n\n\n\n\n\n\n');
+
+  console.log('\n\n\n\nAI response:\n\n\n\n', text);
+  console.log('\n\n\n\n\n\n\n\n');
 
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);

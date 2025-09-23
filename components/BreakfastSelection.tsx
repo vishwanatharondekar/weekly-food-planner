@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Check, ArrowLeft, ArrowRight } from 'lucide-react';
-import { INDIAN_CUISINES, UNIVERSAL_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
+import { INDIAN_CUISINES, getUniversalCuisines, getDishesForCuisines } from '@/lib/cuisine-data';
 import toast from 'react-hot-toast';
 
 interface BreakfastSelectionProps {
@@ -24,7 +24,7 @@ export default function BreakfastSelection({ selectedCuisines, initialBreakfast 
   // Get all available breakfast dishes from selected cuisines + universal
   const availableBreakfast = React.useMemo(() => {
     const cuisineDishes = getDishesForCuisines(selectedCuisines);
-    const universalDishes = UNIVERSAL_CUISINES.dishes;
+    const universalDishes = getUniversalCuisines();
 
     // Avoid using Set spread for compatibility; use Array.from instead
     return Array.from(
