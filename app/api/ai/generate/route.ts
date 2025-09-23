@@ -205,6 +205,18 @@ ${history.length > 0 ? '1. Similar to the user\'s historical preferences' : hasD
 6. Easy to prepare
 ${hasDishPreferences ? '7. Select dishes primarily from their preferred dishes list provided above' : cuisinePreferences.length > 0 ? `7. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
 ${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) ? '8. Select dishes primarily from the available dishes list provided above' : ''}
+8. Do not repeat the suggestions. Provide new suggestions for each day.
+9. Provide a variety of dishes for each meal.
+10. Provide a variety of cuisines.
+11. Provide a variety of ingredients.
+12. Provide a variety of dishes for each day.
+13. Provide a variety of cuisines for each day.
+14. Provide a variety of ingredients for each day.
+15. Provide a variety of dishes for each meal.
+16. Provide a variety of cuisines for each meal.
+17. Provide a variety of ingredients for each meal.
+18. Provide a variety of cuisines for each day.
+19. Provide a variety of ingredients for each day.
 
 Return the suggestions in this exact JSON format:
 {

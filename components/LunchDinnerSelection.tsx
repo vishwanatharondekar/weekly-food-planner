@@ -2,30 +2,31 @@
 
 import React, { useState } from 'react';
 import { Check, ArrowLeft, ArrowRight } from 'lucide-react';
-import { INDIAN_CUISINES, UNIVERSAL_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
+import { INDIAN_CUISINES, getUniversalCuisines, getDishesForCuisines } from '@/lib/cuisine-data';
 import toast from 'react-hot-toast';
 
 interface LunchDinnerSelectionProps {
   selectedCuisines: string[];
   selectedBreakfast: string[];
+  dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] };
   onComplete: (selectedLunchDinner: string[]) => void;
   onBack: () => void;
 }
 
-export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfast, onComplete, onBack }: LunchDinnerSelectionProps) {
+export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfast, dietaryPreferences, onComplete, onBack }: LunchDinnerSelectionProps) {
   const [selectedLunchDinner, setSelectedLunchDinner] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get all available lunch/dinner dishes from selected cuisines + universal
   const availableLunchDinner = React.useMemo(() => {
-    const cuisineDishes = getDishesForCuisines(selectedCuisines);
-    const universalDishes = UNIVERSAL_CUISINES.dishes;
+    const isVegetarian = dietaryPreferences?.isVegetarian || false;
+    const cuisineDishes = getDishesForCuisines(selectedCuisines, isVegetarian);
+    const universalDishes = getUniversalCuisines(isVegetarian);
 
     // Fix: Avoid using Set spread for deduplication to prevent TS/ES5 iteration issues
     const allDishes = [
       ...(cuisineDishes.lunch_dinner || []),
-      ...(universalDishes.lunch_dinner_veg || []),
-      ...(universalDishes.lunch_dinner_non_veg || []),
+      ...(universalDishes.lunch_dinner || []),
     ];
     const uniqueDishes: string[] = [];
     const seen = new Set<string>();
@@ -36,7 +37,7 @@ export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfa
       }
     }
     return uniqueDishes;
-  }, [selectedCuisines]);
+  }, [selectedCuisines, dietaryPreferences]);
 
 
   const handleDishToggle = (dish: string) => {

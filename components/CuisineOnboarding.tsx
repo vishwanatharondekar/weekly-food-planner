@@ -135,6 +135,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
       <LunchDinnerSelection
         selectedCuisines={selectedCuisines}
         selectedBreakfast={selectedBreakfast}
+        dietaryPreferences={dietaryPreferences || undefined}
         onComplete={handleLunchDinnerComplete}
         onBack={handleBackToBreakfast}
       />

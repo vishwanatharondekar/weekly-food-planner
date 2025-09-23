@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, Sparkles, Check, Search } from 'lucide-react';
-import { INDIAN_CUISINES, UNIVERSAL_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
+import { INDIAN_CUISINES, getUniversalCuisines, getDishesForCuisines } from '@/lib/cuisine-data';
 import toast from 'react-hot-toast';
 
 interface UserPreferences {
@@ -87,7 +87,7 @@ export default function PreferencesEditModal({
   const availableDishes = React.useMemo(() => {
     const userCuisines = user?.cuisinePreferences || [];
     const cuisineDishes = getDishesForCuisines(userCuisines);
-    const universalDishes = UNIVERSAL_CUISINES.dishes;
+    const universalDishes = getUniversalCuisines();
 
     // Get breakfast dishes
     const breakfastDishes = Array.from(
@@ -101,8 +101,7 @@ export default function PreferencesEditModal({
     const lunchDinnerDishes = Array.from(
       new Set([
         ...cuisineDishes.lunch_dinner,
-        ...universalDishes.lunch_dinner_veg,
-        ...universalDishes.lunch_dinner_non_veg
+        ...universalDishes.lunch_dinner
       ])
     );
 

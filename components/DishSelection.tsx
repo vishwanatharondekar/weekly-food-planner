@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, X, ChefHat, ArrowLeft, ArrowRight, Search } from 'lucide-react';
-import { INDIAN_CUISINES, UNIVERSAL_CUISINES, getDishesForCuisines, type CuisineDishes } from '@/lib/cuisine-data';
+import { INDIAN_CUISINES, getUniversalCuisines, getDishesForCuisines, type CuisineDishes } from '@/lib/cuisine-data';
 import toast from 'react-hot-toast';
 
 interface DishSelectionProps {
@@ -23,7 +23,7 @@ export default function DishSelection({ selectedCuisines, onComplete, onBack }: 
   // Get all available dishes from selected cuisines + universal
   const availableDishes = React.useMemo(() => {
     const cuisineDishes = getDishesForCuisines(selectedCuisines);
-    const universalDishes = UNIVERSAL_CUISINES.dishes;
+    const universalDishes = getUniversalCuisines();
 
     // Avoid using spread on Set for compatibility with older JS targets
     const uniqueBreakfast = Array.from(
@@ -32,8 +32,7 @@ export default function DishSelection({ selectedCuisines, onComplete, onBack }: 
     const uniqueLunchDinner = Array.from(
       new Set([
         ...cuisineDishes.lunch_dinner,
-        ...universalDishes.lunch_dinner_veg,
-        ...universalDishes.lunch_dinner_non_veg
+        ...universalDishes.lunch_dinner
       ])
     );
     return {
