@@ -146,8 +146,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Recipe Discovery</h3>
               <p className="text-slate-600 leading-relaxed">
-                Discover new recipes and cooking inspiration. Get video tutorials 
-                and step-by-step instructions for every meal.
+                Discover new recipes and cooking inspiration. Save videos of your favorite recipes.
               </p>
             </div>
 
