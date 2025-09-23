@@ -73,24 +73,34 @@ export default function Home() {
     setShowSettingsDropdown(false);
   };
 
-  const handleCuisineOnboardingComplete = async (selectedCuisines: string[]) => {
+  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
     try {
+      // Save cuisine preferences
       await authAPI.updateCuisinePreferences({
         cuisinePreferences: selectedCuisines,
         onboardingCompleted: true,
       });
+
+      // Save dietary preferences if provided
+      if (dietaryPreferences) {
+        await authAPI.updateDietaryPreferences({
+          isVegetarian: dietaryPreferences.isVegetarian,
+          nonVegDays: dietaryPreferences.nonVegDays,
+        });
+      }
       
       // Update local user state
       setUser((prev: any) => ({
         ...prev,
         cuisinePreferences: selectedCuisines,
+        dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
         onboardingCompleted: true,
       }));
       
       setShowCuisineOnboarding(false);
       setContinueFromOnboarding(true);
     } catch (error) {
-      console.error('Error updating cuisine preferences:', error);
+      console.error('Error updating preferences:', error);
       toast.error('Failed to save preferences. Please try again.');
     }
   };

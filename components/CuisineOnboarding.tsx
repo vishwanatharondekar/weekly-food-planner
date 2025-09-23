@@ -5,16 +5,18 @@ import { Check, HelpCircle, ArrowRight } from 'lucide-react';
 import { INDIAN_CUISINES, type Cuisine } from '@/lib/cuisine-data';
 import BreakfastSelection from './BreakfastSelection';
 import LunchDinnerSelection from './LunchDinnerSelection';
+import DietaryOnboarding from './DietaryOnboarding';
 import toast from 'react-hot-toast';
 
 interface CuisineOnboardingProps {
-  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }) => void;
+  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => void;
 }
 
 export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState<'cuisine' | 'breakfast' | 'lunch_dinner'>('cuisine');
+  const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[] } | null>(null);
+  const [currentStep, setCurrentStep] = useState<'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('cuisine');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCuisineToggle = (cuisineName: string) => {
@@ -37,13 +39,18 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      setCurrentStep('breakfast');
-      toast.success('Cuisine preferences saved! Now select your breakfast options...');
+      setCurrentStep('dietary');
+      toast.success('Cuisine preferences saved! Now set your dietary preferences...');
     } catch (error) {
       toast.error('Failed to save preferences. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[] }) => {
+    setDietaryPreferences(preferences);
+    setCurrentStep('breakfast');
   };
 
   const handleBreakfastComplete = (breakfast: string[]) => {
@@ -81,7 +88,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
       }
 
       // Call the completion handler with the data
-      onComplete(selectedCuisines, { breakfast: selectedBreakfast, lunch_dinner: lunchDinner });
+      onComplete(selectedCuisines, { breakfast: selectedBreakfast, lunch_dinner: lunchDinner }, dietaryPreferences || undefined);
     } catch (error) {
       console.error('Error saving dish preferences:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to save preferences');
@@ -92,18 +99,32 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     setCurrentStep('cuisine');
   };
 
+  const handleBackToDietary = () => {
+    setCurrentStep('dietary');
+  };
+
   const handleBackToBreakfast = () => {
     setCurrentStep('breakfast');
   };
 
-  // Show breakfast selection if user has completed cuisine selection
+  // Show dietary preferences if user has completed cuisine selection
+  if (currentStep === 'dietary') {
+    return (
+      <DietaryOnboarding
+        onComplete={handleDietaryComplete}
+        onBack={handleBackToCuisines}
+      />
+    );
+  }
+
+  // Show breakfast selection if user has completed dietary preferences
   if (currentStep === 'breakfast') {
     return (
       <BreakfastSelection
         selectedCuisines={selectedCuisines}
         initialBreakfast={selectedBreakfast}
         onComplete={handleBreakfastComplete}
-        onBack={handleBackToCuisines}
+        onBack={handleBackToDietary}
       />
     );
   }
@@ -178,8 +199,8 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
                 </>
               ) : (
                 <>
-                  <ArrowRight className="h-4 w-4" />
-                  <span>Next: Select Breakfast</span>
+                <ArrowRight className="h-4 w-4" />
+                <span>Next: Dietary Preferences</span>
                 </>
               )}
             </button>
