@@ -162,16 +162,29 @@ function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
           }`;
 }
 
+function isWeekEmpty(meals: any, enabledMeals: string[]) {
+  console.log('meals : ', meals);
+  return !Object.keys(meals).every(day => isDayEmpty(meals?.[day], enabledMeals));
+}
+
+function isDayEmpty(meals: any, enabledMeals: string[]) {
+  return enabledMeals.every(mealType => !meals?.[mealType]?.name);
+}
+
 async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = [], mealSettings?: { enabledMealTypes: string[] }) {
   // Prepare history for AI
   const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
-  const historyText = history.length > 0 ? history.map(plan => {
+  const historyText = history.length > 0 ? history
+  .filter((plan: any) => isWeekEmpty(plan.meals, enabledMeals))
+  .map(plan => {
     const meals = plan.meals;
     const weekInfo = `Week of ${plan.weekStartDate}:\n`;
-    const mealsText = Object.entries(meals).map(([day, dayMeals]: [string, any]) => {
-      const mealNames = enabledMeals.map(mealType => dayMeals?.[mealType]?.name || 'empty').join(' / ');
-      return `  ${day}: ${mealNames}`;
-    }).join('\n');
+    const mealsText = Object.entries(meals)
+                        .filter(([day, dayMeals]: [string, any]) => !isDayEmpty(dayMeals, enabledMeals))
+                        .map(([day, dayMeals]: [string, any]) => {
+                          const mealNames = enabledMeals.map(mealType => dayMeals?.[mealType]?.name || 'empty').join(' / ');
+                          return `  ${day}: ${mealNames}`;
+                        }).join('\n');
     return weekInfo + mealsText;
   }).join('\n\n') : 'No previous meal history available.';
 
