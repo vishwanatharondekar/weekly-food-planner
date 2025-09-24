@@ -234,12 +234,6 @@ Return the suggestions in this exact JSON format:
   const response = await result.response;
   const text = response.text();
 
-  console.log('\n\n\n\nPrompt:\n\n\n\n', prompt);
-  console.log('\n\n\n\n\n\n\n\n');
-
-  console.log('\n\n\n\nAI response:\n\n\n\n', text);
-  console.log('\n\n\n\n\n\n\n\n');
-
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
