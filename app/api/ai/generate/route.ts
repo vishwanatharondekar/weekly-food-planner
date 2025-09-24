@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
     const dietaryPreferences = userData?.dietaryPreferences;
     const cuisinePreferences = userData?.cuisinePreferences || [];
     const dishPreferences = userData?.dishPreferences || { breakfast: [], lunch_dinner: [] };
+    const mealSettings = userData?.mealSettings;
 
     // If no history, check if user has cuisine preferences or dish preferences
     if (history.length < 1 && cuisinePreferences.length === 0 && 
@@ -99,7 +100,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate AI suggestions
-    const suggestions = await generateAISuggestions(history, weekStartDate, dietaryPreferences, cuisinePreferences, dishPreferences, ingredients);
+    const suggestions = await generateAISuggestions(
+      history, 
+      weekStartDate, 
+      dietaryPreferences, 
+      cuisinePreferences, 
+      dishPreferences, 
+      ingredients,
+      mealSettings,
+    );
 
     return NextResponse.json(suggestions);
   } catch (error: any) {
@@ -134,13 +143,34 @@ If uncertain, default to a vegetarian option.`;
   return returnString;
 }
 
-async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = []) {
+function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
+  // Default to all meal types if no settings provided (backward compatibility)
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+  
+  // Create meal entries for each enabled meal type
+  const mealEntries = enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(', ');
+  
+  // Create the JSON structure for each day
+  const dayStructure = `{ ${mealEntries} }`;
+  
+  // Create the full JSON format with all days
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayEntries = days.map(day => `"${day}": ${dayStructure}`).join(',\n            ');
+  
+  return `{
+            ${dayEntries}
+          }`;
+}
+
+async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = [], mealSettings?: { enabledMealTypes: string[] }) {
   // Prepare history for AI
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
   const historyText = history.length > 0 ? history.map(plan => {
     const meals = plan.meals;
     const weekInfo = `Week of ${plan.weekStartDate}:\n`;
     const mealsText = Object.entries(meals).map(([day, dayMeals]: [string, any]) => {
-      return `  ${day}: ${dayMeals?.breakfast?.name || 'empty'} / ${dayMeals?.morningSnack?.name || 'empty'} / ${dayMeals?.lunch?.name || 'empty'} / ${dayMeals?.eveningSnack?.name || 'empty'} / ${dayMeals?.dinner?.name || 'empty'}`;
+      const mealNames = enabledMeals.map(mealType => dayMeals?.[mealType]?.name || 'empty').join(' / ');
+      return `  ${day}: ${mealNames}`;
     }).join('\n');
     return weekInfo + mealsText;
   }).join('\n\n') : 'No previous meal history available.';
@@ -156,6 +186,9 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   // Prepare cuisine preferences and get available dishes
   let cuisineInfo = 'No specific cuisine preferences';
   let availableDishes = '';
+  
+  // Get JSON format for the prompt (needed regardless of cuisine/dish preferences)
+  const jsonFormat = getJsonFormat(mealSettings);
   
   // Check if user has specific dish preferences (from onboarding)
   const hasDishPreferences = dishPreferences.breakfast.length > 0 && dishPreferences.lunch_dinner.length > 0;
@@ -219,15 +252,9 @@ ${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) 
 19. Provide a variety of ingredients for each day.
 
 Return the suggestions in this exact JSON format:
-{
-  "monday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "tuesday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "wednesday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "thursday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "friday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "saturday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" },
-  "sunday": { "breakfast": "meal name", "morningSnack": "snack name", "lunch": "meal name", "eveningSnack": "snack name", "dinner": "meal name" }
-}`;
+${jsonFormat}`;
+
+  console.log(prompt);
 
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
   const result = await model.generateContent(prompt);
