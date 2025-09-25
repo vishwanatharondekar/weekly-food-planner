@@ -483,43 +483,19 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   try {
     const doc = new jsPDF();
 
-    doc.setFont("NotoSans");
     
     let fontName = 'helvetica';
 
-    if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
-      fontName = 'NotoSansDevanagari-Regular'
+    // TODO : Temporary disabled localisation for Shopping List
+    if(false) {
+    // if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+      fontName = 'NotoSans'
     }
 
 
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
-    // Add font support for multi-language characters
-    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
-      try {
-        // Use Noto Sans font for proper Unicode support
-        
-        // Add the Noto Sans font to jsPDF
-        // Note: This is a simplified approach - in production you might want to load the actual font file
-        try {
-          // Try to use a font that supports Unicode characters
-          // For now, we'll use the default font but ensure proper text handling
-          doc.setFont(fontName);
-          
-          // Test if we can render Unicode characters
-          const testText = 'अबक'; // Hindi test characters
-          
-          // The real fix is to ensure the font actually contains the glyphs
-          // For now, let's try to handle this at the text level
-        } catch (fontError) {
-          console.warn('Font setup failed, using default:', fontError);
-        }
-      } catch (error) {
-        console.warn('Font/encoding setup failed, using default:', error);
-      }
-    }
-  
     // Get enabled meal types from settings or use all meal types as fallback
     const enabledMealTypes = mealPlan.mealSettings?.enabledMealTypes || ALL_MEAL_TYPES;
 
@@ -549,7 +525,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
     let translations: { [key: string]: string } = {};
     
-    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+    // TODO : Temporary disabled localisation for Shopping List
+    if(false) {
+    // if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       try {
         // Use batch translation API for efficiency
         const response = await fetch('/api/translate/batch', {
@@ -625,7 +603,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     // Main title - more compact
     doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
+    // doc.setFont('helvetica', 'bold');
     doc.text('Shopping List', pageWidth / 2, 12, { align: 'center' });
   
     // Subtitle - more compact
@@ -633,7 +611,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     const weekDays = getWeekDays(weekStart);
     const weekEnd = weekDays[6];
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
+    // doc.setFont('helvetica', 'normal');
     doc.text(
       `${format(weekStart, 'MMMM d')} - ${format(weekEnd, 'MMMM d, yyyy')}`,
       pageWidth / 2,
@@ -694,14 +672,14 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           doc.rect(15, currentY, pageWidth - 30, 15, 'F');
           doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
           doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
+          // doc.setFont('helvetica', 'bold');
           doc.text('Unified Ingredients List', 20, currentY + 10);
           
           // Shopping list content - more compact
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           let listY = currentY + 20;
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
+          // doc.setFont('helvetica', 'normal');
           
           // Create organized columns - use 4 columns for better space utilization
           const itemsPerColumn = Math.ceil(result.consolidated.length / 4);
@@ -772,27 +750,25 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             doc.rect(15, currentY, pageWidth - 30, 15, 'F');
             doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
             doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
             doc.text(`Ingredients by Meal (Page ${pageIndex + 1} of ${totalPages})`, 20, currentY + 10);
             
             // Ingredients by meal content - more compact
             doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
             let mealY = currentY + 20;
             doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
             
             pageMeals.forEach((mealGroup: any, index: number) => {
               const mealName = Object.keys(mealGroup)[0];
               const ingredients = mealGroup[mealName];
               
               // Meal name - more compact
-              doc.setFont('helvetica', 'bold');
+              // doc.setFont('helvetica', 'bold');
               doc.setFontSize(10);
               doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
               doc.text(`${mealName}:`, 20, mealY);
               
               // Ingredients for this meal - more compact
-              doc.setFont('helvetica', 'normal');
+              // doc.setFont('helvetica', 'normal');
               doc.setFontSize(8);
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               
@@ -835,11 +811,11 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
+          // doc.setFont('helvetica', 'bold');
           doc.text('Unified Ingredients List', 20, currentY + 10);
           
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
+          // doc.setFont('helvetica', 'normal');
           
           let itemY = currentY + 18;
           result.consolidated.forEach((ingredient: string) => {
@@ -888,27 +864,27 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               doc.rect(15, currentY, pageWidth - 30, 15, 'F');
               doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
               doc.setFontSize(10);
-              doc.setFont('helvetica', 'bold');
+              // doc.setFont('helvetica', 'bold');
               doc.text(`Ingredients by Meal (Page ${pageIndex + 1} of ${totalPages})`, 20, currentY + 10);
               
               // Ingredients by meal content - more compact
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               let mealY = currentY + 20;
               doc.setFontSize(8);
-              doc.setFont('helvetica', 'normal');
+              // doc.setFont('helvetica', 'normal');
               
               pageMeals.forEach((mealGroup: any, index: number) => {
                 const mealName = Object.keys(mealGroup)[0];
                 const ingredients = mealGroup[mealName];
-                
+
                 // Meal name - more compact
-                doc.setFont('helvetica', 'bold');
+                // doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8);
                 doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
                 doc.text(`${mealName}:`, 20, mealY);
                 
                 // Ingredients for this meal - more compact
-                doc.setFont('helvetica', 'normal');
+                // doc.setFont('helvetica', 'normal');
                 doc.setFontSize(6);
                 doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
                 
@@ -952,11 +928,11 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         doc.setFontSize(12);
-        doc.setFont(fontName, 'bold');
+        // doc.setFont(fontName, 'bold');
         doc.text('Your Planned Meals', 25, currentY + 15);
         
         doc.setFontSize(10);
-        doc.setFont(fontName, 'normal');
+        // doc.setFont(fontName, 'normal');
         let mealY = currentY + 25;
         allMeals.slice(0, 6).forEach((meal, index) => {
           if (mealY < currentY + 55) {
@@ -975,7 +951,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   
   doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
   doc.setFontSize(8);
-  doc.setFont(fontName, 'normal');
+  // doc.setFont(fontName, 'normal');
   doc.text(
     'Generated by Weekly Food Planner App!',
     pageWidth / 2,

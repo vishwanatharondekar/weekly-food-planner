@@ -1227,7 +1227,7 @@ function PlanModeView({
       </div>
       
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-hidden">
         <table className="min-w-full">
           <thead className="bg-slate-50">
             <tr>
