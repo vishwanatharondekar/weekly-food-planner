@@ -83,7 +83,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
-        generateAIMeals();
+        performAIGeneration();
       }, 1000);
       
       return () => clearTimeout(timer);
