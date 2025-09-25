@@ -482,17 +482,12 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
 export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<void> {
   try {
     const doc = new jsPDF();
-
-    
     let fontName = 'helvetica';
-
     // TODO : Temporary disabled localisation for Shopping List
     if(false) {
     // if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       fontName = 'NotoSans'
     }
-
-
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
@@ -509,7 +504,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         }
       });
     });
-
 
     // Pre-translate all texts that need translation
     const textsToTranslate = [
@@ -680,7 +674,33 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           let listY = currentY + 20;
           doc.setFontSize(8);
           // doc.setFont('helvetica', 'normal');
+
+          // Create a map to count the number of meals each ingredient appears in
+          const ingredientMealCount: { [ingredient: string]: number } = {};
+          if (result.grouped && Array.isArray(result.grouped)) {
+            result.grouped.forEach((mealObj: any) => {
+              // Each mealObj is like { "Meal Name": [ingredients] }
+              const ingredients = Object.values(mealObj)[0];
+              if (Array.isArray(ingredients)) {
+                ingredients.forEach((ingredient: string) => {
+                  const cleanIngredient = ingredient.trim().toLowerCase();
+                  ingredientMealCount[cleanIngredient.trim()] = (ingredientMealCount[cleanIngredient.trim()] || 0) + 1;
+                });
+              }
+            });
+          }
           
+          // Sort result.consolidated by descending count in ingredientMealCount, then alphabetically
+          result.consolidated.sort((a, b) => {
+            const countA = ingredientMealCount[a.trim().toLowerCase()] || 0;
+            const countB = ingredientMealCount[b.trim().toLowerCase()] || 0;
+            if (countA !== countB) {
+              return countB - countA; // Descending by count
+            }
+            // If counts are equal, sort alphabetically
+            return a.localeCompare(b);
+          });
+
           // Create organized columns - use 4 columns for better space utilization
           const itemsPerColumn = Math.ceil(result.consolidated.length / 4);
           const columns = [
@@ -702,6 +722,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
                 doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
                 doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
                 doc.text(cleanIngredient, xPos + 6, listY);
+                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(cleanIngredient.trim()) + 8, listY);
               }
               xPos += columnWidth;
             });
@@ -800,123 +821,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             currentY += ingredientsByMealHeight + 5;
             pageIndex++;
           }
-        } else if (result.consolidated && result.consolidated.length > 0) {
-          // Fallback: Only consolidated list with modern styling - more compact
-          const fallbackHeight = 50;
-          doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-          doc.rect(15, currentY, pageWidth - 30, fallbackHeight, 'F');
-          doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-          doc.setLineWidth(1);
-          doc.rect(15, currentY, pageWidth - 30, fallbackHeight, 'S');
-          
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          doc.setFontSize(10);
-          // doc.setFont('helvetica', 'bold');
-          doc.text('Unified Ingredients List', 20, currentY + 10);
-          
-          doc.setFontSize(8);
-          // doc.setFont('helvetica', 'normal');
-          
-          let itemY = currentY + 18;
-          result.consolidated.forEach((ingredient: string) => {
-            if (itemY < currentY + fallbackHeight - 5) {
-              const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
-              // Add smaller checkbox
-              doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-              doc.setDrawColor(colors.text[0], colors.text[1], colors.text[2]);
-              doc.roundedRect(20, itemY - 2, 3, 3, 1, 1, 'FD');
-              doc.text(cleanIngredient, 26, itemY);
-              itemY += 5;
-            }
-          });
-          
-          currentY += fallbackHeight + 8;
-
-          // Add grouped ingredients section if available - with pagination
-          if (result.grouped && result.grouped.length > 0) {
-            let remainingMeals = [...result.grouped];
-            let pageIndex = 0;
-            
-            while (remainingMeals.length > 0) {
-              // Add new page if not the first page
-              if (pageIndex > 0) {
-                doc.addPage();
-                currentY = 30; // Reset Y position for new page
-              }
-              
-              // Calculate meals per page based on current page height
-              const availableHeight = pageHeight - currentY - 50; // 50px buffer for footer
-              const mealsPerPage = Math.floor(availableHeight / 14);
-              const mealsToShow = Math.min(mealsPerPage, remainingMeals.length);
-              
-              const pageMeals = remainingMeals.splice(0, mealsToShow);
-              const totalPages = Math.ceil(result.grouped.length / mealsPerPage);
-              
-              const ingredientsByMealHeight = 15 + (pageMeals.length * 14);
-              doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-              doc.rect(15, currentY, pageWidth - 30, ingredientsByMealHeight, 'F');
-              doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-              doc.setLineWidth(1);
-              doc.rect(15, currentY, pageWidth - 30, ingredientsByMealHeight, 'S');
-              
-              // Section header - more compact
-              doc.setFillColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-              doc.rect(15, currentY, pageWidth - 30, 15, 'F');
-              doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-              doc.setFontSize(10);
-              // doc.setFont('helvetica', 'bold');
-              doc.text(`Ingredients by Meal (Page ${pageIndex + 1} of ${totalPages})`, 20, currentY + 10);
-              
-              // Ingredients by meal content - more compact
-              doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-              let mealY = currentY + 20;
-              doc.setFontSize(8);
-              // doc.setFont('helvetica', 'normal');
-              
-              pageMeals.forEach((mealGroup: any, index: number) => {
-                const mealName = Object.keys(mealGroup)[0];
-                const ingredients = mealGroup[mealName];
-
-                // Meal name - more compact
-                // doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8);
-                doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-                doc.text(`${mealName}:`, 20, mealY);
-                
-                // Ingredients for this meal - more compact
-                // doc.setFont('helvetica', 'normal');
-                doc.setFontSize(6);
-                doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-                
-                let ingredientX = 25;
-                let ingredientY = mealY + 2;
-                let lineCount = 0;
-                
-                ingredients.forEach((ingredient: string, ingIndex: number) => {
-                  if (ingredientX + doc.getTextWidth(ingredient) > pageWidth - 50) {
-                    ingredientX = 25;
-                    ingredientY += 6;
-                    lineCount++;
-                  }
-                  
-                  if (lineCount < 3) { // Allow 3 lines per meal for more ingredients
-                    const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
-                    // Add smaller checkbox
-                    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-                    doc.setDrawColor(colors.text[0], colors.text[1], colors.text[2]);
-                    doc.rect(ingredientX, ingredientY - 1, 2, 2, 'FD');
-                    doc.text(cleanIngredient, ingredientX + 4, ingredientY);
-                    ingredientX += doc.getTextWidth(cleanIngredient) + 8;
-                  }
-                });
-                
-                mealY += 14;
-              });
-              
-              currentY += ingredientsByMealHeight + 5;
-              pageIndex++;
-            }
-          }
         }
       } catch (error) {
         console.error('Error extracting ingredients:', error);
@@ -993,7 +897,7 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
     }
 
     const data = await response.json();
-    
+
     return {
       grouped: data.grouped || [],
       consolidated: data.consolidated || []
