@@ -209,14 +209,13 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   
   if (hasDishPreferences) {
     // Use user's specific dish preferences from onboarding
-    cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')}`;
+    cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')} cuisine`;
     availableDishes = `User's likes following dishes:
       Breakfast: ${dishPreferences.breakfast.join(', ')}
       Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }
 
   const prompt = `Based on the following meal history, dietary preferences, available ingredients, and preferences, suggest meals for the week of ${weekStartDate}.
-
 ${dietaryInfo}
 ${ingredientsInfo}
 ${cuisineInfo}
@@ -229,7 +228,7 @@ Please suggest meals for each day (${enabledMeals.join(', ')}) that are:
 ${history.length > 0 ? '1. Similar to the users meal history but do not repeat the same meals' : '1. Similar to the their dish preferences but do not repeat the same meals'}
 2. Respect their dietary restrictions
 3. ${ingredients.length > 0 ? 'Use the ingredients listed above for some dishes' : 'Use common ingredients that are easily available'}
-4. ${cuisinePreferences.length > 0 ? `Focus on their preferred cuisines: ${cuisinePreferences.join(', ')}` : 'Use any appropriate cuisine'}
+4. ${cuisinePreferences.length > 0 ? `Focus on ${cuisinePreferences.join(', ')} cuisine` : 'Use any appropriate cuisine'}
 5. Easy to prepare
 6. Include authentic dishes from: ${cuisinePreferences.join(', ')}
 7. Use the dishes provided above as reference for selecting other dishes
