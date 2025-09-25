@@ -137,7 +137,7 @@ function getDietaryInfo(dietaryPreferences: any) {
 Exclude any dish with meat, fish, or eggs. 
 If uncertain, default to a vegetarian option.`;
   } else {
-    returnString += `Non-vegetarian, Non-veg days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}`;
+    returnString += `Non-vegetarian,User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}. Exclude any dish with meat, fish, or eggs on other days.`;
   }
 
   return returnString;
@@ -176,6 +176,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
   const historyText = history.length > 0 ? history
   .filter((plan: any) => isWeekEmpty(plan.meals, enabledMeals))
+  .slice(0, 2)
   .map(plan => {
     const meals = plan.meals;
     const weekInfo = `Week of ${plan.weekStartDate}:\n`;
@@ -194,7 +195,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   // Prepare ingredients information
   const ingredientsInfo = ingredients.length > 0 ? 
     `Available Ingredients: ${ingredients.join(', ')}` :
-    'No specific ingredients available';
+    '';
 
   // Prepare cuisine preferences and get available dishes
   let cuisineInfo = 'No specific cuisine preferences';
@@ -208,28 +209,10 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   
   if (hasDishPreferences) {
     // Use user's specific dish preferences from onboarding
-    cuisineInfo = `User has selected specific dish preferences from onboarding`;
-    availableDishes = `
-User's preferred dishes:
-Breakfast: ${dishPreferences.breakfast.join(', ')}
-Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
-  } else if (cuisinePreferences.length > 0) {
-    // Fallback to cuisine-based dish selection
-    cuisineInfo = `Preferred Cuisines: ${cuisinePreferences.join(', ')}`;
-    
-    // Get dishes from selected cuisines
-    const cuisineDishes = getDishesForCuisines(cuisinePreferences);
-    
-    // Create a comprehensive list of available dishes
-    const breakfastDishes = cuisineDishes.breakfast.slice(0, 15); // Limit to avoid token limits
-    const lunchDinnerDishes = cuisineDishes.lunch_dinner.slice(0, 20);
-    const snackDishes = cuisineDishes.snacks.slice(0, 15);
-    
-    availableDishes = `
-Available dishes from selected cuisines:
-Breakfast: ${breakfastDishes.join(', ')}
-Lunch/Dinner: ${lunchDinnerDishes.join(', ')}
-Snacks: ${snackDishes.join(', ')}`;
+    cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')}`;
+    availableDishes = `User's likes following dishes:
+      Breakfast: ${dishPreferences.breakfast.join(', ')}
+      Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }
 
   const prompt = `Based on the following meal history, dietary preferences, available ingredients, and preferences, suggest meals for the week of ${weekStartDate}.
@@ -242,32 +225,19 @@ ${availableDishes}
 Meal History:
 ${historyText}
 
-Please suggest meals for each day (breakfast, morning snack, lunch, evening snack, dinner) that are:
-${history.length > 0 ? '1. Similar to the user\'s historical preferences' : hasDishPreferences ? '1. Based on their specific dish preferences from onboarding' : '1. Based on their cuisine preferences and dietary restrictions'}
+Please suggest meals for each day (${enabledMeals.join(', ')}) that are:
+${history.length > 0 ? '1. Similar to the users meal history but do not repeat the same meals' : '1. Similar to the their dish preferences but do not repeat the same meals'}
 2. Respect their dietary restrictions
-3. ${ingredients.length > 0 ? 'Prioritize using the available ingredients listed above' : 'Use common ingredients that are easily available'}
-4. ${hasDishPreferences ? 'Focus on their selected dish preferences' : cuisinePreferences.length > 0 ? `Focus on their preferred cuisines: ${cuisinePreferences.join(', ')}` : 'Use any appropriate cuisine'}
-5. Varied and healthy
-6. Easy to prepare
-${hasDishPreferences ? '7. Select dishes primarily from their preferred dishes list provided above' : cuisinePreferences.length > 0 ? `7. Include authentic dishes from: ${cuisinePreferences.join(', ')}` : ''}
-${history.length === 0 && (hasDishPreferences || cuisinePreferences.length > 0) ? '8. Select dishes primarily from the available dishes list provided above' : ''}
-8. Do not repeat the suggestions. Provide new suggestions for each day.
-9. Provide a variety of dishes for each meal.
-10. Provide a variety of cuisines.
-11. Provide a variety of ingredients.
-12. Provide a variety of dishes for each day.
-13. Provide a variety of cuisines for each day.
-14. Provide a variety of ingredients for each day.
-15. Provide a variety of dishes for each meal.
-16. Provide a variety of cuisines for each meal.
-17. Provide a variety of ingredients for each meal.
-18. Provide a variety of cuisines for each day.
-19. Provide a variety of ingredients for each day.
+3. ${ingredients.length > 0 ? 'Use the ingredients listed above for some dishes' : 'Use common ingredients that are easily available'}
+4. ${cuisinePreferences.length > 0 ? `Focus on their preferred cuisines: ${cuisinePreferences.join(', ')}` : 'Use any appropriate cuisine'}
+5. Easy to prepare
+6. Include authentic dishes from: ${cuisinePreferences.join(', ')}
+7. Use the dishes provided above as reference for selecting other dishes
+7. Do not repeat the suggestions. Provide new suggestions for each day.
+8. Do not suggest the options which are present in the meal history provided above.
 
 Return the suggestions in this exact JSON format:
 ${jsonFormat}`;
-
-  console.log(prompt);
 
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
   const result = await model.generateContent(prompt);
