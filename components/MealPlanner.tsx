@@ -1231,11 +1231,11 @@ function PlanModeView({
         <table className="min-w-full">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b  border-r border-gray-300">
                 Day
               </th>
               {enabledMealTypes.map(mealType => (
-                <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b  border-r border-gray-300 last:border-r-0">
                   {getMealDisplayName(mealType)}
                 </th>
               ))}
@@ -1247,8 +1247,8 @@ function PlanModeView({
               dayDate.setDate(currentWeek.getDate() + index);
               
               return (
-                <tr key={day} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">
+                <tr key={day} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-300">
                     <div className="text-sm font-bold text-gray-900">
                       {day.charAt(0).toUpperCase() + day.slice(1)}
                     </div>
@@ -1262,7 +1262,7 @@ function PlanModeView({
                     const hasText = mealName.trim().length > 0;
                     
                     return (
-                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-100 last:border-r-0">
+                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
                             type="text"
