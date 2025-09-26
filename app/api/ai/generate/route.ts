@@ -194,7 +194,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
 
   // Prepare ingredients information
   const ingredientsInfo = ingredients.length > 0 ? 
-    `Available Ingredients: ${ingredients.join(', ')}` :
+    `Must use all of the following ingredients in at least one dish: ${ingredients.join(', ')}` :
     '';
 
   // Prepare cuisine preferences and get available dishes

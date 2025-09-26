@@ -806,7 +806,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               )}
               
               <ChefHat className="w-4 h-4 mr-2" />
-              Cook
+              Today's Menu
               {!hasTodaysMeals && (
                 <span className="ml-2 text-xs font-normal opacity-75">(No meals)</span>
               )}
@@ -1148,80 +1148,48 @@ function PlanModeView({
       <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Weekly Meal Plan</h3>
-            <p className="text-sm text-gray-600 mt-1 hidden md:block">Enter your meals for each day and meal type</p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* 1. Fill with AI */}
-            {aiStatus.canGenerate && (
-              <div className="relative">
-                <button
-                  onClick={onGenerateAIMeals}
-                  onMouseEnter={onAiTooltipStart}
-                  onMouseLeave={onAiTooltipEnd}
-                  disabled={loading}
-                  className="p-2 text-gray-600 hover:text-purple-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Sparkles className="w-5 h-5" />
-                </button>
-                {showAiTooltip && (
-                  <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                    <div className="text-white">Fill with AI</div>
-                    <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                  </div>
-                )}
-              </div>
-            )}
+            <button
+              onClick={onGenerateAIMeals}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Sparkles className="w-4 h-4 text-purple-600 md:mr-2" />
+              <span className="hidden md:inline">AI</span>
+            </button>
             
             {/* 2. Download PDF */}
-            <div className="relative">
-              <button
-                onClick={onGeneratePDF}
-                onMouseEnter={onPdfTooltipStart}
-                onMouseLeave={onPdfTooltipEnd}
-                className="p-2 text-gray-600 hover:text-blue-600 bg-gray-100 rounded-md transition-colors"
-              >
-                <FileDown className="w-5 h-5" />
-              </button>
-              {showPdfTooltip && (
-                <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                  <div className="text-white">Download PDF</div>
-                  <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={onGeneratePDF}
+              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
+            >
+              <FileDown className="w-4 h-4 text-blue-600 md:mr-2" />
+              <span className="hidden md:inline">PDF</span>
+            </button>
             
             {/* 3. Shopping List */}
-            <div className="relative">
-              <button
-                onClick={onGenerateShoppingList}
-                onMouseEnter={onShoppingTooltipStart}
-                onMouseLeave={onShoppingTooltipEnd}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:text-green-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="w-5 h-5" />
-              </button>
-              {showShoppingTooltip && (
-                <div className="absolute top-full -left-20 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                  <div className="text-white">Generate Shopping List</div>
-                  <div className="absolute bottom-full left-24 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={onGenerateShoppingList}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="w-4 h-4 text-green-600 md:mr-2" />
+              <span className="hidden md:inline">List</span>
+            </button>
             
             {/* 4. Clear Week */}
-            <div className="relative">
-              <button
-                onClick={onClearMeals}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:text-red-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={onClearMeals}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4 text-red-600 md:mr-2" />
+              <span className="hidden md:inline">Clear</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1231,11 +1199,11 @@ function PlanModeView({
         <table className="min-w-full">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b  border-r border-gray-300">
                 Day
               </th>
               {enabledMealTypes.map(mealType => (
-                <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                <th key={mealType} className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b  border-r border-gray-300 last:border-r-0">
                   {getMealDisplayName(mealType)}
                 </th>
               ))}
@@ -1247,8 +1215,8 @@ function PlanModeView({
               dayDate.setDate(currentWeek.getDate() + index);
               
               return (
-                <tr key={day} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">
+                <tr key={day} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-300">
                     <div className="text-sm font-bold text-gray-900">
                       {day.charAt(0).toUpperCase() + day.slice(1)}
                     </div>
@@ -1262,7 +1230,7 @@ function PlanModeView({
                     const hasText = mealName.trim().length > 0;
                     
                     return (
-                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-100 last:border-r-0">
+                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
                             type="text"
