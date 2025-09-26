@@ -1155,73 +1155,43 @@ function PlanModeView({
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* 1. Fill with AI */}
-            {aiStatus.canGenerate && (
-              <div className="relative">
-                <button
-                  onClick={onGenerateAIMeals}
-                  onMouseEnter={onAiTooltipStart}
-                  onMouseLeave={onAiTooltipEnd}
-                  disabled={loading}
-                  className="p-2 text-gray-600 hover:text-purple-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Sparkles className="w-5 h-5" />
-                </button>
-                {showAiTooltip && (
-                  <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                    <div className="text-white">Fill with AI</div>
-                    <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                  </div>
-                )}
-              </div>
-            )}
+            <button
+              onClick={onGenerateAIMeals}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI
+            </button>
             
             {/* 2. Download PDF */}
-            <div className="relative">
-              <button
-                onClick={onGeneratePDF}
-                onMouseEnter={onPdfTooltipStart}
-                onMouseLeave={onPdfTooltipEnd}
-                className="p-2 text-gray-600 hover:text-blue-600 bg-gray-100 rounded-md transition-colors"
-              >
-                <FileDown className="w-5 h-5" />
-              </button>
-              {showPdfTooltip && (
-                <div className="absolute top-full left-0 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                  <div className="text-white">Download PDF</div>
-                  <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={onGeneratePDF}
+              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              PDF
+            </button>
             
             {/* 3. Shopping List */}
-            <div className="relative">
-              <button
-                onClick={onGenerateShoppingList}
-                onMouseEnter={onShoppingTooltipStart}
-                onMouseLeave={onShoppingTooltipEnd}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:text-green-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="w-5 h-5" />
-              </button>
-              {showShoppingTooltip && (
-                <div className="absolute top-full -left-20 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md z-50 whitespace-nowrap shadow-lg">
-                  <div className="text-white">Generate Shopping List</div>
-                  <div className="absolute bottom-full left-24 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={onGenerateShoppingList}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              List
+            </button>
             
             {/* 4. Clear Week */}
-            <div className="relative">
-              <button
-                onClick={onClearMeals}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:text-red-600 bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={onClearMeals}
+              disabled={loading}
+              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear
+            </button>
           </div>
         </div>
       </div>
