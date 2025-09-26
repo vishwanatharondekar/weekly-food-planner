@@ -1148,8 +1148,6 @@ function PlanModeView({
       <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Weekly Meal Plan</h3>
-            <p className="text-sm text-gray-600 mt-1 hidden md:block">Enter your meals for each day and meal type</p>
           </div>
 
           {/* Action Buttons */}
@@ -1158,39 +1156,39 @@ function PlanModeView({
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              AI
+              <Sparkles className="w-4 h-4 text-purple-600 md:mr-2" />
+              <span className="hidden md:inline">AI</span>
             </button>
             
             {/* 2. Download PDF */}
             <button
               onClick={onGeneratePDF}
-              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
             >
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF
+              <FileDown className="w-4 h-4 text-blue-600 md:mr-2" />
+              <span className="hidden md:inline">PDF</span>
             </button>
             
             {/* 3. Shopping List */}
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              List
+              <ShoppingCart className="w-4 h-4 text-green-600 md:mr-2" />
+              <span className="hidden md:inline">List</span>
             </button>
             
             {/* 4. Clear Week */}
             <button
               onClick={onClearMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear
+              <Trash2 className="w-4 h-4 text-red-600 md:mr-2" />
+              <span className="hidden md:inline">Clear</span>
             </button>
           </div>
         </div>
