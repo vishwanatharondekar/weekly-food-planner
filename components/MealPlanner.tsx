@@ -806,7 +806,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               )}
               
               <ChefHat className="w-4 h-4 mr-2" />
-              Cook
+              Today's Menu
               {!hasTodaysMeals && (
                 <span className="ml-2 text-xs font-normal opacity-75">(No meals)</span>
               )}
