@@ -14,6 +14,7 @@ import CuisineOnboarding from '@/components/CuisineOnboarding';
 import { authAPI } from '@/lib/api';
 import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 export default function Home() {
   const router = useRouter();
@@ -66,6 +67,15 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    // Track logout event
+    analytics.trackEvent({
+      action: AnalyticsEvents.AUTH.LOGOUT,
+      category: 'authentication',
+      custom_parameters: {
+        user_id: user?.id,
+      },
+    });
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
@@ -88,6 +98,21 @@ export default function Home() {
           nonVegDays: dietaryPreferences.nonVegDays,
         });
       }
+      
+      // Track onboarding completion
+      analytics.trackEvent({
+        action: AnalyticsEvents.ONBOARDING.COMPLETE,
+        category: 'onboarding',
+        custom_parameters: {
+          user_id: user?.id,
+          cuisine_count: selectedCuisines.length,
+          selected_cuisines: selectedCuisines,
+          dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+          non_veg_days: dietaryPreferences?.nonVegDays?.length || 0,
+          breakfast_dishes: selectedDishes.breakfast.length,
+          lunch_dinner_dishes: selectedDishes.lunch_dinner.length,
+        },
+      });
       
       // Update local user state
       setUser((prev: any) => ({

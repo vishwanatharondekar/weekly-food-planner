@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Leaf, Beef } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 const DAYS_OF_WEEK = [
   { key: 'monday', label: 'Monday' },
@@ -59,6 +60,19 @@ export default function DietaryPreferences({ user, onClose }: DietaryPreferences
         nonVegDays,
         isVegetarian,
       });
+      
+      // Track dietary preferences update
+      analytics.trackEvent({
+        action: AnalyticsEvents.PREFERENCES.UPDATE_DIETARY,
+        category: 'preferences',
+        custom_parameters: {
+          is_vegetarian: isVegetarian,
+          non_veg_days: nonVegDays,
+          non_veg_days_count: nonVegDays.length,
+          user_id: user?.id,
+        },
+      });
+      
       toast.success('Dietary preferences saved successfully!');
       onClose();
     } catch (error) {

@@ -10,6 +10,7 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 interface MealData {
   [day: string]: {
@@ -340,6 +341,21 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   );
 
   const updateMeal = async (day: string, mealType: string, value: string) => {
+    // Track meal update event
+    const isNewMeal = !meals[day]?.[mealType]?.name?.trim();
+    analytics.trackEvent({
+      action: isNewMeal ? AnalyticsEvents.MEAL.ADD : AnalyticsEvents.MEAL.UPDATE,
+      category: 'meal_planning',
+      label: `${day}_${mealType}`,
+      custom_parameters: {
+        day,
+        meal_type: mealType,
+        meal_name: value,
+        is_new_meal: isNewMeal,
+        week_start: formatDate(currentWeek),
+      },
+    });
+
     // Update local state immediately for responsive UI
     setMeals(prev => ({
       ...prev,
@@ -373,6 +389,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const openVideoModal = (day: string, mealType: string) => {
+    // Track video modal opening
+    analytics.trackEvent({
+      action: AnalyticsEvents.VIDEO.OPEN_MODAL,
+      category: 'video_management',
+      custom_parameters: {
+        day,
+        meal_type: mealType,
+        meal_name: meals[day]?.[mealType]?.name || '',
+        week_start: formatDate(currentWeek),
+        user_id: user?.id,
+      },
+    });
+    
     setSelectedMeal({ day, mealType });
     setShowVideoModal(true);
   };
@@ -394,6 +423,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       try {
         // Save to user's video URL collection
         await saveVideoURLForRecipe(mealName, videoUrl);
+        
+        // Track video URL addition
+        analytics.trackEvent({
+          action: AnalyticsEvents.VIDEO.ADD_URL,
+          category: 'video_management',
+          custom_parameters: {
+            meal_name: mealName,
+            day: selectedMeal.day,
+            meal_type: selectedMeal.mealType,
+            video_url: videoUrl,
+            week_start: formatDate(currentWeek),
+          },
+        });
         
         // Update local state immediately
         handleVideoUrlChange(selectedMeal.day, selectedMeal.mealType, videoUrl);
@@ -452,6 +494,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
+      
+      // Track AI generation start
+      analytics.trackEvent({
+        action: AnalyticsEvents.AI.GENERATE_MEALS,
+        category: 'ai_features',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          has_ingredients: !!ingredients,
+          ingredient_count: ingredients?.length || 0,
+          user_id: user?.id,
+        },
+      });
       
       const weekStart = formatDate(currentWeek);
       const suggestions = await aiAPI.generateMeals(weekStart, ingredients);
@@ -524,6 +578,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       setLoading(true);
       showFullScreenLoader('ai', 'Clearing Meals', 'Removing all meals from this week...');
       
+      // Track clear meals event
+      analytics.trackEvent({
+        action: AnalyticsEvents.MEAL.CLEAR_WEEK,
+        category: 'meal_planning',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          user_id: user?.id,
+        },
+      });
+      
       const weekStart = formatDate(currentWeek);
       await mealsAPI.clearWeekMeals(weekStart);
       setMeals({});
@@ -541,6 +605,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
+    // Track navigation event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.WEEK_CHANGE,
+      category: 'navigation',
+      custom_parameters: {
+        direction,
+        from_week: formatDate(currentWeek),
+        to_week: formatDate(direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1)),
+        user_id: user?.id,
+      },
+    });
+    
     if (direction === 'prev') {
       setCurrentWeek(subWeeks(currentWeek, 1));
     } else {
@@ -551,6 +627,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const handleGeneratePDF = async () => {
     try {
       showFullScreenLoader('pdf', 'Generating PDF', 'Preparing your meal plan document...');
+      
+      // Track PDF generation event
+      analytics.trackEvent({
+        action: AnalyticsEvents.PDF.GENERATE_MEAL_PLAN,
+        category: 'pdf_generation',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          language: userLanguage,
+          meal_count: Object.values(meals).reduce((total, dayMeals) => {
+            return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
+          }, 0),
+          user_id: user?.id,
+        },
+      });
       
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
@@ -595,6 +685,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const handleGenerateShoppingList = async () => {
     try {
       showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
+      
+      // Track shopping list generation event
+      analytics.trackEvent({
+        action: AnalyticsEvents.PDF.GENERATE_SHOPPING_LIST,
+        category: 'pdf_generation',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          language: userLanguage,
+          meal_count: Object.values(meals).reduce((total, dayMeals) => {
+            return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
+          }, 0),
+          user_id: user?.id,
+        },
+      });
       
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
@@ -725,10 +829,32 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Mode switching functions
   const switchToPlanMode = () => {
+    // Track mode switch event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.MODE_SWITCH,
+      category: 'navigation',
+      custom_parameters: {
+        from_mode: currentMode,
+        to_mode: 'plan',
+        user_id: user?.id,
+      },
+    });
+    
     setCurrentMode('plan');
   };
 
   const switchToCookMode = () => {
+    // Track mode switch event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.MODE_SWITCH,
+      category: 'navigation',
+      custom_parameters: {
+        from_mode: currentMode,
+        to_mode: 'cook',
+        user_id: user?.id,
+      },
+    });
+    
     setCurrentMode('cook');
   };
 

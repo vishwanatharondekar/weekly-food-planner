@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -26,14 +27,40 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
       let response;
       if (mode === 'register') {
         response = await authAPI.register(formData);
+        
+        // Track registration event
+        analytics.trackEvent({
+          action: AnalyticsEvents.AUTH.REGISTER,
+          category: 'authentication',
+          custom_parameters: {
+            user_id: response.user.id,
+            method: 'email',
+          },
+        });
       } else {
         response = await authAPI.login(formData);
+        
+        // Track login event
+        analytics.trackEvent({
+          action: AnalyticsEvents.AUTH.LOGIN,
+          category: 'authentication',
+          custom_parameters: {
+            user_id: response.user.id,
+            method: 'email',
+          },
+        });
       }
 
       localStorage.setItem('token', response.token);
       onSuccess(response.token, response.user);
       toast.success(mode === 'login' ? 'Login successful!' : 'Registration successful!');
     } catch (error: any) {
+      // Track authentication error
+      analytics.trackError(`auth_${mode}_error`, {
+        error_message: error.message || 'Unknown error',
+        method: 'email',
+      });
+      
       toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
