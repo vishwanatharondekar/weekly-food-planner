@@ -1151,44 +1151,44 @@ function PlanModeView({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 md:space-x-3 w-full md:w-auto">
             {/* 1. Fill with AI */}
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-4 h-4 text-purple-600 md:mr-2" />
-              <span className="hidden md:inline">AI</span>
+              <Sparkles className="w-4 h-4 text-purple-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">AI</span>
             </button>
             
             {/* 2. Download PDF */}
             <button
               onClick={onGeneratePDF}
-              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
             >
-              <FileDown className="w-4 h-4 text-blue-600 md:mr-2" />
-              <span className="hidden md:inline">PDF</span>
+              <FileDown className="w-4 h-4 text-blue-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">PDF</span>
             </button>
             
             {/* 3. Shopping List */}
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ShoppingCart className="w-4 h-4 text-green-600 md:mr-2" />
-              <span className="hidden md:inline">List</span>
+              <ShoppingCart className="w-4 h-4 text-green-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">List</span>
             </button>
             
             {/* 4. Clear Week */}
             <button
               onClick={onClearMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4 text-red-600 md:mr-2" />
-              <span className="hidden md:inline">Clear</span>
+              <Trash2 className="w-4 h-4 text-red-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">Clear</span>
             </button>
           </div>
         </div>
