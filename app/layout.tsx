@@ -53,6 +53,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
+
         <GoogleAnalytics measurementId={process.env.GA_MEASUREMENT_ID || ''} />
         {children}
         <Toaster position="top-right" />
