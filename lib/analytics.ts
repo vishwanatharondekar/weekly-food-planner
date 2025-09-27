@@ -32,8 +32,6 @@ class AnalyticsService {
     this.measurementId = measurementId;
     this.userId = userId || null;
 
-    console.log('Analytics: Initializing with measurement ID:', measurementId);
-
     // Load Google Analytics script
     const script = document.createElement('script');
     script.async = true;
@@ -53,7 +51,6 @@ class AnalyticsService {
     });
 
     this.isInitialized = true;
-    console.log('Analytics: Successfully initialized');
   }
 
   // Track custom events
@@ -74,7 +71,6 @@ class AnalyticsService {
       Object.assign(eventData, event.custom_parameters);
     }
 
-    console.log('Analytics: Sending event:', event.action, eventData);
     window.gtag('event', event.action, eventData);
   }
 
