@@ -47,6 +47,15 @@ export default function Home() {
       const response = await authAPI.getProfile();
       setUser(response.user);
       
+      // Initialize analytics with user ID
+      analytics.setUserProperties({
+        user_id: response.user.id,
+        user_type: 'returning',
+        dietary_preference: response.user.dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+        language: response.user.language || 'en',
+        has_ai_history: response.user.onboardingCompleted || false,
+      });
+      
       // Show onboarding if user hasn't completed it
       if (!response.user.onboardingCompleted) {
         setShowCuisineOnboarding(true);
@@ -62,6 +71,16 @@ export default function Home() {
 
   const handleAuthSuccess = (newToken: string, userData: any) => {
     setToken(newToken);
+    
+    // Initialize analytics for new user
+    analytics.setUserProperties({
+      user_id: userData.id,
+      user_type: 'new',
+      dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
+      language: 'en',
+      has_ai_history: false,
+    });
+    
     // Load full user profile to get onboardingCompleted and other fields
     loadUserProfile();
   };
@@ -112,6 +131,15 @@ export default function Home() {
           breakfast_dishes: selectedDishes.breakfast.length,
           lunch_dinner_dishes: selectedDishes.lunch_dinner.length,
         },
+      });
+      
+      // Update analytics user properties after onboarding
+      analytics.setUserProperties({
+        user_id: user?.id,
+        user_type: 'returning',
+        dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+        language: user?.language || 'en',
+        has_ai_history: true,
       });
       
       // Update local user state
