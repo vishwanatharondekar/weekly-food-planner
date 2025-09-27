@@ -20,12 +20,19 @@ export interface UserProperties {
 class AnalyticsService {
   private isInitialized = false;
   private userId: string | null = null;
+  private measurementId: string | null = null;
 
   // Initialize analytics service
   init(measurementId: string, userId?: string) {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      console.log('Analytics: Running on server side, skipping initialization');
+      return;
+    }
 
+    this.measurementId = measurementId;
     this.userId = userId || null;
+
+    console.log('Analytics: Initializing with measurement ID:', measurementId);
 
     // Load Google Analytics script
     const script = document.createElement('script');
@@ -33,11 +40,11 @@ class AnalyticsService {
     script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
     document.head.appendChild(script);
 
-    // Initialize gtag
-    window.gtag = window.gtag || function() {
-      (window.gtag as any).q = (window.gtag as any).q || [];
-      (window.gtag as any).q.push(arguments);
-    };
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() {
+        window.dataLayer.push(arguments);
+    }
 
     window.gtag('js', new Date());
     window.gtag('config', measurementId, {
@@ -46,12 +53,13 @@ class AnalyticsService {
     });
 
     this.isInitialized = true;
+    console.log('Analytics: Successfully initialized');
   }
 
   // Track custom events
   trackEvent(event: AnalyticsEvent) {
     if (!this.isInitialized || typeof window === 'undefined') {
-      console.log('Analytics event (not sent):', event);
+      console.log('Analytics event (not sent - not initialized):', event);
       return;
     }
 
@@ -66,6 +74,7 @@ class AnalyticsService {
       Object.assign(eventData, event.custom_parameters);
     }
 
+    console.log('Analytics: Sending event:', event.action, eventData);
     window.gtag('event', event.action, eventData);
   }
 
@@ -73,7 +82,7 @@ class AnalyticsService {
   trackPageView(pagePath: string, pageTitle?: string) {
     if (!this.isInitialized || typeof window === 'undefined') return;
 
-    window.gtag('config', 'GA_MEASUREMENT_ID', {
+    window.gtag('event', 'page_view', {
       page_path: pagePath,
       page_title: pageTitle,
     });
@@ -83,7 +92,7 @@ class AnalyticsService {
   setUserProperties(properties: UserProperties) {
     if (!this.isInitialized || typeof window === 'undefined') return;
 
-    window.gtag('config', 'GA_MEASUREMENT_ID', {
+    window.gtag('config', this.measurementId, {
       user_id: properties.user_id || this.userId,
       custom_map: {
         user_type: properties.user_type,
@@ -131,6 +140,7 @@ export const analytics = new AnalyticsService();
 declare global {
   interface Window {
     gtag: (...args: any[]) => void;
+    dataLayer: any[];
   }
 }
 

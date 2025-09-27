@@ -8,9 +8,12 @@ interface GoogleAnalyticsProps {
   userId?: string;
 }
 
+let isInitialized = false;
+
 export default function GoogleAnalytics({ measurementId, userId }: GoogleAnalyticsProps) {
   useEffect(() => {
-    if (measurementId) {
+    if (measurementId && !isInitialized) {
+      isInitialized = true;
       analytics.init(measurementId, userId);
     }
   }, [measurementId, userId]);
