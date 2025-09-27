@@ -5,6 +5,7 @@ import { Globe, Check, X } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, type Language } from '@/lib/translate-api';
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 interface LanguagePreferencesProps {
   user: any;
@@ -64,6 +65,18 @@ export default function LanguagePreferences({ user, onClose }: LanguagePreferenc
       await authAPI.updateLanguagePreferences({
         language: selectedLanguage.code,
       });
+      
+      // Track language preferences update
+      analytics.trackEvent({
+        action: AnalyticsEvents.PREFERENCES.UPDATE_LANGUAGE,
+        category: 'preferences',
+        custom_parameters: {
+          language_code: selectedLanguage.code,
+          language_name: selectedLanguage.name,
+          user_id: user?.id,
+        },
+      });
+      
       toast.success('Language preferences saved successfully!');
       onClose();
     } catch (error) {

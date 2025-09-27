@@ -14,6 +14,7 @@ import CuisineOnboarding from '@/components/CuisineOnboarding';
 import { authAPI } from '@/lib/api';
 import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 export default function Home() {
   const router = useRouter();
@@ -46,6 +47,15 @@ export default function Home() {
       const response = await authAPI.getProfile();
       setUser(response.user);
       
+      // Initialize analytics with user ID
+      analytics.setUserProperties({
+        user_id: response.user.id,
+        user_type: 'returning',
+        dietary_preference: response.user.dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+        language: response.user.language || 'en',
+        has_ai_history: response.user.onboardingCompleted || false,
+      });
+      
       // Show onboarding if user hasn't completed it
       if (!response.user.onboardingCompleted) {
         setShowCuisineOnboarding(true);
@@ -61,11 +71,30 @@ export default function Home() {
 
   const handleAuthSuccess = (newToken: string, userData: any) => {
     setToken(newToken);
+    
+    // Initialize analytics for new user
+    analytics.setUserProperties({
+      user_id: userData.id,
+      user_type: 'new',
+      dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
+      language: 'en',
+      has_ai_history: false,
+    });
+    
     // Load full user profile to get onboardingCompleted and other fields
     loadUserProfile();
   };
 
   const handleLogout = () => {
+    // Track logout event
+    analytics.trackEvent({
+      action: AnalyticsEvents.AUTH.LOGOUT,
+      category: 'authentication',
+      custom_parameters: {
+        user_id: user?.id,
+      },
+    });
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
@@ -88,6 +117,30 @@ export default function Home() {
           nonVegDays: dietaryPreferences.nonVegDays,
         });
       }
+      
+      // Track onboarding completion
+      analytics.trackEvent({
+        action: AnalyticsEvents.ONBOARDING.COMPLETE,
+        category: 'onboarding',
+        custom_parameters: {
+          user_id: user?.id,
+          cuisine_count: selectedCuisines.length,
+          selected_cuisines: selectedCuisines,
+          dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+          non_veg_days: dietaryPreferences?.nonVegDays?.length || 0,
+          breakfast_dishes: selectedDishes.breakfast.length,
+          lunch_dinner_dishes: selectedDishes.lunch_dinner.length,
+        },
+      });
+      
+      // Update analytics user properties after onboarding
+      analytics.setUserProperties({
+        user_id: user?.id,
+        user_type: 'returning',
+        dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
+        language: user?.language || 'en',
+        has_ai_history: true,
+      });
       
       // Update local user state
       setUser((prev: any) => ({
