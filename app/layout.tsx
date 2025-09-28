@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
-import GoogleAnalytics from '@/components/GoogleAnalytics'
+import Analytics from '@/components/Analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,7 +54,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
         {/* End Google Tag Manager (noscript) */}
 
-        <GoogleAnalytics measurementId={process.env.GA_MEASUREMENT_ID || ''} />
+        <Analytics 
+          gaMeasurementId={process.env.GA_MEASUREMENT_ID || ''} 
+          mixpanelToken={process.env.MIXPANEL_TOKEN || ''} 
+        />
         {children}
         <Toaster position="top-right" />
       </body>

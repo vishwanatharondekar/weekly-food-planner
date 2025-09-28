@@ -1,6 +1,8 @@
 // Analytics wrapper service for tracking user events
 // This provides a flexible interface that can be easily switched between different analytics providers
 
+import mixpanel from 'mixpanel-browser';
+
 export interface AnalyticsEvent {
   action: string;
   category: string;
@@ -21,9 +23,11 @@ class AnalyticsService {
   private isInitialized = false;
   private userId: string | null = null;
   private measurementId: string | null = null;
+  private mixpanelToken: string | null = null;
+  private mixpanelInitialized = false;
 
   // Initialize analytics service
-  init(measurementId: string, userId?: string) {
+  init(measurementId: string, userId?: string, mixpanelToken?: string) {
     if (typeof window === 'undefined') {
       console.log('Analytics: Running on server side, skipping initialization');
       return;
@@ -31,24 +35,39 @@ class AnalyticsService {
 
     this.measurementId = measurementId;
     this.userId = userId || null;
+    this.mixpanelToken = mixpanelToken || null;
 
-    // Load Google Analytics script
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-    document.head.appendChild(script);
+    // Initialize Google Analytics
+    if (measurementId) {
+      // Load Google Analytics script
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+      document.head.appendChild(script);
 
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function() {
+          window.dataLayer.push(arguments);
+      }
 
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function() {
-        window.dataLayer.push(arguments);
+      window.gtag('js', new Date());
+      window.gtag('config', measurementId, {
+        user_id: this.userId,
+        send_page_view: false, // We'll handle page views manually
+      });
     }
 
-    window.gtag('js', new Date());
-    window.gtag('config', measurementId, {
-      user_id: this.userId,
-      send_page_view: false, // We'll handle page views manually
-    });
+    // Initialize Mixpanel
+    if (mixpanelToken) {
+      mixpanel.init(mixpanelToken, {
+        debug: process.env.NODE_ENV === 'development',
+        track_pageview: true,
+        persistence: "localStorage",
+        record_sessions_percent: 1, // records 1% of all sessions
+        record_heatmap_data: true,
+      });
+      this.mixpanelInitialized = true;
+    }
 
     this.isInitialized = true;
   }
@@ -60,43 +79,95 @@ class AnalyticsService {
       return;
     }
 
-    const eventData: any = {
-      event_category: event.category,
-      event_label: event.label,
-      value: event.value,
-    };
+    // Track with Google Analytics
+    if (this.measurementId && window.gtag) {
+      const eventData: any = {
+        event_category: event.category,
+        event_label: event.label,
+        value: event.value,
+      };
 
-    // Add custom parameters
-    if (event.custom_parameters) {
-      Object.assign(eventData, event.custom_parameters);
+      // Add custom parameters
+      if (event.custom_parameters) {
+        Object.assign(eventData, event.custom_parameters);
+      }
+
+      window.gtag('event', event.action, eventData);
     }
 
-    window.gtag('event', event.action, eventData);
+    // Track with Mixpanel
+    if (this.mixpanelInitialized) {
+      const mixpanelEvent = `${event.category}_${event.action}`;
+      const mixpanelProperties: any = {
+        category: event.category,
+        label: event.label,
+        value: event.value,
+      };
+
+      // Add custom parameters
+      if (event.custom_parameters) {
+        Object.assign(mixpanelProperties, event.custom_parameters);
+      }
+
+      mixpanel.track(mixpanelEvent, mixpanelProperties);
+    }
   }
 
   // Track page views
   trackPageView(pagePath: string, pageTitle?: string) {
     if (!this.isInitialized || typeof window === 'undefined') return;
 
-    window.gtag('event', 'page_view', {
-      page_path: pagePath,
-      page_title: pageTitle,
-    });
+    // Track with Google Analytics
+    if (this.measurementId && window.gtag) {
+      window.gtag('event', 'page_view', {
+        page_path: pagePath,
+        page_title: pageTitle,
+      });
+    }
+
+    // Track with Mixpanel
+    if (this.mixpanelInitialized) {
+      mixpanel.track('Page View', {
+        page_path: pagePath,
+        page_title: pageTitle,
+      });
+    }
   }
 
   // Set user properties
   setUserProperties(properties: UserProperties) {
     if (!this.isInitialized || typeof window === 'undefined') return;
 
-    window.gtag('config', this.measurementId, {
-      user_id: properties.user_id || this.userId,
-      custom_map: {
-        user_type: properties.user_type,
-        dietary_preference: properties.dietary_preference,
-        language: properties.language,
-        has_ai_history: properties.has_ai_history,
-      },
-    });
+    // Set user properties in Google Analytics
+    if (this.measurementId && window.gtag) {
+      window.gtag('config', this.measurementId, {
+        user_id: properties.user_id || this.userId,
+        custom_map: {
+          user_type: properties.user_type,
+          dietary_preference: properties.dietary_preference,
+          language: properties.language,
+          has_ai_history: properties.has_ai_history,
+        },
+      });
+    }
+
+    // Set user properties in Mixpanel
+    if (this.mixpanelInitialized) {
+      const mixpanelProperties: any = {};
+      
+      if (properties.user_id || this.userId) {
+        mixpanel.identify(properties.user_id || this.userId || '');
+      }
+      
+      if (properties.user_type) mixpanelProperties.user_type = properties.user_type;
+      if (properties.dietary_preference) mixpanelProperties.dietary_preference = properties.dietary_preference;
+      if (properties.language) mixpanelProperties.language = properties.language;
+      if (properties.has_ai_history !== undefined) mixpanelProperties.has_ai_history = properties.has_ai_history;
+
+      if (Object.keys(mixpanelProperties).length > 0) {
+        mixpanel.people.set(mixpanelProperties);
+      }
+    }
   }
 
   // Track user engagement
