@@ -165,6 +165,8 @@ class AnalyticsService {
       if (properties.dietary_preference) mixpanelProperties.dietary_preference = properties.dietary_preference;
       if (properties.language) mixpanelProperties.language = properties.language;
       if (properties.has_ai_history !== undefined) mixpanelProperties.has_ai_history = properties.has_ai_history;
+      if (properties.email) mixpanelProperties.email = properties.email;
+      if (properties.name) mixpanelProperties.name = properties.name;
 
       if (Object.keys(mixpanelProperties).length > 0) {
         mixpanel.people.set(mixpanelProperties);
