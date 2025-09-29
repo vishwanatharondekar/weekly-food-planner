@@ -17,6 +17,8 @@ export interface UserProperties {
   dietary_preference?: 'vegetarian' | 'non-vegetarian' | 'mixed';
   language?: string;
   has_ai_history?: boolean;
+  email?: string;
+  name?: string;
 }
 
 class AnalyticsService {
@@ -63,7 +65,7 @@ class AnalyticsService {
         debug: process.env.NODE_ENV === 'development',
         track_pageview: true,
         persistence: "localStorage",
-        record_sessions_percent: 1, // records 1% of all sessions
+        record_sessions_percent: 100, 
         record_heatmap_data: true,
       });
       this.mixpanelInitialized = true;

@@ -46,7 +46,7 @@ export default function Home() {
     try {
       const response = await authAPI.getProfile();
       setUser(response.user);
-      
+
       // Initialize analytics with user ID
       analytics.setUserProperties({
         user_id: response.user.id,
@@ -54,6 +54,8 @@ export default function Home() {
         dietary_preference: response.user.dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
         language: response.user.language || 'en',
         has_ai_history: response.user.onboardingCompleted || false,
+        email: response.user.email,
+        name: response.user.name,
       });
       
       // Show onboarding if user hasn't completed it
