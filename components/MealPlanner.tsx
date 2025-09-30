@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -409,6 +409,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const closeVideoModal = () => {
     setShowVideoModal(false);
     setSelectedMeal(null);
+  };
+
+  const focusMealInput = (day: string, mealType: string) => {
+    // Find the input element for the specific day and meal type
+    const inputId = `meal-input-${day}-${mealType}`;
+    const inputElement = document.getElementById(inputId);
+    if (inputElement) {
+      inputElement.focus();
+    }
   };
 
   const saveVideoUrl = async (videoUrl: string) => {
@@ -984,6 +993,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             onGenerateShoppingList={handleGenerateShoppingList}
             onClearMeals={clearMeals}
             onUpdateMeal={updateMeal}
+            onFocusMealInput={focusMealInput}
             onGetVideoIcon={getVideoIcon}
             onPdfTooltipStart={handlePdfTooltipStart}
             onPdfTooltipEnd={handlePdfTooltipEnd}
@@ -1173,6 +1183,7 @@ interface PlanModeViewProps {
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
+  onFocusMealInput: (day: string, mealType: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
   onPdfTooltipEnd: () => void;
@@ -1199,6 +1210,7 @@ function PlanModeView({
   onGenerateShoppingList,
   onClearMeals,
   onUpdateMeal,
+  onFocusMealInput,
   onGetVideoIcon,
   onPdfTooltipStart,
   onPdfTooltipEnd,
@@ -1359,6 +1371,7 @@ function PlanModeView({
                       <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
+                            id={`meal-input-${day}-${mealType}`}
                             type="text"
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1385,14 +1398,14 @@ function PlanModeView({
                                 {onGetVideoIcon(day, mealType)}
                               </div>
                               
-                              {/* Clear button - always visible when text exists */}
+                              {/* Edit button - always visible when text exists */}
                               <button
                                 type="button"
-                                onClick={() => onUpdateMeal(day, mealType, '')}
+                                onClick={() => onFocusMealInput(day, mealType)}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
-                                title="Clear meal"
+                                title="Edit meal"
                               >
-                                <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                               </button>
                             </div>
                           )}
@@ -1453,6 +1466,7 @@ function PlanModeView({
                           </label>
                           <div className="relative group">
                             <input
+                              id={`meal-input-${day}-${mealType}`}
                               type="text"
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1479,14 +1493,14 @@ function PlanModeView({
                                   {onGetVideoIcon(day, mealType)}
                                 </div>
                                 
-                                {/* Clear button - always visible when text exists */}
+                                {/* Edit button - always visible when text exists */}
                                 <button
                                   type="button"
-                                  onClick={() => onUpdateMeal(day, mealType, '')}
+                                  onClick={() => onFocusMealInput(day, mealType)}
                                   className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
-                                  title="Clear meal"
+                                  title="Edit meal"
                                 >
-                                  <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                  <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                 </button>
                               </div>
                             )}
