@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Check, X } from 'lucide-react';
 import { ALL_MEAL_TYPES, getMealDisplayName, DEFAULT_MEAL_SETTINGS, type MealSettings } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 interface MealSettingsProps {
   user: any;
@@ -64,6 +65,17 @@ export default function MealSettingsComponent({ user, onSettingsChange, onClose 
       });
 
       if (response.ok) {
+        // Track meal settings update
+        analytics.trackEvent({
+          action: AnalyticsEvents.PREFERENCES.UPDATE_MEAL_SETTINGS,
+          category: 'preferences',
+          custom_parameters: {
+            enabled_meal_types: settings.enabledMealTypes,
+            meal_types_count: settings.enabledMealTypes.length,
+            user_id: user?.id,
+          },
+        });
+        
         toast.success('Meal settings saved!');
         onSettingsChange(settings);
         onClose();

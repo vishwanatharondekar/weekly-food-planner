@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 interface MealData {
   [day: string]: {
@@ -340,6 +341,21 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   );
 
   const updateMeal = async (day: string, mealType: string, value: string) => {
+    // Track meal update event
+    const isNewMeal = !meals[day]?.[mealType]?.name?.trim();
+    analytics.trackEvent({
+      action: isNewMeal ? AnalyticsEvents.MEAL.ADD : AnalyticsEvents.MEAL.UPDATE,
+      category: 'meal_planning',
+      label: `${day}_${mealType}`,
+      custom_parameters: {
+        day,
+        meal_type: mealType,
+        meal_name: value,
+        is_new_meal: isNewMeal,
+        week_start: formatDate(currentWeek),
+      },
+    });
+
     // Update local state immediately for responsive UI
     setMeals(prev => ({
       ...prev,
@@ -373,6 +389,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const openVideoModal = (day: string, mealType: string) => {
+    // Track video modal opening
+    analytics.trackEvent({
+      action: AnalyticsEvents.VIDEO.OPEN_MODAL,
+      category: 'video_management',
+      custom_parameters: {
+        day,
+        meal_type: mealType,
+        meal_name: meals[day]?.[mealType]?.name || '',
+        week_start: formatDate(currentWeek),
+        user_id: user?.id,
+      },
+    });
+    
     setSelectedMeal({ day, mealType });
     setShowVideoModal(true);
   };
@@ -380,6 +409,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const closeVideoModal = () => {
     setShowVideoModal(false);
     setSelectedMeal(null);
+  };
+
+  const focusMealInput = (day: string, mealType: string) => {
+    // Find the input element for the specific day and meal type
+    const inputId = `meal-input-${day}-${mealType}`;
+    const inputElement = document.getElementById(inputId);
+    if (inputElement) {
+      inputElement.focus();
+    }
   };
 
   const saveVideoUrl = async (videoUrl: string) => {
@@ -394,6 +432,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       try {
         // Save to user's video URL collection
         await saveVideoURLForRecipe(mealName, videoUrl);
+        
+        // Track video URL addition
+        analytics.trackEvent({
+          action: AnalyticsEvents.VIDEO.ADD_URL,
+          category: 'video_management',
+          custom_parameters: {
+            meal_name: mealName,
+            day: selectedMeal.day,
+            meal_type: selectedMeal.mealType,
+            video_url: videoUrl,
+            week_start: formatDate(currentWeek),
+          },
+        });
         
         // Update local state immediately
         handleVideoUrlChange(selectedMeal.day, selectedMeal.mealType, videoUrl);
@@ -452,6 +503,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
+      
+      // Track AI generation start
+      analytics.trackEvent({
+        action: AnalyticsEvents.AI.GENERATE_MEALS,
+        category: 'ai_features',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          has_ingredients: !!ingredients,
+          ingredient_count: ingredients?.length || 0,
+          user_id: user?.id,
+        },
+      });
       
       const weekStart = formatDate(currentWeek);
       const suggestions = await aiAPI.generateMeals(weekStart, ingredients);
@@ -524,6 +587,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       setLoading(true);
       showFullScreenLoader('ai', 'Clearing Meals', 'Removing all meals from this week...');
       
+      // Track clear meals event
+      analytics.trackEvent({
+        action: AnalyticsEvents.MEAL.CLEAR_WEEK,
+        category: 'meal_planning',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          user_id: user?.id,
+        },
+      });
+      
       const weekStart = formatDate(currentWeek);
       await mealsAPI.clearWeekMeals(weekStart);
       setMeals({});
@@ -541,6 +614,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
+    // Track navigation event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.WEEK_CHANGE,
+      category: 'navigation',
+      custom_parameters: {
+        direction,
+        from_week: formatDate(currentWeek),
+        to_week: formatDate(direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1)),
+        user_id: user?.id,
+      },
+    });
+    
     if (direction === 'prev') {
       setCurrentWeek(subWeeks(currentWeek, 1));
     } else {
@@ -551,6 +636,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const handleGeneratePDF = async () => {
     try {
       showFullScreenLoader('pdf', 'Generating PDF', 'Preparing your meal plan document...');
+      
+      // Track PDF generation event
+      analytics.trackEvent({
+        action: AnalyticsEvents.PDF.GENERATE_MEAL_PLAN,
+        category: 'pdf_generation',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          language: userLanguage,
+          meal_count: Object.values(meals).reduce((total, dayMeals) => {
+            return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
+          }, 0),
+          user_id: user?.id,
+        },
+      });
       
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
@@ -595,6 +694,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const handleGenerateShoppingList = async () => {
     try {
       showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
+      
+      // Track shopping list generation event
+      analytics.trackEvent({
+        action: AnalyticsEvents.PDF.GENERATE_SHOPPING_LIST,
+        category: 'pdf_generation',
+        custom_parameters: {
+          week_start: formatDate(currentWeek),
+          language: userLanguage,
+          meal_count: Object.values(meals).reduce((total, dayMeals) => {
+            return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
+          }, 0),
+          user_id: user?.id,
+        },
+      });
       
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
@@ -725,10 +838,32 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Mode switching functions
   const switchToPlanMode = () => {
+    // Track mode switch event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.MODE_SWITCH,
+      category: 'navigation',
+      custom_parameters: {
+        from_mode: currentMode,
+        to_mode: 'plan',
+        user_id: user?.id,
+      },
+    });
+    
     setCurrentMode('plan');
   };
 
   const switchToCookMode = () => {
+    // Track mode switch event
+    analytics.trackEvent({
+      action: AnalyticsEvents.NAVIGATION.MODE_SWITCH,
+      category: 'navigation',
+      custom_parameters: {
+        from_mode: currentMode,
+        to_mode: 'cook',
+        user_id: user?.id,
+      },
+    });
+    
     setCurrentMode('cook');
   };
 
@@ -858,6 +993,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             onGenerateShoppingList={handleGenerateShoppingList}
             onClearMeals={clearMeals}
             onUpdateMeal={updateMeal}
+            onFocusMealInput={focusMealInput}
             onGetVideoIcon={getVideoIcon}
             onPdfTooltipStart={handlePdfTooltipStart}
             onPdfTooltipEnd={handlePdfTooltipEnd}
@@ -1047,6 +1183,7 @@ interface PlanModeViewProps {
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
+  onFocusMealInput: (day: string, mealType: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
   onPdfTooltipEnd: () => void;
@@ -1073,6 +1210,7 @@ function PlanModeView({
   onGenerateShoppingList,
   onClearMeals,
   onUpdateMeal,
+  onFocusMealInput,
   onGetVideoIcon,
   onPdfTooltipStart,
   onPdfTooltipEnd,
@@ -1151,44 +1289,44 @@ function PlanModeView({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 md:space-x-3 w-full md:w-auto">
             {/* 1. Fill with AI */}
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-4 h-4 text-purple-600 md:mr-2" />
-              <span className="hidden md:inline">AI</span>
+              <Sparkles className="w-4 h-4 text-purple-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">AI</span>
             </button>
             
             {/* 2. Download PDF */}
             <button
               onClick={onGeneratePDF}
-              className="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
             >
-              <FileDown className="w-4 h-4 text-blue-600 md:mr-2" />
-              <span className="hidden md:inline">PDF</span>
+              <FileDown className="w-4 h-4 text-blue-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">PDF</span>
             </button>
             
             {/* 3. Shopping List */}
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ShoppingCart className="w-4 h-4 text-green-600 md:mr-2" />
-              <span className="hidden md:inline">List</span>
+              <ShoppingCart className="w-4 h-4 text-green-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">List</span>
             </button>
             
             {/* 4. Clear Week */}
             <button
               onClick={onClearMeals}
               disabled={loading}
-              className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4 text-red-600 md:mr-2" />
-              <span className="hidden md:inline">Clear</span>
+              <Trash2 className="w-4 h-4 text-red-600 mb-1 md:mb-0 md:mr-2" />
+              <span className="text-xs md:text-sm">Clear</span>
             </button>
           </div>
         </div>
@@ -1233,6 +1371,7 @@ function PlanModeView({
                       <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
+                            id={`meal-input-${day}-${mealType}`}
                             type="text"
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1259,14 +1398,14 @@ function PlanModeView({
                                 {onGetVideoIcon(day, mealType)}
                               </div>
                               
-                              {/* Clear button - always visible when text exists */}
+                              {/* Edit button - always visible when text exists */}
                               <button
                                 type="button"
-                                onClick={() => onUpdateMeal(day, mealType, '')}
+                                onClick={() => onFocusMealInput(day, mealType)}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
-                                title="Clear meal"
+                                title="Edit meal"
                               >
-                                <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                               </button>
                             </div>
                           )}
@@ -1327,6 +1466,7 @@ function PlanModeView({
                           </label>
                           <div className="relative group">
                             <input
+                              id={`meal-input-${day}-${mealType}`}
                               type="text"
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1353,14 +1493,14 @@ function PlanModeView({
                                   {onGetVideoIcon(day, mealType)}
                                 </div>
                                 
-                                {/* Clear button - always visible when text exists */}
+                                {/* Edit button - always visible when text exists */}
                                 <button
                                   type="button"
-                                  onClick={() => onUpdateMeal(day, mealType, '')}
+                                  onClick={() => onFocusMealInput(day, mealType)}
                                   className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
-                                  title="Clear meal"
+                                  title="Edit meal"
                                 >
-                                  <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                  <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                 </button>
                               </div>
                             )}

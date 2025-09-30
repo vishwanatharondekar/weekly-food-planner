@@ -484,8 +484,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     const doc = new jsPDF();
     let fontName = 'helvetica';
     // TODO : Temporary disabled localisation for Shopping List
-    if(false) {
-    // if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+    // if(false) {
+    if(mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       fontName = 'NotoSans'
     }
     const pageWidth = doc.internal.pageSize.width;
@@ -494,18 +494,41 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     // Get enabled meal types from settings or use all meal types as fallback
     const enabledMealTypes = mealPlan.mealSettings?.enabledMealTypes || ALL_MEAL_TYPES;
 
-    // Collect all meal names that need translation
-    const mealNamesToTranslate: string[] = [];
+    // Collect all meal names (original, untranslated)
+    const originalMealNames: string[] = [];
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
         if (meal && meal.trim()) {
-          mealNamesToTranslate.push(meal.trim());
+          originalMealNames.push(meal.trim());
         }
       });
     });
 
-    // Pre-translate all texts that need translation
+    // Extract ingredients from original meal names first
+    let ingredientsResult: { grouped: any[], consolidated: string[] } = { grouped: [], consolidated: [] };
+    if (originalMealNames.length > 0) {
+      try {
+        ingredientsResult = await extractIngredientsFromMeals(originalMealNames);
+      } catch (error) {
+        console.error('Error extracting ingredients:', error);
+      }
+    }
+
+    // Now prepare all texts for translation (meals + ingredients + UI text)
+    const allIngredients = ingredientsResult.consolidated || [];
+    
+    // Extract meal names from the grouped result for translation
+    const groupedMealNames: string[] = [];
+    if (ingredientsResult.grouped && Array.isArray(ingredientsResult.grouped)) {
+      ingredientsResult.grouped.forEach((mealObj: any) => {
+        const mealName = Object.keys(mealObj)[0];
+        if (mealName) {
+          groupedMealNames.push(mealName);
+        }
+      });
+    }
+    
     const textsToTranslate = [
       'Smart Shopping List',
       'Shopping list for:',
@@ -514,14 +537,15 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       'Your Organized Shopping List',
       'Complete Ingredients List',
       'Plan some meals first to generate your shopping list!',
-      ...mealNamesToTranslate
+      ...groupedMealNames.map(mealName => mealName.toLocaleLowerCase()),
+      ...allIngredients
     ];
 
     let translations: { [key: string]: string } = {};
     
     // TODO : Temporary disabled localisation for Shopping List
-    if(false) {
-    // if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
+    // if(false) {
+    if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
       try {
         // Use batch translation API for efficiency
         const response = await fetch('/api/translate/batch', {
@@ -556,7 +580,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
     // Helper function to get translated text
     const getTranslatedText = (text: string): string => {
-      const translated = translations[text] || text;
+      const translated = translations[text.toLocaleLowerCase()] || text;
       
       // Ensure proper text encoding for PDF generation
       if (mealPlan.targetLanguage && mealPlan.targetLanguage !== 'en') {
@@ -615,7 +639,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
     let currentY = 30;
 
-    // Extract all meals (only from enabled meal types) - use translated versions
+    // Use translated meal names for display
     const allMeals: string[] = [];
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
@@ -647,9 +671,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       doc.text(getTranslatedText('Plan some meals first to generate your shopping list!'), pageWidth / 2, currentY + 55, { align: 'center' });
     } else {
       try {
-        // Use AI to extract ingredients
-        const result = await extractIngredientsFromMeals(allMeals);
-        // const result = {"grouped":[{"Poha":["flattened rice","onions","potatoes","peanuts"]},{"Mug Matki Suki Bhaji":["moong beans","moth beans","onions","tomatoes"]},{"Godi Dal":["toor dal","jaggery","tamarind"]},{"Chapati":["wheat flour"]},{"Rice":["rice"]},{"Vanga Fry":["brinjal"]},{"Sabudana Khichdi":["sago","potatoes","peanuts"]},{"Tomato Bhaji":["tomatoes","onions"]},{"Godi Dal rice chapati":["toor dal","rice","wheat flour","jaggery"]},{"Suran Fry":["elephant foot yam"]},{"Half Fry Chapati":["eggs","wheat flour"]},{"Kolambi Bhaji":["prawns","onions","tomatoes","coconut"]},{"Tikhat Dal":["toor dal","onions","tomatoes"]},{"Papad":["papad"]},{"Egg Shakshuka":["eggs","tomatoes","onions","bell peppers"]},{"Sandwich":["bread","cucumber","tomatoes","onions","potatoes"]},{"Aaloo Palak":["potatoes","spinach","onions","tomatoes"]},{"Kadi":["yogurt","gram flour"]},{"Koshimbir":["cucumber","tomatoes","onions","yogurt"]},{"Loncha":["pickle"]},{"Besan Poli Chapati":["gram flour","jaggery","wheat flour"]},{"Tondli":["ivy gourd","potatoes"]},{"Kakadi Salad":["cucumber","peanuts"]},{"Idli Chutney":["idli rice","urad dal","coconut"]},{"Masala Khichdi":["rice","moong dal","mixed vegetables","onions","tomatoes"]},{"Pav Bhaji":["pav","potatoes","onions","tomatoes","mixed vegetables","butter"]},{"Misal Pav":["pav","moth beans","onions","tomatoes","farsan"]},{"Chicken Biryani":["chicken","basmati rice","onions","tomatoes","yogurt"]},{"Raita":["yogurt","cucumber","onions"]}],"consolidated":["basmati rice","bell peppers","bread","brinjal","butter","chicken","coconut","cucumber","eggs","elephant foot yam","farsan","flattened rice","gram flour","idli rice","ivy gourd","jaggery","mixed vegetables","moong beans","moong dal","moth beans","onions","papad","pav","peanuts","pickle","potatoes","prawns","rice","sago","spinach","tamarind","tomatoes","toor dal","urad dal","wheat flour","yogurt"]}
+        // Use the already extracted ingredients result
+        const result = ingredientsResult;
 
         // Create organized layout with modern cards
         if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
@@ -666,14 +689,14 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           doc.rect(15, currentY, pageWidth - 30, 15, 'F');
           doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
           doc.setFontSize(10);
-          // doc.setFont('helvetica', 'bold');
+          doc.setFont(fontName, 'bold');
           doc.text('Unified Ingredients List', 20, currentY + 10);
           
           // Shopping list content - more compact
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           let listY = currentY + 20;
           doc.setFontSize(8);
-          // doc.setFont('helvetica', 'normal');
+          doc.setFont(fontName, 'normal');
 
           // Create a map to count the number of meals each ingredient appears in
           const ingredientMealCount: { [ingredient: string]: number } = {};
@@ -721,8 +744,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
                 doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
                 doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
                 doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
-                doc.text(cleanIngredient, xPos + 6, listY);
-                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(cleanIngredient.trim()) + 8, listY);
+                const translatedIngredient = getTranslatedText(cleanIngredient);
+                doc.text(translatedIngredient, xPos + 6, listY);
+                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(translatedIngredient) + 8, listY);
               }
               xPos += columnWidth;
             });
@@ -782,14 +806,13 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               const mealName = Object.keys(mealGroup)[0];
               const ingredients = mealGroup[mealName];
               
-              // Meal name - more compact
-              // doc.setFont('helvetica', 'bold');
+              // Meal name - more compact (use translated meal name)
+              const translatedMealName = getTranslatedText(mealName);
               doc.setFontSize(10);
               doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-              doc.text(`${mealName}:`, 20, mealY);
+              doc.text(`${translatedMealName}:`, 20, mealY);
               
               // Ingredients for this meal - more compact
-              // doc.setFont('helvetica', 'normal');
               doc.setFontSize(8);
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               
@@ -798,20 +821,22 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               let lineCount = 0;
               
               ingredients.forEach((ingredient: string, ingIndex: number) => {
-                if (ingredientX + doc.getTextWidth(ingredient) > pageWidth - 50) {
+                const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
+                const translatedIngredient = getTranslatedText(cleanIngredient);
+                
+                if (ingredientX + doc.getTextWidth(translatedIngredient) > pageWidth - 50) {
                   ingredientX = 25;
                   ingredientY += 6;
                   lineCount++;
                 }
                 
                 if (lineCount < 3) { // Allow 3 lines per meal for more ingredients
-                  const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
                   // Add smaller checkbox
                   doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
                   doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
                   doc.roundedRect(ingredientX, ingredientY - 2, 2, 2, 1, 1, 'FD');
-                  doc.text(cleanIngredient, ingredientX + 4, ingredientY);
-                  ingredientX += doc.getTextWidth(cleanIngredient) + 8;
+                  doc.text(translatedIngredient, ingredientX + 4, ingredientY);
+                  ingredientX += doc.getTextWidth(translatedIngredient) + 8;
                 }
               });
               
