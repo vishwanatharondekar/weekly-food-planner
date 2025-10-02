@@ -129,24 +129,12 @@ export default function Home() {
       },
     });
     
-    if (user?.isGuest) {
-      // For guest users, clear guest data and create a new guest session
-      clearGuestData();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setToken(null);
-      setUser(null);
-      setShowSettingsDropdown(false);
-      // Create new guest user
-      createGuestUser();
-    } else {
-      // For registered users, just logout
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setToken(null);
-      setUser(null);
-      setShowSettingsDropdown(false);
-    }
+    // Logout for registered users only
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+    setShowSettingsDropdown(false);
   };
 
   const handleSignUp = () => {
@@ -352,18 +340,23 @@ export default function Home() {
                         Language Preferences
                       </button>
                       
-                      <div className="border-t border-gray-200 my-1"></div>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleLogout();
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        {user?.isGuest ? 'Reset Session' : 'Logout'}
-                      </button>
+                      {/* Only show logout for registered users */}
+                      {!user?.isGuest && (
+                        <>
+                          <div className="border-t border-gray-200 my-1"></div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLogout();
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Logout
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
