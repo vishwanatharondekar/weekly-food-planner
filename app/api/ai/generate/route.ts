@@ -137,7 +137,7 @@ function getDietaryInfo(dietaryPreferences: any) {
 Exclude any dish with meat, fish, or eggs. 
 If uncertain, default to a vegetarian option.`;
   } else {
-    returnString += `Non-vegetarian,User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}. Exclude any dish with meat, fish, or eggs on other days.`;
+    returnString += dietaryPreferences.nonVegDays ? `Non-vegetarian, User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ')}. Exclude any dish with meat, fish, or eggs on other days.` : `Non-vegetarian, User can eat non veg on any day. Have a mix of vegetarian and non-vegetarian meals.`;
   }
 
   return returnString;
@@ -163,7 +163,6 @@ function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
 }
 
 function isWeekEmpty(meals: any, enabledMeals: string[]) {
-  console.log('meals : ', meals);
   return !Object.keys(meals).every(day => isDayEmpty(meals?.[day], enabledMeals));
 }
 
@@ -210,7 +209,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   if (hasDishPreferences) {
     // Use user's specific dish preferences from onboarding
     cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')} cuisine`;
-    availableDishes = `User's likes following dishes:
+    availableDishes = `User likes following dishes:
       Breakfast: ${dishPreferences.breakfast.join(', ')}
       Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }
