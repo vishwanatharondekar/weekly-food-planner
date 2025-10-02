@@ -10,9 +10,10 @@ interface MealSettingsProps {
   user: any;
   onSettingsChange: (settings: MealSettings) => void;
   onClose: () => void;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-export default function MealSettingsComponent({ user, onSettingsChange, onClose }: MealSettingsProps) {
+export default function MealSettingsComponent({ user, onSettingsChange, onClose, onUserUpdate }: MealSettingsProps) {
   const [settings, setSettings] = useState<MealSettings>(DEFAULT_MEAL_SETTINGS);
   const [loading, setLoading] = useState(false);
 
@@ -78,6 +79,16 @@ export default function MealSettingsComponent({ user, onSettingsChange, onClose 
         
         toast.success('Meal settings saved!');
         onSettingsChange(settings);
+        
+        // Update user data in parent component
+        if (onUserUpdate) {
+          const updatedUser = {
+            ...user,
+            mealSettings: settings
+          };
+          onUserUpdate(updatedUser);
+        }
+        
         onClose();
       } else {
         toast.error('Failed to save settings');

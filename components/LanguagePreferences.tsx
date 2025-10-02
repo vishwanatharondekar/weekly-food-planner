@@ -10,9 +10,10 @@ import { analytics, AnalyticsEvents } from '@/lib/analytics';
 interface LanguagePreferencesProps {
   user: any;
   onClose: () => void;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-export default function LanguagePreferences({ user, onClose }: LanguagePreferencesProps) {
+export default function LanguagePreferences({ user, onClose, onUserUpdate }: LanguagePreferencesProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(SUPPORTED_LANGUAGES[0]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -78,6 +79,16 @@ export default function LanguagePreferences({ user, onClose }: LanguagePreferenc
       });
       
       toast.success('Language preferences saved successfully!');
+      
+      // Update user data in parent component
+      if (onUserUpdate) {
+        const updatedUser = {
+          ...user,
+          language: selectedLanguage.code
+        };
+        onUserUpdate(updatedUser);
+      }
+      
       onClose();
     } catch (error) {
       console.error('Error saving language preferences:', error);

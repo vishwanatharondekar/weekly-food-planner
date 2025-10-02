@@ -19,9 +19,10 @@ const DAYS_OF_WEEK = [
 interface DietaryPreferencesProps {
   user: any;
   onClose: () => void;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-export default function DietaryPreferences({ user, onClose }: DietaryPreferencesProps) {
+export default function DietaryPreferences({ user, onClose, onUserUpdate }: DietaryPreferencesProps) {
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [nonVegDays, setNonVegDays] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,6 +75,19 @@ export default function DietaryPreferences({ user, onClose }: DietaryPreferences
       });
       
       toast.success('Dietary preferences saved successfully!');
+      
+      // Update user data in parent component
+      if (onUserUpdate) {
+        const updatedUser = {
+          ...user,
+          dietaryPreferences: {
+            isVegetarian,
+            nonVegDays
+          }
+        };
+        onUserUpdate(updatedUser);
+      }
+      
       onClose();
     } catch (error) {
       console.error('Error saving dietary preferences:', error);

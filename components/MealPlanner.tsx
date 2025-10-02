@@ -74,6 +74,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     loadUserLanguagePreferences();
   }, []);
 
+  // React to user prop changes - reload settings when user is updated
+  useEffect(() => {
+    if (user) {
+      loadMealSettings();
+      loadUserLanguagePreferences();
+    }
+  }, [user]);
+
   useEffect(() => {
     loadMeals();
     checkAIStatus();
