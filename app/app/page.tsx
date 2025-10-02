@@ -324,6 +324,7 @@ export default function Home() {
             user={user}
             onSettingsChange={() => {}} // This will be handled by MealPlanner
             onClose={() => setShowMealSettings(false)}
+            onUserUpdate={setUser}
           />
         )}
         
@@ -331,6 +332,7 @@ export default function Home() {
           <DietaryPreferences
             user={user}
             onClose={() => setShowDietaryPreferences(false)}
+            onUserUpdate={setUser}
           />
         )}
         
@@ -345,6 +347,7 @@ export default function Home() {
           <LanguagePreferences
             user={user}
             onClose={() => setShowLanguagePreferences(false)}
+            onUserUpdate={setUser}
           />
         )}
         
