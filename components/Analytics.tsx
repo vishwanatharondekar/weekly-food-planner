@@ -17,6 +17,14 @@ export default function Analytics({
   userId 
 }: AnalyticsProps) {
   useEffect(() => {
+    // Check if analytics is enabled
+    const isEnabled = process.env.ANALYTICS_ENABLED === 'true';
+    
+    if (!isEnabled) {
+      console.log('Analytics component: Analytics disabled - ANALYTICS_ENABLED environment variable not set to true');
+      return;
+    }
+
     if ((gaMeasurementId || mixpanelToken) && !isInitialized) {
       isInitialized = true;
       // Initialize analytics with both Google Analytics and Mixpanel
