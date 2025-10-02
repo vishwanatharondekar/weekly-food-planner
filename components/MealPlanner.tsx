@@ -10,6 +10,7 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import GuestUpgradeModal from './GuestUpgradeModal';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
@@ -69,6 +70,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   // Preferences modal state
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
 
   useEffect(() => {
     loadMealSettings();
@@ -93,6 +96,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
+        // Check guest limits for onboarding flow too
+        if (isGuestUser(user?.id) && hasExceededGuestLimit('ai', user)) {
+          console.log('Guest user has exceeded AI limit during onboarding flow');
+          setUpgradeModalType('ai');
+          setShowUpgradeModal(true);
+          return;
+        }
         performAIGeneration();
       }, 1000);
       
@@ -468,6 +478,22 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const generateAIMeals = () => {
+    console.log('AI button clicked - checking guest limits');
+    
+    // Check guest usage limits before opening preferences modal
+    if (isGuestUser(user?.id)) {
+      if (hasExceededGuestLimit('ai', user)) {
+        setUpgradeModalType('ai');
+        setShowUpgradeModal(true);
+        return;
+      }
+      
+      const remaining = getRemainingGuestUsage('ai', user);
+      if (remaining <= 1) {
+        toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
+      }
+    }
+    
     console.log('Opening preferences modal for AI generation');
     setShowPreferencesModal(true);
   };
@@ -510,19 +536,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const performAIGeneration = async (ingredients?: string[]) => {
     try {
-      // Check guest usage limits before proceeding
-      if (isGuestUser(user?.id)) {
-        if (hasExceededGuestLimit('ai')) {
-          toast.error('Guest users are limited to 3 AI generations. Please create an account for unlimited access.');
-          return;
-        }
-        
-        const remaining = getRemainingGuestUsage('ai');
-        if (remaining <= 1) {
-          toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
-        }
-      }
-
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
       
@@ -590,6 +603,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       hideFullScreenLoader();
       toast.success('AI meal suggestions applied to empty slots!');
       await checkAIStatus();
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
     } catch (error: any) {
       console.error('Error generating AI meals:', error);
       hideFullScreenLoader();
@@ -724,12 +747,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     try {
       // Check guest usage limits before proceeding
       if (isGuestUser(user?.id)) {
-        if (hasExceededGuestLimit('shopping_list')) {
-          toast.error('Guest users are limited to 3 shopping list generations. Please create an account for unlimited access.');
+        if (hasExceededGuestLimit('shopping_list', user)) {
+          setUpgradeModalType('shopping_list');
+          setShowUpgradeModal(true);
           return;
         }
         
-        const remaining = getRemainingGuestUsage('shopping_list');
+        const remaining = getRemainingGuestUsage('shopping_list', user);
         if (remaining <= 1) {
           toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
         }
@@ -785,6 +809,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('Shopping list downloaded successfully!');
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
     } catch (error: any) {
       console.error('Error generating shopping list:', error);
       hideFullScreenLoader();
@@ -1050,6 +1084,22 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         onConfirm={handlePreferencesConfirm}
         user={user}
         isLoading={isUpdatingPreferences}
+      />
+
+      {/* Guest Upgrade Modal */}
+      <GuestUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onSuccess={(token, upgradedUser) => {
+          // Update the user state with the new registered user
+          if (onUserUpdate) {
+            onUserUpdate(upgradedUser);
+          }
+          setShowUpgradeModal(false);
+        }}
+        limitType={upgradeModalType}
+        currentUsage={upgradeModalType === 'ai' ? (user?.aiUsageCount || 0) : (user?.shoppingListUsageCount || 0)}
+        usageLimit={upgradeModalType === 'ai' ? (user?.guestUsageLimits?.aiGeneration || 3) : (user?.guestUsageLimits?.shoppingList || 3)}
       />
       </div>
     </div>
@@ -1318,7 +1368,7 @@ function PlanModeView({
               <span className="text-xs md:text-sm">AI</span>
               {isGuestUser(user?.id) && (
                 <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {getRemainingGuestUsage('ai')}
+                  {getRemainingGuestUsage('ai', user)}
                 </span>
               )}
             </button>
@@ -1342,7 +1392,7 @@ function PlanModeView({
               <span className="text-xs md:text-sm">List</span>
               {isGuestUser(user?.id) && (
                 <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {getRemainingGuestUsage('shopping_list')}
+                  {getRemainingGuestUsage('shopping_list', user)}
                 </span>
               )}
             </button>

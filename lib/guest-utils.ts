@@ -110,7 +110,8 @@ export function getGuestUsageLimits() {
 }
 
 /**
- * Track guest usage for a specific feature
+ * Track guest usage for a specific feature (deprecated - now handled by backend)
+ * @deprecated Use backend tracking instead
  */
 export function trackGuestUsage(feature: 'ai' | 'shopping_list'): number {
   if (typeof window === 'undefined') return 0;
@@ -124,21 +125,26 @@ export function trackGuestUsage(feature: 'ai' | 'shopping_list'): number {
 }
 
 /**
- * Get current guest usage for a specific feature
+ * Get current guest usage for a specific feature from user data
  */
-export function getGuestUsage(feature: 'ai' | 'shopping_list'): number {
-  if (typeof window === 'undefined') return 0;
-
-  const key = `guest_${feature}_usage`;
-  return parseInt(localStorage.getItem(key) || '0');
+export function getGuestUsage(feature: 'ai' | 'shopping_list', user?: any): number {
+  if (!user || !isGuestUser(user.id)) return 0;
+  
+  if (feature === 'ai') {
+    return user.aiUsageCount || 0;
+  } else {
+    return user.shoppingListUsageCount || 0;
+  }
 }
 
 /**
  * Check if guest user has exceeded usage limits
  */
-export function hasExceededGuestLimit(feature: 'ai' | 'shopping_list'): boolean {
-  const limits = getGuestUsageLimits();
-  const usage = getGuestUsage(feature);
+export function hasExceededGuestLimit(feature: 'ai' | 'shopping_list', user?: any): boolean {
+  if (!user || !isGuestUser(user.id)) return false;
+  
+  const usage = getGuestUsage(feature, user);
+  const limits = user.guestUsageLimits || getGuestUsageLimits();
   
   const limit = feature === 'ai' ? limits.aiGeneration : limits.shoppingList;
   return usage >= limit;
@@ -147,9 +153,11 @@ export function hasExceededGuestLimit(feature: 'ai' | 'shopping_list'): boolean 
 /**
  * Get remaining guest usage for a feature
  */
-export function getRemainingGuestUsage(feature: 'ai' | 'shopping_list'): number {
-  const limits = getGuestUsageLimits();
-  const usage = getGuestUsage(feature);
+export function getRemainingGuestUsage(feature: 'ai' | 'shopping_list', user?: any): number {
+  if (!user || !isGuestUser(user.id)) return 0;
+  
+  const usage = getGuestUsage(feature, user);
+  const limits = user.guestUsageLimits || getGuestUsageLimits();
   
   const limit = feature === 'ai' ? limits.aiGeneration : limits.shoppingList;
   return Math.max(0, limit - usage);

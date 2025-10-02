@@ -78,6 +78,33 @@ export const authAPI = {
     }
   },
 
+  upgradeGuestAccount: async (data: { email: string; password: string; name: string }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No guest token found');
+      }
+
+      const response = await fetch('/api/auth/upgrade-guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upgrade guest account');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getProfile: async () => {
     try {
       const token = localStorage.getItem('token');
