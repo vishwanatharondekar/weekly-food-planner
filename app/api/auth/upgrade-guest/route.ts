@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import bcrypt from 'bcryptjs';
+import { DEFAULT_MEAL_SETTINGS } from '@/lib/utils';
 
 // Initialize Firebase on server side
 const firebaseConfig = {
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       cuisinePreferences: guestUserData.cuisinePreferences || [],
       dishPreferences: guestUserData.dishPreferences || { breakfast: [], lunch_dinner: [] },
       dietaryPreferences: guestUserData.dietaryPreferences,
-      mealSettings: guestUserData.mealSettings || [],
+      mealSettings: guestUserData.mealSettings || DEFAULT_MEAL_SETTINGS,
       ingredients: guestUserData.ingredients || [],
       
       // Reset usage counts since they now have unlimited access
