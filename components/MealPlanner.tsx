@@ -966,7 +966,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   return (
     <div className="min-h-screen bg-gradient-to-br ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="space-y-6">
 
         {/* Mode Switcher - Chrome-like Full Width Tabs */}
@@ -976,7 +976,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             <button
               onClick={switchToCookMode}
               disabled={!hasTodaysMeals}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-2 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'cook'
                   ? 'bg-white text-gray-900 border-b-2 border-orange-500'
                   : hasTodaysMeals
@@ -999,7 +999,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             {/* Plan Mode Tab - Right Side */}
             <button
               onClick={switchToPlanMode}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-4 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'plan'
                   ? 'bg-white text-gray-900 border-b-2 border-blue-500'
                   : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -1291,7 +1291,7 @@ function PlanModeView({
   showAiTooltip,
 }: PlanModeViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Week Navigation - Desktop */}
       <div className="hidden md:flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
         <button
