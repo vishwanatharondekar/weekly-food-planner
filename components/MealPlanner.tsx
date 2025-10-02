@@ -419,9 +419,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setSelectedMeal(null);
   };
 
-  const focusMealInput = (day: string, mealType: string) => {
+  const focusMealInput = (day: string, mealType: string, formFactor?: string) => {
     // Find the input element for the specific day and meal type
-    const inputId = `meal-input-${day}-${mealType}`;
+    const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
     const inputElement = document.getElementById(inputId);
     if (inputElement) {
       inputElement.focus();
@@ -1157,7 +1157,7 @@ interface PlanModeViewProps {
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
-  onFocusMealInput: (day: string, mealType: string) => void;
+  onFocusMealInput: (day: string, mealType: string, formFactor?: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
   onPdfTooltipEnd: () => void;
@@ -1345,7 +1345,7 @@ function PlanModeView({
                       <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
-                            id={`meal-input-${day}-${mealType}`}
+                            id={`meal-input-desktop-${day}-${mealType}`}
                             type="text"
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1375,7 +1375,7 @@ function PlanModeView({
                               {/* Edit button - always visible when text exists */}
                               <button
                                 type="button"
-                                onClick={() => onFocusMealInput(day, mealType)}
+                                onClick={() => onFocusMealInput(day, mealType, 'desktop')}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                 title="Edit meal"
                               >
@@ -1440,7 +1440,7 @@ function PlanModeView({
                           </label>
                           <div className="relative group">
                             <input
-                              id={`meal-input-${day}-${mealType}`}
+                              id={`meal-input-mobile-${day}-${mealType}`}
                               type="text"
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1470,7 +1470,7 @@ function PlanModeView({
                                 {/* Edit button - always visible when text exists */}
                                 <button
                                   type="button"
-                                  onClick={() => onFocusMealInput(day, mealType)}
+                                  onClick={() => onFocusMealInput(day, mealType, 'mobile')}
                                   className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                   title="Edit meal"
                                 >
