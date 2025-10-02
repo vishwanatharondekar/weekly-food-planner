@@ -18,7 +18,7 @@ export default function Analytics({
 }: AnalyticsProps) {
   useEffect(() => {
     // Check if analytics is enabled
-    const isEnabled = process.env.ANALYTICS_ENABLED === 'true';
+    const isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
     
     if (!isEnabled) {
       console.log('Analytics component: Analytics disabled - ANALYTICS_ENABLED environment variable not set to true');

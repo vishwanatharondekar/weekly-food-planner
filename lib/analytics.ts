@@ -37,7 +37,7 @@ class AnalyticsService {
     }
 
     // Check if analytics is enabled via environment variable
-    this.isEnabled = process.env.ANALYTICS_ENABLED === 'true';
+    this.isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
     
     if (!this.isEnabled) {
       console.log('Analytics: Disabled - ANALYTICS_ENABLED environment variable not set to true');
