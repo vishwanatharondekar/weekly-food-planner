@@ -267,6 +267,21 @@ export default function Home() {
                 <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
               </div>
               <div className="flex items-center space-x-4">
+                {/* Login CTA for Guest Users - Desktop Only */}
+                {user?.isGuest && (
+                  <div className="hidden md:flex items-center space-x-2 text-sm text-blue-700">
+                    <span>Already have an account?</span>
+                    <button
+                      onClick={() => {
+                        window.location.href = '/signin';
+                      }}
+                      className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+                
                 {/* Settings Dropdown */}
                 <div className="relative">
                   <button
@@ -357,9 +372,9 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* Login CTA Banner for Guest Users */}
+        {/* Login CTA Banner for Guest Users - Mobile Only */}
         {user?.isGuest && (
-          <div className="bg-blue-50 border-b border-blue-200">
+          <div className="md:hidden bg-blue-50 border-b border-blue-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="py-3 text-center">
                 <span className="text-sm text-blue-700">
