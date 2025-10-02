@@ -55,11 +55,10 @@ export default function Home() {
       // Initialize analytics for guest user
       analytics.setUserProperties({
         user_id: response.user.id,
-        user_type: 'guest',
+        user_type: 'new',
         dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
         language: 'en',
         has_ai_history: false,
-        is_guest: true,
       });
       
       // Show onboarding for new guest users
@@ -152,8 +151,8 @@ export default function Home() {
 
   const handleSignUp = () => {
     setShowSettingsDropdown(false);
-    // Redirect to landing page with sign up mode
-    router.push('/?mode=register');
+    // Redirect to sign-in page (which includes both login and register)
+    router.push('/signin');
   };
 
   const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
@@ -268,22 +267,20 @@ export default function Home() {
                 <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
               </div>
               <div className="flex items-center space-x-4">
-
-                
                 {/* Settings Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
                     className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                   >
-                    {user.isGuest && <User className="w-4 h-4 text-blue-500" />}
-                    <span>{user.isGuest ? 'Guest User' : user.name}</span>
+                    {user?.isGuest && <User className="w-4 h-4 text-blue-500" />}
+                    <span>{user?.isGuest ? 'Guest User' : user.name}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {showSettingsDropdown && (
                     <div data-dropdown="settings" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
-                      {user.isGuest && (
+                      {user?.isGuest && (
                         <>
                           <button
                             onClick={handleSignUp}
@@ -350,7 +347,7 @@ export default function Home() {
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        {user.isGuest ? 'Reset Session' : 'Logout'}
+                        {user?.isGuest ? 'Reset Session' : 'Logout'}
                       </button>
                     </div>
                   )}
@@ -359,6 +356,28 @@ export default function Home() {
             </div>
           </div>
         </nav>
+
+        {/* Login CTA Banner for Guest Users */}
+        {user?.isGuest && (
+          <div className="bg-blue-50 border-b border-blue-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="py-3 text-center">
+                <span className="text-sm text-blue-700">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => {
+                      // Redirect to dedicated sign-in page
+                      window.location.href = '/signin';
+                    }}
+                    className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         
         {user.onboardingCompleted ? (
           <MealPlanner 

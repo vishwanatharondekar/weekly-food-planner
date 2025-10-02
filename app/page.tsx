@@ -92,7 +92,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center">
               <Link 
-                href="/app" 
+                href="/signin" 
                 className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Sign In
@@ -117,13 +117,19 @@ export default function LandingPage() {
               and discover new recipes with our AI-powered food planning assistant. 
               Perfect for households and cooking enthusiasts!
             </p>
-            <div className="flex justify-center">
+            <div className="flex justify-center space-x-4">
               <Link 
                 href="/app"
                 className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
               >
-                <span>Start Planning</span>
+                <span>Try Free</span>
                 <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link 
+                href="/signin"
+                className="px-8 py-4 border-2 border-blue-500 text-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+              >
+                <span>Sign In</span>
               </Link>
             </div>
           </div>

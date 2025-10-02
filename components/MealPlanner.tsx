@@ -488,10 +488,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         return;
       }
       
-      const remaining = getRemainingGuestUsage('ai', user);
-      if (remaining <= 1) {
-        toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
-      }
+        const remaining = getRemainingGuestUsage('ai', user);
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+        }
     }
     
     console.log('Opening preferences modal for AI generation');
@@ -755,7 +755,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         
         const remaining = getRemainingGuestUsage('shopping_list', user);
         if (remaining <= 1) {
-          toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
+          toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
         }
       }
 

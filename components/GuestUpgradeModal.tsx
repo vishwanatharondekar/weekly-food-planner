@@ -5,6 +5,7 @@ import { X, User, Mail, Lock, Zap, ShoppingCart, CheckCircle } from 'lucide-reac
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { clearGuestData } from '@/lib/guest-utils';
 
 interface GuestUpgradeModalProps {
   isOpen: boolean;
@@ -53,6 +54,10 @@ export default function GuestUpgradeModal({
       });
 
       localStorage.setItem('token', response.token);
+      
+      // Clear any existing guest data from localStorage
+      clearGuestData();
+      
       onSuccess(response.token, response.user);
       toast.success('Account created successfully! You now have unlimited access.');
       onClose();
@@ -214,6 +219,22 @@ export default function GuestUpgradeModal({
             By creating an account, you agree to our Terms of Service and Privacy Policy
           </p>
         </form>
+
+        {/* Login Option for Existing Users */}
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-3">Already have an account?</p>
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/signin';
+              }}
+              className="text-blue-600 hover:text-blue-700 font-medium text-sm underline"
+            >
+              Sign in to your existing account
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
