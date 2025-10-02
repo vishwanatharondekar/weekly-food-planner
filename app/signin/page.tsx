@@ -24,7 +24,8 @@ export default function SignInPage() {
 
       try {
         // Fetch user profile to check if they're a registered user
-        const user = await authAPI.getProfile();
+        const response = await authAPI.getProfile();
+        const user = response.user; // Extract user from response
         
         if (user && !user.isGuest) {
           // Registered user - redirect to app

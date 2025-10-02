@@ -11,6 +11,7 @@ import MealSettingsComponent from '@/components/MealSettings';
 import VideoURLManager from '@/components/VideoURLManager';
 import LanguagePreferences from '@/components/LanguagePreferences';
 import CuisineOnboarding from '@/components/CuisineOnboarding';
+import GuestUpgradeModal from '@/components/GuestUpgradeModal';
 import { authAPI } from '@/lib/api';
 import { ChevronDown, Settings, Leaf, Video, Globe, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -30,6 +31,7 @@ export default function Home() {
   const [showVideoURLManager, setShowVideoURLManager] = useState(false);
   const [showLanguagePreferences, setShowLanguagePreferences] = useState(false);
   const [showCuisineOnboarding, setShowCuisineOnboarding] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
 
   useEffect(() => {
@@ -141,6 +143,19 @@ export default function Home() {
     setShowSettingsDropdown(false);
     // Redirect to sign-in page (which includes both login and register)
     router.push('/signin');
+  };
+
+  const handleUpgradeSuccess = (token: string, newUser: any) => {
+    // Update the user state with the new registered user
+    setUser(newUser);
+    setToken(token);
+    
+    // Close the modal
+    setShowUpgradeModal(false);
+    
+    // Show success message (handled by the modal itself)
+    // Refresh the page data to reflect the new user status
+    loadUserProfile();
   };
 
   const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
@@ -286,7 +301,10 @@ export default function Home() {
                       {user?.isGuest && (
                         <>
                           <button
-                            onClick={handleSignUp}
+                            onClick={() => {
+                              setShowUpgradeModal(true);
+                              setShowSettingsDropdown(false);
+                            }}
                             className="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-medium"
                           >
                             <User className="w-4 h-4 mr-3 text-blue-600" />
@@ -431,6 +449,18 @@ export default function Home() {
             user={user}
             onClose={() => setShowLanguagePreferences(false)}
             onUserUpdate={setUser}
+          />
+        )}
+        
+        {showUpgradeModal && (
+          <GuestUpgradeModal
+            isOpen={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
+            onSuccess={handleUpgradeSuccess}
+            limitType="ai" // Default to ai type for manual upgrade
+            currentUsage={user?.aiUsageCount || 0}
+            usageLimit={user?.guestUsageLimits?.ai || 3}
+            isManualRegistration={true} // Hide limit message for manual registration
           />
         )}
         

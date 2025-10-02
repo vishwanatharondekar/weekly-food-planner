@@ -14,6 +14,7 @@ interface GuestUpgradeModalProps {
   limitType: 'ai' | 'shopping_list';
   currentUsage: number;
   usageLimit: number;
+  isManualRegistration?: boolean; // True when opened from Create Account button
 }
 
 export default function GuestUpgradeModal({ 
@@ -22,7 +23,8 @@ export default function GuestUpgradeModal({
   onSuccess, 
   limitType,
   currentUsage,
-  usageLimit 
+  usageLimit,
+  isManualRegistration = false
 }: GuestUpgradeModalProps) {
   const [formData, setFormData] = useState({
     email: '',
@@ -106,15 +108,17 @@ export default function GuestUpgradeModal({
           </button>
         </div>
 
-        {/* Limit Reached Message */}
-        <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-          <div className="text-center">
-            <p className="text-gray-600 text-sm">
-            You've reached your {limitTypeDisplay} limit.
-              Create a free account to get unlimited access to all features
-            </p>
+        {/* Limit Reached Message - Only show when not manual registration */}
+        {!isManualRegistration && (
+          <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+            <div className="text-center">
+              <p className="text-gray-600 text-sm">
+              You've reached your {limitTypeDisplay} limit.
+                Create a free account to get unlimited access to all features
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Benefits */}
         <div className="p-6 border-b border-gray-200">
