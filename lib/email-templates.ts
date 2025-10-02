@@ -42,14 +42,14 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Weekly Meal Plan - ${weekRange}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; background-color: #f8f9fa;">
-    <div style="background-color: #f8f9fa; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e9ecef;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 12px;">
+    <div style="background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #e9ecef;">
             <h1 style="color: #2c3e50; margin: 0 0 8px 0; font-size: 28px;">🍽️ Your Weekly Meal Plan</h1>
             <p style="color: #6c757d; margin: 0; font-size: 16px;">Hello ${userName}! Here's your personalized meal plan for the week.</p>
         </div>
         
-        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
             <h2 style="margin: 0 0 5px 0; color: #495057; font-size: 20px;">Week of ${weekRange}</h2>
             <p style="margin: 0; color: #6c757d; font-size: 14px;">Plan your grocery shopping and meal prep with confidence!</p>
         </div>
@@ -57,15 +57,16 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
         <div style="margin-bottom: 20px;">
             ${days.map((day, index) => {
               const dayMeals = meals[day] || {};
+              const isLastDay = index === days.length - 1;
               return `
-                <div style="margin-bottom: 18px; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden;">
-                    <div style="background-color: #495057; color: white; padding: 10px 16px; font-weight: 600; font-size: 16px;">${dayNames[index]}</div>
-                    <div style="padding: 16px;">
-                        ${enabledMeals.map((mealType, index) => {
+                <div style="margin-bottom: ${isLastDay ? '0' : ''}; ${!isLastDay ? 'border-bottom: 2px solid #e9ecef; padding-bottom: 20px;' : ''}">
+                    <div style="background-color: #495057; color: white; padding: 10px 16px; font-weight: 600; font-size: 16px; margin-bottom: 12px;">${dayNames[index]}</div>
+                    <div style="padding: 0 12px;">
+                        ${enabledMeals.map((mealType, mealIndex) => {
                           const mealName = dayMeals[mealType];
-                          const isLast = index === enabledMeals.length - 1;
+                          const isLastMeal = mealIndex === enabledMeals.length - 1;
                           return `
-                            <div style="padding: 8px 0; ${!isLast ? 'border-bottom: 1px solid #e9ecef;' : ''}">
+                            <div style="padding: 8px 0; ${!isLastMeal ? 'border-bottom: 1px solid #e9ecef;' : 'padding-bottom: 16px;'}">
                                 <div style="font-weight: 600; color: #495057; margin-bottom: 3px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">${mealTypeLabels[mealType] || mealType}</div>
                                 <div style="color: #212529; font-size: 16px; ${!mealName ? 'color: #6c757d; font-style: italic;' : ''}">
                                     ${mealName || 'Not planned yet'}
