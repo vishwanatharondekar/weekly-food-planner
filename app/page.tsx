@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import AuthForm from '@/components/AuthForm';
+import StorageInitializer from '@/components/StorageInitializer';
 import { 
   Calendar, 
   ShoppingCart, 
@@ -20,6 +22,8 @@ import {
 export default function LandingPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   useEffect(() => {
     // Check if user is already logged in
@@ -28,9 +32,25 @@ export default function LandingPage() {
       // Redirect to app if already authenticated
       router.replace('/app');
     } else {
+      // Check for mode parameter in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      if (mode === 'register') {
+        setAuthMode('register');
+        setShowAuthForm(true);
+      }
       setIsCheckingAuth(false);
     }
   }, [router]);
+
+  const handleAuthSuccess = (token: string, user: any) => {
+    // Redirect to app after successful authentication
+    router.replace('/app');
+  };
+
+  const toggleAuthMode = () => {
+    setAuthMode(prev => prev === 'login' ? 'register' : 'login');
+  };
 
   // Show loading while checking authentication
   if (isCheckingAuth) {
@@ -38,6 +58,19 @@ export default function LandingPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
+    );
+  }
+
+  // Show auth form if requested
+  if (showAuthForm) {
+    return (
+      <StorageInitializer>
+        <AuthForm
+          mode={authMode}
+          onSuccess={handleAuthSuccess}
+          onToggleMode={toggleAuthMode}
+        />
+      </StorageInitializer>
     );
   }
 

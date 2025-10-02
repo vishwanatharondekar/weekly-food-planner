@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, setDoc } from 'firebase/firestore';
 import { formatDate } from '@/lib/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
@@ -51,6 +51,38 @@ export async function POST(request: NextRequest) {
     }
 
     const { weekStartDate, ingredients = [] } = await request.json();
+
+    // Check if this is a guest user and enforce usage limits
+    if (userId.startsWith('guest_')) {
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('__name__', '==', userId));
+      const userSnapshot = await getDocs(userQuery);
+      const userData = userSnapshot.docs[0]?.data();
+      
+      if (userData) {
+        const currentUsage = userData.aiUsageCount || 0;
+        const usageLimit = userData.guestUsageLimits?.aiGeneration || parseInt(process.env.GUEST_AI_LIMIT || '3');
+        
+        if (currentUsage >= usageLimit) {
+          return NextResponse.json(
+            { 
+              error: `Guest users are limited to ${usageLimit} AI generations. Please create an account for unlimited access.`,
+              isGuestLimitReached: true,
+              usageLimit,
+              currentUsage
+            },
+            { status: 403 }
+          );
+        }
+        
+        // Increment usage count
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, { 
+          ...userData, 
+          aiUsageCount: currentUsage + 1 
+        }, { merge: true });
+      }
+    }
 
     // Get meal history for the target week
     const referenceWeekStart = new Date(weekStartDate);

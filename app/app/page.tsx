@@ -12,9 +12,10 @@ import VideoURLManager from '@/components/VideoURLManager';
 import LanguagePreferences from '@/components/LanguagePreferences';
 import CuisineOnboarding from '@/components/CuisineOnboarding';
 import { authAPI } from '@/lib/api';
-import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
+import { ChevronDown, Settings, Leaf, Video, Globe, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { getGuestDeviceId, isGuestUser, clearGuestData } from '@/lib/guest-utils';
 
 export default function Home() {
   const router = useRouter();
@@ -37,10 +38,41 @@ export default function Home() {
       setToken(savedToken);
       loadUserProfile();
     } else {
-      setLoading(false);
-      // Let unauthenticated users see the login form
+      // Create guest user automatically
+      createGuestUser();
     }
   }, [router]);
+
+  const createGuestUser = async () => {
+    try {
+      const deviceId = getGuestDeviceId();
+      const response = await authAPI.createGuestUser(deviceId);
+      
+      setToken(response.token);
+      setUser(response.user);
+      localStorage.setItem('token', response.token);
+      
+      // Initialize analytics for guest user
+      analytics.setUserProperties({
+        user_id: response.user.id,
+        user_type: 'guest',
+        dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
+        language: 'en',
+        has_ai_history: false,
+        is_guest: true,
+      });
+      
+      // Show onboarding for new guest users
+      if (!response.user.onboardingCompleted) {
+        setShowCuisineOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error creating guest user:', error);
+      toast.error('Failed to initialize app. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -94,14 +126,34 @@ export default function Home() {
       category: 'authentication',
       custom_parameters: {
         user_id: user?.id,
+        user_type: user?.isGuest ? 'guest' : 'registered',
       },
     });
     
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
+    if (user?.isGuest) {
+      // For guest users, clear guest data and create a new guest session
+      clearGuestData();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+      setShowSettingsDropdown(false);
+      // Create new guest user
+      createGuestUser();
+    } else {
+      // For registered users, just logout
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+      setShowSettingsDropdown(false);
+    }
+  };
+
+  const handleSignUp = () => {
     setShowSettingsDropdown(false);
+    // Redirect to landing page with sign up mode
+    router.push('/?mode=register');
   };
 
   const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
@@ -196,17 +248,7 @@ export default function Home() {
     );
   }
 
-  if (!token || !user) {
-    return (
-      <StorageInitializer>
-        <AuthForm
-          mode={authMode}
-          onSuccess={handleAuthSuccess}
-          onToggleMode={toggleAuthMode}
-        />
-      </StorageInitializer>
-    );
-  }
+  // Remove the old auth form logic since we automatically create guest users
 
   return (
     <StorageInitializer>
@@ -234,12 +276,26 @@ export default function Home() {
                     onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
                     className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                   >
-                    <span>{user.name}</span>
+                    {user.isGuest && <User className="w-4 h-4 text-blue-500" />}
+                    <span>{user.isGuest ? 'Guest User' : user.name}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {showSettingsDropdown && (
                     <div data-dropdown="settings" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                      {user.isGuest && (
+                        <>
+                          <button
+                            onClick={handleSignUp}
+                            className="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+                          >
+                            <User className="w-4 h-4 mr-3 text-blue-600" />
+                            Create Account
+                          </button>
+                          <div className="border-t border-gray-200 my-1"></div>
+                        </>
+                      )}
+                      
                       <button
                         onClick={() => {
                           setShowDietaryPreferences(true);
@@ -294,7 +350,7 @@ export default function Home() {
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        Logout
+                        {user.isGuest ? 'Reset Session' : 'Logout'}
                       </button>
                     </div>
                   )}

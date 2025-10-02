@@ -10,7 +10,9 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import GuestUsageIndicator from './GuestUsageIndicator';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
 interface MealData {
   [day: string]: {
@@ -501,6 +503,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const performAIGeneration = async (ingredients?: string[]) => {
     try {
+      // Check guest usage limits before proceeding
+      if (isGuestUser(user?.id)) {
+        if (hasExceededGuestLimit('ai')) {
+          toast.error('Guest users are limited to 3 AI generations. Please create an account for unlimited access.');
+          return;
+        }
+        
+        const remaining = getRemainingGuestUsage('ai');
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
+        }
+      }
+
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
       
@@ -513,6 +528,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           has_ingredients: !!ingredients,
           ingredient_count: ingredients?.length || 0,
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -570,7 +586,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     } catch (error: any) {
       console.error('Error generating AI meals:', error);
       hideFullScreenLoader();
-      toast.error(error.message || 'Failed to generate AI suggestions');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error(error.message || 'Failed to generate AI suggestions');
+      }
     } finally {
       setLoading(false);
     }
@@ -693,6 +715,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const handleGenerateShoppingList = async () => {
     try {
+      // Check guest usage limits before proceeding
+      if (isGuestUser(user?.id)) {
+        if (hasExceededGuestLimit('shopping_list')) {
+          toast.error('Guest users are limited to 3 shopping list generations. Please create an account for unlimited access.');
+          return;
+        }
+        
+        const remaining = getRemainingGuestUsage('shopping_list');
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user.`);
+        }
+      }
+
       showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
       
       // Track shopping list generation event
@@ -706,6 +741,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
           }, 0),
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -742,10 +778,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('Shopping list downloaded successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating shopping list:', error);
       hideFullScreenLoader();
-      toast.error('Failed to generate shopping list');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to generate shopping list');
+      }
     }
 
   };
@@ -880,12 +922,19 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     };
   };
 
+  const handleCreateAccount = () => {
+    // Navigate to sign up page
+    window.location.href = '/?mode=register';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
         <div className="space-y-6">
+          {/* Guest Usage Indicator */}
+          <GuestUsageIndicator user={user} onCreateAccount={handleCreateAccount} />
 
-        {/* Onboarding Tooltip */}
+          {/* Onboarding Tooltip */}
         {continueFromOnboarding && showOnboardingTooltip && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm relative">
             <div className="flex items-start">

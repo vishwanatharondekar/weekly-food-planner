@@ -42,6 +42,42 @@ export const authAPI = {
     }
   },
 
+  createGuestUser: async (deviceId: string) => {
+    try {
+      const response = await fetch('/api/auth/guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deviceId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Guest user creation failed');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getGuestUser: async (deviceId: string) => {
+    try {
+      const response = await fetch(`/api/auth/guest?deviceId=${encodeURIComponent(deviceId)}`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get guest user');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getProfile: async () => {
     try {
       const token = localStorage.getItem('token');
