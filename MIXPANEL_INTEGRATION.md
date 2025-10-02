@@ -16,7 +16,34 @@ GA_MEASUREMENT_ID=your_ga_measurement_id_here
 
 # Mixpanel Analytics
 MIXPANEL_TOKEN=your_mixpanel_token_here
+
+# Analytics Control (required for production)
+# Set to 'true' to enable analytics (disabled by default for security)
+ANALYTICS_ENABLED=false
 ```
+
+### Enabling Analytics for Production
+
+Analytics is **disabled by default** for security and privacy. To enable analytics in production, you must explicitly set the `ANALYTICS_ENABLED` environment variable to `true`:
+
+```env
+ANALYTICS_ENABLED=true
+```
+
+### Local Development (Analytics Disabled by Default)
+
+For local development, simply omit the `ANALYTICS_ENABLED` variable or set it to `false` in your `.env.local` file:
+
+```env
+# Analytics will be disabled (default behavior)
+ANALYTICS_ENABLED=false
+```
+
+When analytics is disabled (default):
+- No Google Analytics or Mixpanel tracking scripts will be loaded
+- No Google Tag Manager scripts will be injected
+- All analytics events will be logged to console but not sent to any analytics provider
+- The Analytics component will skip initialization entirely
 
 ## Configuration
 
