@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthForm from '@/components/AuthForm';
 import StorageInitializer from '@/components/StorageInitializer';
-import * as authAPI from '@/lib/api';
+import { authAPI } from '@/lib/api';
 import { clearGuestData } from '@/lib/guest-utils';
 
 export default function SignInPage() {
