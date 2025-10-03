@@ -334,7 +334,7 @@ async function generateAISuggestions(
   ingredients: string[] = [],
   mealSettings?: { enabledMealTypes: string[] }
 ) {
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
   const historyText = history.length > 0 ? history
     .filter((plan: any) => !isWeekEmpty(plan.meals, enabledMeals))
     .slice(0, 2)
