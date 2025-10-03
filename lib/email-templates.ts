@@ -46,7 +46,10 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
     <div style="background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #e9ecef;">
             <h1 style="color: #2c3e50; margin: 0 0 8px 0; font-size: 28px;">🍽️ Your Weekly Meal Plan</h1>
-            <p style="color: #6c757d; margin: 0; font-size: 16px;">Hello ${userName}! Here's your personalized meal plan for the week.</p>
+            <p style="color: #6c757d; margin: 0 0 12px 0; font-size: 16px;">Hello ${userName}! Here's your personalized meal plan for the week.</p>
+            <p style="margin: 0; font-size: 14px;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in'}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open Meal Planner App</a>
+            </p>
         </div>
         
         <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
@@ -125,6 +128,7 @@ export function generateMealPlanTextEmail({ userName, weekStartDate, userEmail, 
   let text = `🍽️ Your Weekly Meal Plan\n\n`;
   text += `Hello ${userName}!\n`;
   text += `Here's your personalized meal plan for the week of ${weekRange}.\n\n`;
+  text += `🔗 Open Meal Planner App: ${process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in'}\n\n`;
   text += `Plan your grocery shopping and meal prep with confidence!\n\n`;
 
   days.forEach((day, index) => {
