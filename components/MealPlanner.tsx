@@ -73,6 +73,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
   const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
     loadMealSettings();
@@ -651,13 +652,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     }
   };
 
-  const clearMeals = async () => {
-    // Add confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to clear all meals for this week? This action cannot be undone.');
-    if (!confirmed) {
-      return;
-    }
+  const clearMeals = () => {
+    // Show custom confirmation modal instead of browser dialog
+    setShowClearModal(true);
+  };
 
+  const handleClearConfirm = async () => {
+    setShowClearModal(false);
+    
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Clearing Meals', 'Removing all meals from this week...');
@@ -1151,6 +1153,45 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
                   className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                 >
                   OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Clear All Meals
+                  </h3>
+                </div>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to clear all meals for this week? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowClearModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearConfirm}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                >
+                  Clear
                 </button>
               </div>
             </div>
