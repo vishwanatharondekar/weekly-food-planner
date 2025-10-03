@@ -3,51 +3,5 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "crons": [
-    {
-      "path": "/api/cron/generate-meal-plans",
-      "schedule": "* 5 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "0 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "1 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "2 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "3 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "4 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "5 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "6 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "7 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "8 6 * * 6"
-    },
-    {
-      "path": "/api/cron/weekly-meal-plans",
-      "schedule": "9 6 * * 6"
-    }
-  ]
+  "devCommand": "npm run dev"
 } 
