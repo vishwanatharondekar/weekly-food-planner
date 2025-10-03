@@ -21,9 +21,9 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-// Batch size for email sending (140 emails per cron execution)
-const EMAIL_BATCH_SIZE = 140;
-const EMAILS_PER_SECOND = 14;
+// Batch size for email sending (60 emails per cron execution)
+const EMAIL_BATCH_SIZE = 48;
+const EMAILS_PER_SECOND = 12;
 const LOCK_TIMEOUT_MS = 120000; // 2 minutes
 const EXECUTION_TIMEOUT_MS = 55000; // 55 seconds (safety buffer)
 
