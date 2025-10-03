@@ -1,4 +1,10 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { analytics, AnalyticsEvents } from './analytics';
+
+// Initialize analytics with Mixpanel token for server-side tracking
+if (process.env.MIXPANEL_TOKEN) {
+  analytics.init('', undefined, process.env.MIXPANEL_TOKEN);
+}
 
 // Initialize SES client
 const sesClient = new SESClient({
@@ -14,9 +20,11 @@ export interface EmailData {
   subject: string;
   htmlBody: string;
   textBody?: string;
+  userId?: string;
+  weekStartDate?: string;
 }
 
-export async function sendEmail({ to, subject, htmlBody, textBody }: EmailData): Promise<boolean> {
+export async function sendEmail({ to, subject, htmlBody, textBody, userId, weekStartDate }: EmailData): Promise<boolean> {
   try {
     const command = new SendEmailCommand({
       Source: process.env.SES_FROM_EMAIL || 'noreply@yourdomain.com',
@@ -45,6 +53,27 @@ export async function sendEmail({ to, subject, htmlBody, textBody }: EmailData):
 
     const result = await sesClient.send(command);
     console.log('Email sent successfully:', result.MessageId);
+    
+    // Track email sent event
+    if (userId) {
+      try {
+        analytics.trackEvent({
+          action: AnalyticsEvents.EMAIL.SENT,
+          category: 'email_delivery',
+          label: 'weekly_meal_plan',
+          custom_parameters: {
+            user_id: userId,
+            user_email: to,
+            week_start_date: weekStartDate,
+            message_id: result.MessageId,
+            timestamp: new Date().toISOString(),
+          }
+        });
+      } catch (trackingError) {
+        console.error('Error tracking email sent event:', trackingError);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Error sending email:', error);

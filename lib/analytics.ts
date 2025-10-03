@@ -286,4 +286,15 @@ export const AnalyticsEvents = {
     COMPLETE: 'onboarding_complete',
     SKIP: 'onboarding_skip',
   },
+  
+  // Email events
+  EMAIL: {
+    SENT: 'email_sent',
+    DELIVERED: 'email_delivered',
+    OPEN: 'email_open',
+    CLICK: 'email_click',
+    BOUNCE: 'email_bounce',
+    COMPLAINT: 'email_complaint',
+    UNSUBSCRIBE: 'email_unsubscribe',
+  },
 } as const;
