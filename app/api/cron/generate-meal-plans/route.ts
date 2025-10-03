@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Verify this is a cron request (Vercel adds this header)
     const authHeader = request.headers.get('authorization');
     console.log('authHeader:', authHeader);
-    
+
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -306,13 +306,13 @@ function isWeekEmpty(meals: any, enabledMeals: string[]) {
   
   return Object.values(meals).every((dayMeals: any) => {
     if (!dayMeals) return true;
-    return enabledMeals.every(mealType => !dayMeals[mealType] || dayMeals[mealType].trim() === '');
+    return enabledMeals.every(mealType => !dayMeals[mealType] || dayMeals[mealType]?.name?.trim() === '');
   });
 }
 
 function isDayEmpty(meals: any, enabledMeals: string[]) {
   if (!meals) return true;
-  return enabledMeals.every(mealType => !meals[mealType] || meals[mealType].trim() === '');
+  return enabledMeals.every(mealType => !meals[mealType] || meals[mealType]?.name?.trim() === '');
 }
 
 async function generateAISuggestions(
