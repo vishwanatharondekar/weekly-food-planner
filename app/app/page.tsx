@@ -40,8 +40,9 @@ export default function Home() {
       setToken(savedToken);
       loadUserProfile();
     } else {
-      // Create guest user automatically
-      createGuestUser();
+      // No token found, show welcome screen (onboarding will handle guest user creation)
+      setLoading(false);
+      setShowCuisineOnboarding(true);
     }
   }, [router]);
 
@@ -198,13 +199,22 @@ export default function Home() {
         has_ai_history: true,
       });
       
-      // Update local user state
-      setUser((prev: any) => ({
-        ...prev,
-        cuisinePreferences: selectedCuisines,
-        dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
-        onboardingCompleted: true,
-      }));
+      // Fetch complete user profile to ensure all preferences are available
+      // This is crucial for the AI modal to have access to dishPreferences
+      try {
+        const response = await authAPI.getProfile();
+        setUser(response.user);
+      } catch (profileError) {
+        console.error('Error fetching updated profile:', profileError);
+        // Fallback to manual state update if profile fetch fails
+        setUser((prev: any) => ({
+          ...prev,
+          cuisinePreferences: selectedCuisines,
+          dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
+          dishPreferences: selectedDishes,
+          onboardingCompleted: true,
+        }));
+      }
       
       setShowCuisineOnboarding(false);
       setContinueFromOnboarding(true);
@@ -256,45 +266,46 @@ export default function Home() {
     <StorageInitializer>
       <div className="min-h-screen bg-slate-50">
         {/* Header with logout */}
-        <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-                  <img 
-                    src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
-                    alt="खाना क्या बनाऊं Logo" 
-                    className="w-10 h-10 object-contain"
-                  />
-                </div>
-                <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                {/* Login CTA for Guest Users - Desktop Only */}
-                {user?.isGuest && (
-                  <div className="hidden md:flex items-center space-x-2 text-sm text-blue-700">
-                    <span>Already have an account?</span>
-                    <button
-                      onClick={() => {
-                        window.location.href = '/signin';
-                      }}
-                      className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
-                    >
-                      Sign In
-                    </button>
+        {user && (
+          <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                    <img 
+                      src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
+                      alt="खाना क्या बनाऊं Logo" 
+                      className="w-10 h-10 object-contain"
+                    />
                   </div>
-                )}
-                
-                {/* Settings Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                    className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    {user?.isGuest && <User className="w-4 h-4 text-blue-500" />}
-                    <span>{user?.isGuest ? 'Guest User' : user.name}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
-                  </button>
+                  <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  {/* Login CTA for Guest Users - Desktop Only */}
+                  {user?.isGuest && (
+                    <div className="hidden md:flex items-center space-x-2 text-sm text-blue-700">
+                      <span>Already have an account?</span>
+                      <button
+                        onClick={() => {
+                          window.location.href = '/signin';
+                        }}
+                        className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Settings Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                      className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      {user?.isGuest && <User className="w-4 h-4 text-blue-500" />}
+                      <span>{user?.isGuest ? 'Guest User' : user.name}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
+                    </button>
                   
                   {showSettingsDropdown && (
                     <div data-dropdown="settings" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
@@ -377,11 +388,12 @@ export default function Home() {
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
+        )}
 
         {/* Login CTA Banner for Guest Users - Mobile Only */}
         {user?.isGuest && (
@@ -405,22 +417,22 @@ export default function Home() {
           </div>
         )}
         
-        {user.onboardingCompleted ? (
+        {user && user.onboardingCompleted ? (
           <MealPlanner 
             user={user} 
             continueFromOnboarding={continueFromOnboarding}
             onUserUpdate={setUser}
           />
-        ) : (
+        ) : user && !user.onboardingCompleted ? (
           <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading your meal planner...</p>
             </div>
           </div>
-        )}
+        ) : null}
         {/* Settings Modals */}
-        {showMealSettings && (
+        {showMealSettings && user && (
           <MealSettingsComponent
             user={user}
             onSettingsChange={() => {}} // This will be handled by MealPlanner
@@ -429,7 +441,7 @@ export default function Home() {
           />
         )}
         
-        {showDietaryPreferences && (
+        {showDietaryPreferences && user && (
           <DietaryPreferences
             user={user}
             onClose={() => setShowDietaryPreferences(false)}
@@ -444,7 +456,7 @@ export default function Home() {
           />
         )}
         
-        {showLanguagePreferences && (
+        {showLanguagePreferences && user && (
           <LanguagePreferences
             user={user}
             onClose={() => setShowLanguagePreferences(false)}
@@ -452,7 +464,7 @@ export default function Home() {
           />
         )}
         
-        {showUpgradeModal && (
+        {showUpgradeModal && user && (
           <GuestUpgradeModal
             isOpen={showUpgradeModal}
             onClose={() => setShowUpgradeModal(false)}
@@ -467,6 +479,7 @@ export default function Home() {
         {showCuisineOnboarding && (
           <CuisineOnboarding
             onComplete={handleCuisineOnboardingComplete}
+            onCreateGuestUser={createGuestUser}
           />
         )}
       </div>

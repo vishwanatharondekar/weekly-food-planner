@@ -58,8 +58,8 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <span className="text-lg font-bold">3</span>
+              <div className="w-12 h-12 flex items-center justify-center bg-white bg-opacity-20 rounded-full">
+                <span className="text-lg font-bold">2</span>
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Set Your Dietary Preferences</h2>
@@ -71,14 +71,6 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
-          <div className="text-center mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              What are your dietary preferences?
-            </h3>
-            <p className="text-gray-600">
-              This helps us suggest the right meals for you
-            </p>
-          </div>
 
           {/* Vegetarian Toggle */}
           <div className="mb-8">
