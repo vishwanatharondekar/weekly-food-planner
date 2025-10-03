@@ -6,8 +6,12 @@
   "devCommand": "npm run dev",
   "crons": [
     {
+      "path": "/api/cron/generate-meal-plans",
+      "schedule": "* 5 * * 6"
+    },
+    {
       "path": "/api/cron/weekly-meal-plans",
-      "schedule": "0 1 * * 6"
+      "schedule": "0 6 * * 6"
     }
   ]
 } 
