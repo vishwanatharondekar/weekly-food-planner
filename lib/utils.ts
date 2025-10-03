@@ -17,16 +17,12 @@ export function getWeekStartDate(date: Date): Date {
 export function getNextWeekStartDate(date: Date): Date {
   // If the given date is Saturday (6) or Sunday (0), return next week's Monday
   const day = date.getDay();
-  if (day === 6 || day === 0) {
-    // Move to next Monday
-    const nextMonday = new Date(date);
-    // Calculate days to add: (8 - day) % 7
-    const daysToAdd = (8 - day) % 7;
-    nextMonday.setDate(date.getDate() + daysToAdd);
-    return startOfWeek(nextMonday, { weekStartsOn: 1 });
-  }
-  // Otherwise, return this week's Monday
-  return startOfWeek(date, { weekStartsOn: 1 });
+  // Move to next Monday
+  const nextMonday = new Date(date);
+  // Calculate days to add: (8 - day) % 7
+  const daysToAdd = (8 - day) % 7;
+  nextMonday.setDate(date.getDate() + daysToAdd);
+  return startOfWeek(nextMonday, { weekStartsOn: 1 });
 }
 
 export function getWeekDays(startDate: Date): Date[] {
