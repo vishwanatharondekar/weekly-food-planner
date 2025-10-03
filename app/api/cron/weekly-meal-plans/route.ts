@@ -21,7 +21,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-// Batch size for email sending (60 emails per cron execution)
+// Batch size for email sending (48 emails per cron execution)
 const EMAIL_BATCH_SIZE = 48;
 const EMAILS_PER_SECOND = 12;
 const LOCK_TIMEOUT_MS = 120000; // 2 minutes
@@ -388,7 +388,7 @@ async function sendEmailBatchWithRateLimit(userBatch: any[], weekStartDate: stri
 
       emails.push({
         to: user.userData.email,
-        subject: `🍽️ Your Weekly Meal Plan - Week of ${weekStartDate}`,
+        subject: `🍽️ Your Weekly Meal Plan from Khana Kya Banau for Week of ${weekStartDate}`,
         htmlBody,
         textBody
       });
