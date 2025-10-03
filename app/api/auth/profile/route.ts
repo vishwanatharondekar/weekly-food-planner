@@ -51,11 +51,19 @@ export async function GET(request: NextRequest) {
         id: userDoc.id,
         email: userData.email,
         name: userData.name,
+        isGuest: userData.isGuest || false,
         dietaryPreferences: userData.dietaryPreferences,
         onboardingCompleted: userData.onboardingCompleted || false,
         cuisinePreferences: userData.cuisinePreferences || [],
         dishPreferences: userData.dishPreferences || { breakfast: [], lunch_dinner: [] },
         ingredients: userData.ingredients || [],
+        // Include usage counts for guest users
+        aiUsageCount: userData.aiUsageCount || 0,
+        shoppingListUsageCount: userData.shoppingListUsageCount || 0,
+        guestUsageLimits: userData.guestUsageLimits || {
+          aiGeneration: parseInt(process.env.GUEST_AI_LIMIT || '3'),
+          shoppingList: parseInt(process.env.GUEST_SHOPPING_LIST_LIMIT || '3')
+        },
       },
     });
   } catch (error) {

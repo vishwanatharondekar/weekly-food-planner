@@ -42,6 +42,69 @@ export const authAPI = {
     }
   },
 
+  createGuestUser: async (deviceId: string) => {
+    try {
+      const response = await fetch('/api/auth/guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deviceId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Guest user creation failed');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getGuestUser: async (deviceId: string) => {
+    try {
+      const response = await fetch(`/api/auth/guest?deviceId=${encodeURIComponent(deviceId)}`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get guest user');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  upgradeGuestAccount: async (data: { email: string; password: string; name: string }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No guest token found');
+      }
+
+      const response = await fetch('/api/auth/upgrade-guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upgrade guest account');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getProfile: async () => {
     try {
       const token = localStorage.getItem('token');

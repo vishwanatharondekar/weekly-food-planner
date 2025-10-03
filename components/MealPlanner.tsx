@@ -10,7 +10,9 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import GuestUpgradeModal from './GuestUpgradeModal';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
 interface MealData {
   [day: string]: {
@@ -68,6 +70,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   // Preferences modal state
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
 
   useEffect(() => {
     loadMealSettings();
@@ -92,6 +96,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
+        // Check guest limits for onboarding flow too
+        if (isGuestUser(user?.id) && hasExceededGuestLimit('ai', user)) {
+          console.log('Guest user has exceeded AI limit during onboarding flow');
+          setUpgradeModalType('ai');
+          setShowUpgradeModal(true);
+          return;
+        }
         performAIGeneration();
       }, 1000);
       
@@ -467,6 +478,22 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const generateAIMeals = () => {
+    console.log('AI button clicked - checking guest limits');
+    
+    // Check guest usage limits before opening preferences modal
+    if (isGuestUser(user?.id)) {
+      if (hasExceededGuestLimit('ai', user)) {
+        setUpgradeModalType('ai');
+        setShowUpgradeModal(true);
+        return;
+      }
+      
+        const remaining = getRemainingGuestUsage('ai', user);
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+        }
+    }
+    
     console.log('Opening preferences modal for AI generation');
     setShowPreferencesModal(true);
   };
@@ -521,6 +548,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           has_ingredients: !!ingredients,
           ingredient_count: ingredients?.length || 0,
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -575,10 +603,26 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       hideFullScreenLoader();
       toast.success('AI meal suggestions applied to empty slots!');
       await checkAIStatus();
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
     } catch (error: any) {
       console.error('Error generating AI meals:', error);
       hideFullScreenLoader();
-      toast.error(error.message || 'Failed to generate AI suggestions');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error(error.message || 'Failed to generate AI suggestions');
+      }
     } finally {
       setLoading(false);
     }
@@ -701,6 +745,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const handleGenerateShoppingList = async () => {
     try {
+      // Check guest usage limits before proceeding
+      if (isGuestUser(user?.id)) {
+        if (hasExceededGuestLimit('shopping_list', user)) {
+          setUpgradeModalType('shopping_list');
+          setShowUpgradeModal(true);
+          return;
+        }
+        
+        const remaining = getRemainingGuestUsage('shopping_list', user);
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+        }
+      }
+
       showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
       
       // Track shopping list generation event
@@ -714,6 +772,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
           }, 0),
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -750,10 +809,26 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('Shopping list downloaded successfully!');
-    } catch (error) {
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
+    } catch (error: any) {
       console.error('Error generating shopping list:', error);
       hideFullScreenLoader();
-      toast.error('Failed to generate shopping list');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to generate shopping list');
+      }
     }
 
   };
@@ -888,11 +963,11 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     };
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="space-y-6">
-
 
         {/* Mode Switcher - Chrome-like Full Width Tabs */}
         {!continueFromOnboarding && <div className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-slate-200 border-b-0">
@@ -901,7 +976,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             <button
               onClick={switchToCookMode}
               disabled={!hasTodaysMeals}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-2 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'cook'
                   ? 'bg-white text-gray-900 border-b-2 border-orange-500'
                   : hasTodaysMeals
@@ -924,7 +999,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             {/* Plan Mode Tab - Right Side */}
             <button
               onClick={switchToPlanMode}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-4 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'plan'
                   ? 'bg-white text-gray-900 border-b-2 border-blue-500'
                   : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -961,6 +1036,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             mealSettings={mealSettings}
             savingMeals={savingMeals}
             enabledMealTypes={enabledMealTypes}
+            user={user}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
@@ -1008,6 +1084,22 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         onConfirm={handlePreferencesConfirm}
         user={user}
         isLoading={isUpdatingPreferences}
+      />
+
+      {/* Guest Upgrade Modal */}
+      <GuestUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onSuccess={(token, upgradedUser) => {
+          // Update the user state with the new registered user
+          if (onUserUpdate) {
+            onUserUpdate(upgradedUser);
+          }
+          setShowUpgradeModal(false);
+        }}
+        limitType={upgradeModalType}
+        currentUsage={upgradeModalType === 'ai' ? (user?.aiUsageCount || 0) : (user?.shoppingListUsageCount || 0)}
+        usageLimit={upgradeModalType === 'ai' ? (user?.guestUsageLimits?.aiGeneration || 3) : (user?.guestUsageLimits?.shoppingList || 3)}
       />
       </div>
     </div>
@@ -1151,6 +1243,7 @@ interface PlanModeViewProps {
   mealSettings: MealSettings;
   savingMeals: Set<string>;
   enabledMealTypes: string[];
+  user: any;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
@@ -1178,6 +1271,7 @@ function PlanModeView({
   mealSettings,
   savingMeals,
   enabledMealTypes,
+  user,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
@@ -1197,7 +1291,7 @@ function PlanModeView({
   showAiTooltip,
 }: PlanModeViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Week Navigation - Desktop */}
       <div className="hidden md:flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
         <button
@@ -1268,10 +1362,15 @@ function PlanModeView({
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
               <Sparkles className="w-4 h-4 text-purple-600 mb-1 md:mb-0 md:mr-2" />
               <span className="text-xs md:text-sm">AI</span>
+              {isGuestUser(user?.id) && (
+                <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {getRemainingGuestUsage('ai', user)}
+                </span>
+              )}
             </button>
             
             {/* 2. Download PDF */}
@@ -1287,10 +1386,15 @@ function PlanModeView({
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
               <ShoppingCart className="w-4 h-4 text-green-600 mb-1 md:mb-0 md:mr-2" />
               <span className="text-xs md:text-sm">List</span>
+              {isGuestUser(user?.id) && (
+                <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {getRemainingGuestUsage('shopping_list', user)}
+                </span>
+              )}
             </button>
             
             {/* 4. Clear Week */}
