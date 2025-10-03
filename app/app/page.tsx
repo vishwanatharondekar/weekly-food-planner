@@ -199,13 +199,22 @@ export default function Home() {
         has_ai_history: true,
       });
       
-      // Update local user state
-      setUser((prev: any) => ({
-        ...prev,
-        cuisinePreferences: selectedCuisines,
-        dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
-        onboardingCompleted: true,
-      }));
+      // Fetch complete user profile to ensure all preferences are available
+      // This is crucial for the AI modal to have access to dishPreferences
+      try {
+        const response = await authAPI.getProfile();
+        setUser(response.user);
+      } catch (profileError) {
+        console.error('Error fetching updated profile:', profileError);
+        // Fallback to manual state update if profile fetch fails
+        setUser((prev: any) => ({
+          ...prev,
+          cuisinePreferences: selectedCuisines,
+          dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
+          dishPreferences: selectedDishes,
+          onboardingCompleted: true,
+        }));
+      }
       
       setShowCuisineOnboarding(false);
       setContinueFromOnboarding(true);
