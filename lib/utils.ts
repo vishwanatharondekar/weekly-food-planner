@@ -93,4 +93,95 @@ export interface MealDataWithVideos {
       videoUrl?: string;
     };
   };
+}
+
+/**
+ * Validates if an email address is valid and not from known invalid patterns
+ * @param email The email address to validate
+ * @returns true if email is valid and should receive emails, false otherwise
+ */
+export function isValidEmailForSending(email: string): boolean {
+  if (!email || typeof email !== 'string') {
+    return false;
+  }
+
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return false;
+  }
+
+  // Convert to lowercase for consistent checking
+  const lowerEmail = email.toLowerCase().trim();
+
+  // Known invalid email patterns to skip
+  const invalidPatterns = [
+    // Test emails
+    /^test@/,
+    /^testing@/,
+    /^demo@/,
+    /^example@/,
+    /^sample@/,
+    /@test\./,
+    /@testing\./,
+    /@example\./,
+    /@sample\./,
+    
+    // Temporary/disposable email domains
+    /@10minutemail\./,
+    /@guerrillamail\./,
+    /@mailinator\./,
+    /@tempmail\./,
+    /@throwaway\./,
+    /@disposable\./,
+    /@temp-mail\./,
+    /@fakeinbox\./,
+    /@yopmail\./,
+    /@maildrop\./,
+    
+    // Invalid/placeholder domains
+    /@invalid\./,
+    /@placeholder\./,
+    /@fake\./,
+    /@dummy\./,
+    /@localhost$/,
+    /@127\.0\.0\.1$/,
+    
+    // Common typos in popular domains
+    /@gmial\./,
+    /@gmai\./,
+    /@yahooo\./,
+    /@hotmial\./,
+    /@outlok\./,
+    
+    // No-reply and system emails
+    /^noreply@/,
+    /^no-reply@/,
+    /^donotreply@/,
+    /^do-not-reply@/,
+    /^system@/,
+    /^admin@.*\.local$/,
+    /^root@.*\.local$/,
+  ];
+
+  // Check against invalid patterns
+  for (const pattern of invalidPatterns) {
+    if (pattern.test(lowerEmail)) {
+      return false;
+    }
+  }
+
+  // Additional checks for obviously fake emails
+  if (
+    lowerEmail.includes('asdf') ||
+    lowerEmail.includes('qwerty') ||
+    lowerEmail.includes('123456') ||
+    lowerEmail.includes('abcdef') ||
+    lowerEmail.match(/^[a-z]\@/) || // Single character before @
+    lowerEmail.match(/\@[a-z]\./) // Single character domain
+  ) {
+    return false;
+  }
+
+  return true;
 } 

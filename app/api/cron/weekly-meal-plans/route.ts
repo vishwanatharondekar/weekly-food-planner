@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, startAfter, DocumentSnapshot } from 'firebase/firestore';
-import { formatDate, getWeekStartDate } from '@/lib/utils';
+import { formatDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { sendBulkEmails, type EmailData } from '@/lib/ses-service';
 import { generateMealPlanEmail, generateMealPlanTextEmail, type MealPlanEmailData } from '@/lib/email-templates';
 
@@ -96,6 +96,9 @@ export async function GET(request: NextRequest) {
     // Send emails with rate limiting
     const emailResults = await sendEmailBatchWithRateLimit(userBatch, nextWeekStartStr);
 
+    // Get count of skipped invalid emails from this batch
+    const skippedInvalidEmailsCount = await getSkippedInvalidEmailsCount(nextWeekStartStr, progress.lastProcessedIndex, EMAIL_BATCH_SIZE);
+
     // Update progress
     const newLastProcessedIndex = progress.lastProcessedIndex + userBatch.length;
     const isCompleted = emailResults.processedUsers.length < EMAIL_BATCH_SIZE; // If we got fewer users than requested, we're done
@@ -112,13 +115,14 @@ export async function GET(request: NextRequest) {
     await releaseExecutionLock(nextWeekStartStr);
     lockAcquired = false;
 
-    console.log(`Email batch completed. Processed: ${emailResults.processedUsers.length}, Failed: ${emailResults.failedUsers.length}`);
+    console.log(`Email batch completed. Processed: ${emailResults.processedUsers.length}, Failed: ${emailResults.failedUsers.length}, Skipped Invalid Emails: ${skippedInvalidEmailsCount}`);
 
     return NextResponse.json({
       message: 'Email batch sent successfully',
       processed: emailResults.processedUsers.length,
       failed: emailResults.failedUsers.length,
       emailsSent: emailResults.emailsSent,
+      skippedInvalidEmails: skippedInvalidEmailsCount,
       completed: isCompleted,
       weekStartDate: nextWeekStartStr,
       executionId: cronExecutionId
@@ -319,6 +323,12 @@ async function getUserBatchForEmails(weekStartDate: string, lastProcessedIndex: 
 
         const userData = userDoc.data();
         
+        // Check if user has a valid email address
+        if (!isValidEmailForSending(userData.email)) {
+          console.log(`User ${userData.email} has invalid email address, skipping email sending`);
+          continue;
+        }
+        
         // Check if user has unsubscribed from emails
         const emailPreferences = userData.emailPreferences;
         if (emailPreferences?.weeklyMealPlans === false) {
@@ -428,4 +438,64 @@ async function sendEmailBatchWithRateLimit(userBatch: any[], weekStartDate: stri
   }
 
   return { processedUsers, failedUsers, emailsSent };
+}
+
+async function getSkippedInvalidEmailsCount(weekStartDate: string, lastProcessedIndex: number, batchSize: number): Promise<number> {
+  try {
+    // Get all pre-generated meal plans for this week
+    const mealPlansRef = collection(db, 'mealPlans');
+    const mealPlansQuery = query(
+      mealPlansRef,
+      where('weekStartDate', '==', weekStartDate)
+    );
+    const mealPlansSnapshot = await getDocs(mealPlansQuery);
+
+    if (mealPlansSnapshot.empty) {
+      return 0;
+    }
+
+    let skippedInvalidEmails = 0;
+    let currentIndex = -1;
+
+    // Process meal plans and count invalid emails in this batch range
+    for (const mealPlanDoc of mealPlansSnapshot.docs) {
+      currentIndex++;
+      
+      // Skip users we've already processed
+      if (currentIndex <= lastProcessedIndex) {
+        continue;
+      }
+      
+      // Stop if we've gone beyond this batch
+      if (currentIndex > lastProcessedIndex + batchSize) {
+        break;
+      }
+      
+      try {
+        const mealPlanData = mealPlanDoc.data();
+        const userId = mealPlanData.userId;
+        
+        // Get user data
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (!userDoc.exists()) {
+          continue;
+        }
+
+        const userData = userDoc.data();
+        
+        // Check if user has invalid email address
+        if (!isValidEmailForSending(userData.email)) {
+          skippedInvalidEmails++;
+        }
+      } catch (error) {
+        console.error(`Error checking email validity for meal plan ${mealPlanDoc.id}:`, error);
+        continue;
+      }
+    }
+
+    return skippedInvalidEmails;
+  } catch (error) {
+    console.error('Error counting skipped invalid emails:', error);
+    return 0;
+  }
 }
