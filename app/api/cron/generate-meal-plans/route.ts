@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { formatDate, getWeekStartDate } from '@/lib/utils';
+import { formatDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
 
 const firebaseConfig = {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     console.log(`Generating meal plans for week starting: ${nextWeekStartStr}`);
 
     // Get users who need meal plan generation
-    const usersToProcess = await getUsersForGeneration(nextWeekStartStr);
+    const { users: usersToProcess, skippedInvalidEmails: totalSkippedInvalidEmails } = await getUsersForGeneration(nextWeekStartStr);
 
     if (usersToProcess.length === 0) {
       console.log('No users found that need meal plan generation');
@@ -53,15 +53,17 @@ export async function GET(request: NextRequest) {
         processed: 0,
         success: 0,
         failed: 0,
+        skippedInvalidEmails: totalSkippedInvalidEmails,
         weekStartDate: nextWeekStartStr
       });
     }
 
-    console.log(`Found ${usersToProcess.length} users to process in this batch`);
+    console.log(`Found ${usersToProcess.length} users to process in this batch (skipped ${totalSkippedInvalidEmails} invalid emails)`);
 
     let processed = 0;
     let success = 0;
     let failed = 0;
+    let skippedInvalidEmails = 0;
 
     // Process users in batch
     for (const userDoc of usersToProcess) {
@@ -99,13 +101,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`AI generation batch completed. Processed: ${processed}, Success: ${success}, Failed: ${failed}`);
+    console.log(`AI generation batch completed. Processed: ${processed}, Success: ${success}, Failed: ${failed}, Total Skipped Invalid Emails: ${totalSkippedInvalidEmails}`);
 
     return NextResponse.json({
       message: 'AI meal plan generation batch completed',
       processed,
       success,
       failed,
+      skippedInvalidEmails: totalSkippedInvalidEmails,
       weekStartDate: nextWeekStartStr
     });
 
@@ -118,7 +121,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getUsersForGeneration(weekStartDate: string): Promise<any[]> {
+async function getUsersForGeneration(weekStartDate: string): Promise<{users: any[], skippedInvalidEmails: number}> {
   try {
     // Get all users who have completed onboarding and haven't unsubscribed
     const usersRef = collection(db, 'users');
@@ -131,10 +134,18 @@ async function getUsersForGeneration(weekStartDate: string): Promise<any[]> {
 
     const usersSnapshot = await getDocs(usersQuery);
     const eligibleUsers: any[] = [];
+    let skippedInvalidEmails = 0;
 
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const userId = userDoc.id;
+
+      // Check if user has a valid email address
+      if (!isValidEmailForSending(userData.email)) {
+        console.log(`User ${userData.email} has invalid email address, skipping meal plan generation`);
+        skippedInvalidEmails++;
+        continue;
+      }
 
       // Check if user has unsubscribed from emails
       const emailPreferences = userData.emailPreferences;
@@ -186,10 +197,10 @@ async function getUsersForGeneration(weekStartDate: string): Promise<any[]> {
       }
     }
 
-    return eligibleUsers;
+    return { users: eligibleUsers, skippedInvalidEmails };
   } catch (error) {
     console.error('Error getting users for generation:', error);
-    return [];
+    return { users: [], skippedInvalidEmails: 0 };
   }
 }
 
