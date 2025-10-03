@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, startAfter, DocumentSnapshot } from 'firebase/firestore';
-import { formatDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
+import { formatDate, getNextWeekStartDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { sendBulkEmails, type EmailData } from '@/lib/ses-service';
 import { generateMealPlanEmail, generateMealPlanTextEmail, type MealPlanEmailData } from '@/lib/email-templates';
 
@@ -41,10 +41,11 @@ export async function GET(request: NextRequest) {
     console.log(`Starting email cron execution: ${cronExecutionId}`);
 
     // Get the next week's start date (Saturday morning, so next week)
-    const nextWeekStart = getWeekStartDate(new Date());
+    const nextWeekStart = getNextWeekStartDate(new Date());
     const nextWeekStartStr = formatDate(nextWeekStart);
 
     console.log(`Processing emails for week starting: ${nextWeekStartStr}`);
+
 
     // Try to acquire execution lock
     const lockResult = await acquireExecutionLock(nextWeekStartStr, cronExecutionId);
