@@ -72,6 +72,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
+  const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
 
   useEffect(() => {
     loadMealSettings();
@@ -477,8 +478,30 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     closeVideoModal();
   };
 
+  // Function to check if there are empty slots in the meal plan
+  const hasEmptySlots = () => {
+    for (const day of DAYS_OF_WEEK) {
+      for (const mealType of mealSettings.enabledMealTypes) {
+        const meal = meals[day]?.[mealType];
+        const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+        if (!mealName.trim()) {
+          return true; // Found at least one empty slot
+        }
+      }
+    }
+    return false; // No empty slots found
+  };
+
   const generateAIMeals = () => {
-    console.log('AI button clicked - checking guest limits');
+    console.log('AI button clicked - checking for empty slots first');
+    
+    // First check if there are empty slots
+    if (!hasEmptySlots()) {
+      setShowNoEmptySlotsModal(true);
+      return;
+    }
+    
+    console.log('Empty slots found - checking guest limits');
     
     // Check guest usage limits before opening preferences modal
     if (isGuestUser(user?.id)) {
@@ -1101,6 +1124,39 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         currentUsage={upgradeModalType === 'ai' ? (user?.aiUsageCount || 0) : (user?.shoppingListUsageCount || 0)}
         usageLimit={upgradeModalType === 'ai' ? (user?.guestUsageLimits?.aiGeneration || 3) : (user?.guestUsageLimits?.shoppingList || 3)}
       />
+
+      {/* No Empty Slots Modal */}
+      {showNoEmptySlotsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <Sparkles className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    No Empty Slots Available
+                  </h3>
+                </div>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  AI will be used only for filling empty slots. Clear the complete plan if you wish to regenerate the whole plan.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowNoEmptySlotsModal(false)}
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
