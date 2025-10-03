@@ -217,8 +217,8 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: Cui
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <span className="text-lg font-bold">2</span>
+              <div className="bg-white bg-opacity-20 rounded-full w-12 h-12 flex items-center justify-center">
+                <span className="text-lg font-bold">1</span>
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Select Your Cuisines</h2>

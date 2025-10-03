@@ -75,11 +75,11 @@ export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfa
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <span className="text-lg font-bold">5</span>
+              <div className="bg-white bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center">
+                <span className="text-lg font-bold">4</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Select Your Lunch & Dinner Options</h2>
+                <h2 className="text-2xl font-bold">Select <span className="underline">Lunch & Dinner</span> Dishes you like</h2>
                 <p className="text-orange-100">Choose your favorite lunch and dinner dishes</p>
               </div>
             </div>
