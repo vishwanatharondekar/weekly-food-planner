@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     console.log('Starting AI meal plan generation cron job...');
     // Verify this is a cron request (Vercel adds this header)
     const authHeader = request.headers.get('authorization');
-    console.log('authHeader:', authHeader);
 
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -390,7 +389,7 @@ ${jsonFormat}
 Return only the JSON object, no additional text or formatting.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
