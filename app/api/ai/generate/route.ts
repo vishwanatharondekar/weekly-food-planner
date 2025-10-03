@@ -145,7 +145,7 @@ If uncertain, default to a vegetarian option.`;
 
 function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
   // Default to all meal types if no settings provided (backward compatibility)
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
   
   // Create meal entries for each enabled meal type
   const mealEntries = enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(', ');
@@ -173,7 +173,7 @@ function isDayEmpty(meals: any, enabledMeals: string[]) {
 
 async function generateAISuggestions(history: any[], weekStartDate: string, dietaryPreferences?: any, cuisinePreferences: string[] = [], dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] }, ingredients: string[] = [], mealSettings?: { enabledMealTypes: string[] }) {
   // Prepare history for AI
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
   const historyText = history.length > 0 ? history
   .filter((plan: any) => isWeekEmpty(plan.meals, enabledMeals))
   .slice(0, 2)

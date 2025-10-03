@@ -282,7 +282,7 @@ If uncertain, default to a vegetarian option.`;
 }
 
 function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }) {
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
   
   const mealEntries = enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(',\n      ');
   
