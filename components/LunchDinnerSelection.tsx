@@ -63,9 +63,7 @@ export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfa
       toast.success('Lunch & Dinner preferences saved! Generating your meal plan...');
     } catch (error) {
       toast.error('Failed to save preferences. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    } 
   };
 
   return (
@@ -75,8 +73,8 @@ export default function LunchDinnerSelection({ selectedCuisines, selectedBreakfa
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center">
-                <span className="text-lg font-bold">4</span>
+            <div className="bg-white bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center">
+              <span className="text-lg font-bold">4</span>
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Select <span className="underline">Lunch & Dinner</span> Dishes you like</h2>
