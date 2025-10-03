@@ -1,22 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, HelpCircle, ArrowRight } from 'lucide-react';
+import { Check, HelpCircle, ArrowRight, ChefHat } from 'lucide-react';
 import { INDIAN_CUISINES, type Cuisine } from '@/lib/cuisine-data';
 import BreakfastSelection from './BreakfastSelection';
 import LunchDinnerSelection from './LunchDinnerSelection';
 import DietaryOnboarding from './DietaryOnboarding';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 interface CuisineOnboardingProps {
   onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => void;
+  onCreateGuestUser: () => Promise<void>;
 }
 
-export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps) {
+export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[] } | null>(null);
-  const [currentStep, setCurrentStep] = useState<'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('cuisine');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('welcome');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCuisineToggle = (cuisineName: string) => {
@@ -107,6 +109,72 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
     setCurrentStep('breakfast');
   };
 
+  const handleWelcomeNext = async () => {
+    setIsSubmitting(true);
+    try {
+      await onCreateGuestUser();
+      setCurrentStep('cuisine');
+    } catch (error) {
+      console.error('Error creating guest user:', error);
+      toast.error('Failed to initialize. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Show welcome step first
+  if (currentStep === 'welcome') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[95vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-white text-gray-800 p-8 text-center border-b border-gray-200">
+            <div className="flex justify-center mb-4">
+              <div className="bg-orange-50 rounded-full p-4">
+                <ChefHat className="h-12 w-12 text-orange-500" />
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Khana Kya Banau</h1>
+            <p className="text-gray-600 text-lg">Your Personal Meal Planning Assistant</p>
+          </div>
+
+          {/* Content */}
+          <div className="bg-white p-8 flex-1 text-center">
+            <div className="space-y-6">
+              <button
+                onClick={handleWelcomeNext}
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 mx-auto"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Getting Started...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Get Started</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+              
+              <div className="text-center">
+                <span className="text-gray-500">Already a member? </span>
+                <Link 
+                  href="/signin" 
+                  className="text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show dietary preferences if user has completed cuisine selection
   if (currentStep === 'dietary') {
     return (
@@ -150,7 +218,7 @@ export default function CuisineOnboarding({ onComplete }: CuisineOnboardingProps
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <span className="text-lg font-bold">1</span>
+                <span className="text-lg font-bold">2</span>
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Select Your Cuisines</h2>

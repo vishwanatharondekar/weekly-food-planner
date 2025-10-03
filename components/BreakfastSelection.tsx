@@ -72,10 +72,10 @@ export default function BreakfastSelection({ selectedCuisines, initialBreakfast 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-white bg-opacity-20 rounded-full p-2">
-                <span className="text-lg font-bold">2</span>
+                <span className="text-lg font-bold">4</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Select Your Breakfast Options</h2>
+                <h2 className="text-2xl font-bold">Select Your <span className="underline">Breakfast</span> Options</h2>
                 <p className="text-orange-100">Choose your favorite breakfast dishes</p>
               </div>
             </div>

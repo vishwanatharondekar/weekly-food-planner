@@ -71,14 +71,6 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
-          <div className="text-center mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              What are your dietary preferences?
-            </h3>
-            <p className="text-gray-600">
-              This helps us suggest the right meals for you
-            </p>
-          </div>
 
           {/* Vegetarian Toggle */}
           <div className="mb-8">
