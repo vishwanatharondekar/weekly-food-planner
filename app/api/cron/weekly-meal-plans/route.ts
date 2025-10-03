@@ -391,7 +391,9 @@ async function sendEmailBatchWithRateLimit(userBatch: any[], weekStartDate: stri
         to: user.userData.email,
         subject: `🍽️ Your Weekly Meal Plan from Khana Kya Banau for Week of ${weekStartDate}`,
         htmlBody,
-        textBody
+        textBody,
+        userId: user.userId,
+        weekStartDate: weekStartDate
       });
       
       processedUsers.push(user.userId);
