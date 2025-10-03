@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { formatDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
+import { formatDate, getNextWeekStartDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
 
 const firebaseConfig = {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     console.log('Starting AI meal plan generation batch...');
 
     // Get the next week's start date (Saturday morning, so next week)
-    const nextWeekStart = getWeekStartDate(new Date());
+    const nextWeekStart = getNextWeekStartDate(new Date());
     const nextWeekStartStr = formatDate(nextWeekStart);
 
     console.log(`Generating meal plans for week starting: ${nextWeekStartStr}`);

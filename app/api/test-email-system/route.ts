@@ -26,63 +26,57 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
     const { 
-      testUserEmails = [], 
-      maxUsers = 5, 
+      email,
       weekStartDate = null,
       testMode = true 
     } = body;
 
-    console.log('Starting email system test...');
-    console.log(`Test mode: ${testMode}, Max users: ${maxUsers}`);
-    
-    // Safety check - prevent accidental mass emails
-    if (maxUsers > 20) {
+    if (!email) {
       return NextResponse.json({
-        error: 'Safety limit: Cannot test with more than 20 users at once',
-        maxAllowed: 20
+        error: 'Email is required',
+        usage: 'POST /api/test-email-system with body: { "email": "user@example.com", "weekStartDate": "2024-01-15", "testMode": true }'
       }, { status: 400 });
     }
+
+    console.log('Starting email system test...');
+    console.log(`Test mode: ${testMode}, Email: ${email}`);
 
     // Get week start date
     const targetWeekStart = weekStartDate ? new Date(weekStartDate) : getWeekStartDate(new Date());
     const targetWeekStartStr = formatDate(targetWeekStart);
 
-    console.log(`Testing emails for week starting: ${targetWeekStartStr}`);
+    console.log(`Testing email for week starting: ${targetWeekStartStr}`);
 
-    // Get test users
-    const testUsers = await getTestUsers(targetWeekStartStr, testUserEmails, maxUsers);
+    // Get test user
+    const testUser = await getTestUser(targetWeekStartStr, email);
     
-    if (testUsers.length === 0) {
+    if (!testUser) {
       return NextResponse.json({
-        message: 'No eligible test users found',
+        message: 'No eligible test user found',
         criteria: {
           weekStartDate: targetWeekStartStr,
-          requestedEmails: testUserEmails,
-          maxUsers
+          email: email
         }
       });
     }
 
-    console.log(`Found ${testUsers.length} test users`);
+    console.log(`Found test user: ${email}`);
 
-    // Send test emails
-    const emailResults = await sendTestEmails(testUsers, targetWeekStartStr, testMode);
+    // Send test email
+    const emailResult = await sendTestEmail(testUser, targetWeekStartStr, testMode);
 
-    console.log(`Test completed. Sent: ${emailResults.sent}, Failed: ${emailResults.failed}`);
+    console.log(`Test completed. Success: ${emailResult.success}`);
 
     return NextResponse.json({
       message: 'Email system test completed',
       results: {
-        usersProcessed: testUsers.length,
-        emailsSent: emailResults.sent,
-        emailsFailed: emailResults.failed,
+        email: testUser.userData.email,
+        userId: testUser.userId,
+        emailSent: emailResult.success,
         weekStartDate: targetWeekStartStr,
         testMode,
-        testUsers: testUsers.map(u => ({
-          email: u.userData.email,
-          userId: u.userId,
-          hasMealPlan: !!u.mealPlanData
-        }))
+        hasMealPlan: !!testUser.mealPlanData,
+        error: emailResult.error
       }
     });
 
@@ -98,194 +92,122 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function getTestUsers(weekStartDate: string, testUserEmails: string[], maxUsers: number) {
+async function getTestUser(weekStartDate: string, email: string) {
   try {
-    const testUsers: any[] = [];
-
-    // If specific emails are provided, get those users first
-    if (testUserEmails.length > 0) {
-      console.log(`Looking for specific test users: ${testUserEmails.join(', ')}`);
-      
-      for (const email of testUserEmails) {
-        try {
-          // Find user by email
-          const usersQuery = query(
-            collection(db, 'users'),
-            where('email', '==', email),
-            limit(1)
-          );
-          const userSnapshot = await getDocs(usersQuery);
-          
-          if (userSnapshot.empty) {
-            console.log(`User not found: ${email}`);
-            continue;
-          }
-
-          const userDoc = userSnapshot.docs[0];
-          const userData = userDoc.data();
-          const userId = userDoc.id;
-
-          // Check if user has unsubscribed
-          if (userData.emailPreferences?.weeklyMealPlans === false) {
-            console.log(`User ${email} has unsubscribed, skipping`);
-            continue;
-          }
-
-          // Get meal plan for this user
-          const mealPlanQuery = query(
-            collection(db, 'mealPlans'),
-            where('userId', '==', userId),
-            where('weekStartDate', '==', weekStartDate),
-            limit(1)
-          );
-          const mealPlanSnapshot = await getDocs(mealPlanQuery);
-          
-          const mealPlanData = mealPlanSnapshot.empty ? null : mealPlanSnapshot.docs[0].data();
-          
-          testUsers.push({
-            userId,
-            userData,
-            mealPlanData
-          });
-
-          console.log(`Added test user: ${email} (meal plan: ${mealPlanData ? 'yes' : 'no'})`);
-        } catch (error) {
-          console.error(`Error processing test user ${email}:`, error);
-        }
-      }
+    console.log(`Looking for test user: ${email}`);
+    
+    // Find user by email
+    const usersQuery = query(
+      collection(db, 'users'),
+      where('email', '==', email),
+      limit(1)
+    );
+    const userSnapshot = await getDocs(usersQuery);
+    
+    if (userSnapshot.empty) {
+      console.log(`User not found: ${email}`);
+      return null;
     }
 
-    // If we need more users, get random ones
-    const remainingSlots = maxUsers - testUsers.length;
-    if (remainingSlots > 0) {
-      console.log(`Getting ${remainingSlots} additional random test users`);
-      
-      // Get meal plans for this week
-      const mealPlansQuery = query(
-        collection(db, 'mealPlans'),
-        where('weekStartDate', '==', weekStartDate),
-        limit(remainingSlots * 2) // Get more than needed to account for filtering
-      );
-      const mealPlansSnapshot = await getDocs(mealPlansQuery);
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+    const userId = userDoc.id;
 
-      for (const mealPlanDoc of mealPlansSnapshot.docs) {
-        if (testUsers.length >= maxUsers) break;
-
-        try {
-          const mealPlanData = mealPlanDoc.data();
-          const userId = mealPlanData.userId;
-
-          // Skip if we already have this user
-          if (testUsers.some(u => u.userId === userId)) {
-            continue;
-          }
-
-          // Get user data
-          const userDoc = await getDoc(doc(db, 'users', userId));
-          if (!userDoc.exists()) {
-            continue;
-          }
-
-          const userData = userDoc.data();
-
-          // Check if user has unsubscribed
-          if (userData.emailPreferences?.weeklyMealPlans === false) {
-            continue;
-          }
-
-          testUsers.push({
-            userId,
-            userData,
-            mealPlanData
-          });
-
-          console.log(`Added random test user: ${userData.email}`);
-        } catch (error) {
-          console.error(`Error processing random user:`, error);
-        }
-      }
+    // Check if user has unsubscribed
+    if (userData.emailPreferences?.weeklyMealPlans === false) {
+      console.log(`User ${email} has unsubscribed, skipping`);
+      return null;
     }
 
-    return testUsers;
+    // Get meal plan for this user
+    const mealPlanQuery = query(
+      collection(db, 'mealPlans'),
+      where('userId', '==', userId),
+      where('weekStartDate', '==', weekStartDate),
+      limit(1)
+    );
+    const mealPlanSnapshot = await getDocs(mealPlanQuery);
+    
+    const mealPlanData = mealPlanSnapshot.empty ? null : mealPlanSnapshot.docs[0].data();
+    
+    console.log(`Found test user: ${email} (meal plan: ${mealPlanData ? 'yes' : 'no'})`);
+    
+    return {
+      userId,
+      userData,
+      mealPlanData
+    };
   } catch (error) {
-    console.error('Error getting test users:', error);
-    return [];
+    console.error(`Error getting test user ${email}:`, error);
+    return null;
   }
 }
 
-async function sendTestEmails(testUsers: any[], weekStartDate: string, testMode: boolean) {
-  let sent = 0;
-  let failed = 0;
-
-  const emails: EmailData[] = [];
-
-  // Prepare emails
-  for (const user of testUsers) {
-    try {
-      if (!user.mealPlanData) {
-        console.log(`Skipping user ${user.userData.email} - no meal plan available`);
-        failed++;
-        continue;
-      }
-
-      const emailData: MealPlanEmailData = {
-        userName: user.userData.name || 'Valued User',
-        weekStartDate: weekStartDate,
-        userEmail: user.userData.email,
-        userId: user.userId,
-        meals: user.mealPlanData.meals,
-        mealSettings: user.userData.mealSettings
-      };
-
-      const htmlBody = generateMealPlanEmail(emailData);
-      const textBody = generateMealPlanTextEmail(emailData);
-
-      const subject = testMode 
-        ? `🧪 TEST - Your Weekly Meal Plan - Week of ${weekStartDate}`
-        : `🍽️ Your Weekly Meal Plan - Week of ${weekStartDate}`;
-
-      emails.push({
-        to: user.userData.email,
-        subject,
-        htmlBody,
-        textBody
-      });
-
-      console.log(`Prepared email for: ${user.userData.email}`);
-    } catch (error) {
-      console.error(`Error preparing email for user ${user.userId}:`, error);
-      failed++;
+async function sendTestEmail(user: any, weekStartDate: string, testMode: boolean) {
+  try {
+    if (!user.mealPlanData) {
+      console.log(`Skipping user ${user.userData.email} - no meal plan available`);
+      return { success: false, error: 'No meal plan available' };
     }
-  }
 
-  // Send emails
-  if (emails.length > 0) {
-    try {
-      console.log(`Sending ${emails.length} test emails...`);
-      const results = await sendBulkEmails(emails);
-      sent = results.success;
-      failed += results.failed;
-      
-      console.log(`Email sending completed: ${results.success} sent, ${results.failed} failed`);
-    } catch (error) {
-      console.error('Error sending test emails:', error);
-      failed += emails.length;
-    }
-  }
+    const emailData: MealPlanEmailData = {
+      userName: user.userData.name || 'Valued User',
+      weekStartDate: weekStartDate,
+      userEmail: user.userData.email,
+      userId: user.userId,
+      meals: user.mealPlanData.meals,
+      mealSettings: user.userData.mealSettings
+    };
 
-  return { sent, failed };
+    const htmlBody = generateMealPlanEmail(emailData);
+    const textBody = generateMealPlanTextEmail(emailData);
+
+    const subject = testMode 
+      ? `🧪 TEST - Your Weekly Meal Plan - Week of ${weekStartDate}`
+      : `🍽️ Your Weekly Meal Plan - Week of ${weekStartDate}`;
+
+    console.log(`Preparing email for: ${user.userData.email}`);
+
+    // Send single email
+    const results = await sendBulkEmails([{
+      to: user.userData.email,
+      subject,
+      htmlBody,
+      textBody
+    }]);
+    
+    const success = results.success > 0;
+    console.log(`Email sending completed: ${success ? 'success' : 'failed'}`);
+    
+    return { 
+      success, 
+      error: success ? null : 'Failed to send email' 
+    };
+  } catch (error) {
+    console.error(`Error sending test email for user ${user.userId}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
 }
 
 // GET endpoint for testing without request body
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const maxUsers = parseInt(url.searchParams.get('maxUsers') || '3');
+  const email = url.searchParams.get('email');
   const weekStartDate = url.searchParams.get('weekStartDate') || null;
+  
+  if (!email) {
+    return NextResponse.json({
+      error: 'Email parameter is required',
+      usage: 'GET /api/test-email-system?email=user@example.com&weekStartDate=2024-01-15'
+    }, { status: 400 });
+  }
   
   // Convert to POST request format
   const body = {
-    testUserEmails: [],
-    maxUsers,
+    email,
     weekStartDate,
     testMode: true
   };
