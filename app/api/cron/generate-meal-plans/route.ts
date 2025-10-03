@@ -123,18 +123,22 @@ export async function GET(request: NextRequest) {
 
 async function getUsersForGeneration(weekStartDate: string): Promise<{users: any[], skippedInvalidEmails: number}> {
   try {
+    // TODO : Instead of taking users directly from the users collection, take users from the audited users collection
+    const maxUsers = 1000;
     // Get all users who have completed onboarding and haven't unsubscribed
     const usersRef = collection(db, 'users');
     const usersQuery = query(
       usersRef,
       where('onboardingCompleted', '==', true),
       orderBy('email'), // Consistent ordering for pagination
-      limit(BATCH_SIZE * 2) // Get more than needed to account for filtering
+      limit(maxUsers) // Get more than needed to account for filtering
     );
 
     const usersSnapshot = await getDocs(usersQuery);
     const eligibleUsers: any[] = [];
     let skippedInvalidEmails = 0;
+
+    console.log('usersSnapshot.docs : ', usersSnapshot.docs.length);
 
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
