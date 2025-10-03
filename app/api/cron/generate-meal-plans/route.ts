@@ -27,8 +27,11 @@ const BATCH_SIZE = 12;
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Starting AI meal plan generation cron job...');
     // Verify this is a cron request (Vercel adds this header)
     const authHeader = request.headers.get('authorization');
+    console.log('authHeader:', authHeader);
+    
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
