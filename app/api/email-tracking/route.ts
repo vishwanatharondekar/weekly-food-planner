@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       // Track the event based on type
       switch (eventType) {
         case 'open':
-          analytics.trackEvent({
+          analytics.trackEventServer({
             action: 'email_open',
             category: 'email_engagement',
             label: 'weekly_meal_plan',
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
           break;
 
         case 'click':
-          analytics.trackEvent({
+          analytics.trackEventServer({
             action: 'email_click',
             category: 'email_engagement',
             label: linkType || 'unknown_link',
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Track the event
-      analytics.trackEvent({
+      analytics.trackEventServer({
         action: `email_${eventType}`,
         category: 'email_engagement',
         label: linkType || 'weekly_meal_plan',
