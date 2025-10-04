@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
             action: 'email_click',
             category: 'email_engagement',
             label: linkType || 'unknown_link',
+            value: 1,
             custom_parameters: {
               user_id: userId,
               user_email: userEmail,

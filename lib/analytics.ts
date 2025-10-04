@@ -2,6 +2,7 @@
 // This provides a flexible interface that can be easily switched between different analytics providers
 
 import mixpanel from 'mixpanel-browser';
+import mixpanelServer from 'mixpanel';
 
 export interface AnalyticsEvent {
   action: string;
@@ -27,6 +28,7 @@ class AnalyticsService {
   private measurementId: string | null = null;
   private mixpanelToken: string | null = null;
   private mixpanelInitialized = false;
+  private mixPanelServerInstance: any = null;
 
   // Initialize analytics service
   init(measurementId: string, userId?: string, mixpanelToken?: string) {
@@ -38,6 +40,7 @@ class AnalyticsService {
     this.measurementId = measurementId;
     this.userId = userId || null;
     this.mixpanelToken = mixpanelToken || null;
+    this.mixPanelServerInstance = null;
 
     // Initialize Google Analytics
     if (measurementId) {
@@ -61,7 +64,7 @@ class AnalyticsService {
 
     // Initialize Mixpanel
     if (mixpanelToken) {
-      mixpanel.init(mixpanelToken, {
+      this.mixPanelServerInstance = mixpanel.init(mixpanelToken, {
         debug: process.env.NODE_ENV === 'development',
         track_pageview: true,
         persistence: "localStorage",
@@ -81,12 +84,8 @@ class AnalyticsService {
 
     // Initialize Mixpanel
     if (mixpanelToken) {
-      mixpanel.init(mixpanelToken, {
+      this.mixPanelServerInstance = mixpanelServer.init(mixpanelToken, {
         debug: process.env.NODE_ENV === 'development',
-        track_pageview: true,
-        persistence: "localStorage",
-        record_sessions_percent: 100, 
-        record_heatmap_data: true,
       });
       this.mixpanelInitialized = true;
     }
@@ -146,6 +145,7 @@ class AnalyticsService {
     if (this.mixpanelInitialized) {
       const mixpanelEvent = `${event.category}_${event.action}`;
       const mixpanelProperties: any = {
+        distinct_id: event.custom_parameters?.user_id,
         category: event.category,
         label: event.label,
         value: event.value,
@@ -156,7 +156,7 @@ class AnalyticsService {
         Object.assign(mixpanelProperties, event.custom_parameters);
       }
 
-      mixpanel.track(mixpanelEvent, mixpanelProperties);
+      this.mixPanelServerInstance.track(mixpanelEvent, mixpanelProperties);
     }
   }
 
