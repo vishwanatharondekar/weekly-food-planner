@@ -74,6 +74,26 @@ class AnalyticsService {
     this.isInitialized = true;
   }
 
+
+  // Initialize analytics service
+  initServer( mixpanelToken?: string) {
+    this.mixpanelToken = mixpanelToken || null;
+
+    // Initialize Mixpanel
+    if (mixpanelToken) {
+      mixpanel.init(mixpanelToken, {
+        debug: process.env.NODE_ENV === 'development',
+        track_pageview: true,
+        persistence: "localStorage",
+        record_sessions_percent: 100, 
+        record_heatmap_data: true,
+      });
+      this.mixpanelInitialized = true;
+    }
+
+    this.isInitialized = true;
+  }
+
   // Track custom events
   trackEvent(event: AnalyticsEvent) {
     if (!this.isInitialized || typeof window === 'undefined') {
