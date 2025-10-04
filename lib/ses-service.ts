@@ -27,7 +27,7 @@ export interface EmailData {
 export async function sendEmail({ to, subject, htmlBody, textBody, userId, weekStartDate }: EmailData): Promise<boolean> {
   try {
     const command = new SendEmailCommand({
-      Source: process.env.SES_FROM_EMAIL || 'noreply@yourdomain.com',
+      Source: "Khana kya Banau <" + (process.env.SES_FROM_EMAIL || 'noreply@khanakyabanau.in') + ">",
       Destination: {
         ToAddresses: [to],
       },
