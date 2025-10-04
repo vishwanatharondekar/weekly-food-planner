@@ -18,6 +18,28 @@ export const metadata: Metadata = {
     shortcut: '/favicon-192x192.png',
     apple: '/apple-touch-icon.png',
   },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://yourdomain.com',
+    siteName: 'खाना क्या बनाऊं',
+    title: 'खाना क्या बनाऊं - Weekly Meal Planning',
+    description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists. Perfect for households and cooking enthusiasts!',
+    images: [
+      {
+        url: '/images/logos/logo-pack-fe229c/icon-transparent.png',
+        width: 1200,
+        height: 630,
+        alt: 'खाना क्या बनाऊं - Weekly Meal Planning',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'खाना क्या बनाऊं - Weekly Meal Planning',
+    description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
+    images: ['/images/logos/logo-pack-fe229c/icon-transparent.png'],
+  },
 }
 
 export default function RootLayout({
