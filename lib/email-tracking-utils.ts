@@ -13,7 +13,7 @@ export interface EmailTrackingData {
  * Generate a tracking pixel URL for email opens
  */
 export function generateTrackingPixelUrl(data: EmailTrackingData): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in';
   const params = new URLSearchParams({
     event: 'open',
     userId: data.userId,
@@ -28,7 +28,7 @@ export function generateTrackingPixelUrl(data: EmailTrackingData): string {
  * Generate a tracked link URL that redirects through our tracking endpoint
  */
 export function generateTrackedLinkUrl(originalUrl: string, data: EmailTrackingData): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in';
   const params = new URLSearchParams({
     event: 'click',
     userId: data.userId,
@@ -103,7 +103,7 @@ export function createEmailTrackingData(
  * Generate all tracking URLs for an email
  */
 export function generateEmailTrackingUrls(data: EmailTrackingData) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in';
   
   return {
     // Tracking pixel for email opens

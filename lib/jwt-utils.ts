@@ -45,6 +45,6 @@ export function verifyUnsubscribeToken(token: string): UnsubscribeTokenPayload |
 
 export function generateUnsubscribeUrl(email: string, userId: string): string {
   const token = generateUnsubscribeToken(email, userId);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://khanakyabanau.in';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in';
   return `${baseUrl}/unsubscribe?token=${token}`;
 }

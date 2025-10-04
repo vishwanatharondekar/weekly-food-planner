@@ -1,7 +1,7 @@
-// Client-side Analytics wrapper service for tracking user events
-// This provides a flexible interface that can be easily switched between different analytics providers
+// Server-side Analytics wrapper service for tracking user events
+// This provides a flexible interface for server-side analytics tracking
 
-import mixpanel from 'mixpanel-browser';
+import mixpanelServer from 'mixpanel';
 
 export interface AnalyticsEvent {
   action: string;
@@ -21,61 +21,20 @@ export interface UserProperties {
   name?: string;
 }
 
-class AnalyticsService {
+class AnalyticsServerService {
   private isInitialized = false;
-  private userId: string | null = null;
-  private measurementId: string | null = null;
   private mixpanelToken: string | null = null;
   private mixpanelInitialized = false;
-  private isEnabled = false;
+  private mixPanelServerInstance: any = null;
 
-  // Initialize analytics service
-  init(measurementId: string, userId?: string, mixpanelToken?: string) {
-    if (typeof window === 'undefined') {
-      console.log('Analytics: Running on server side, skipping initialization');
-      return;
-    }
-
-    // Check if analytics is enabled via environment variable
-    this.isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
-    
-    if (!this.isEnabled) {
-      console.log('Analytics: Disabled - ANALYTICS_ENABLED environment variable not set to true');
-      return;
-    }
-
-    this.measurementId = measurementId;
-    this.userId = userId || null;
+  // Initialize analytics service for server
+  initServer(mixpanelToken?: string) {
     this.mixpanelToken = mixpanelToken || null;
-
-    // Initialize Google Analytics
-    if (measurementId) {
-      // Load Google Analytics script
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-      document.head.appendChild(script);
-
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function() {
-          window.dataLayer.push(arguments);
-      }
-
-      window.gtag('js', new Date());
-      window.gtag('config', measurementId, {
-        user_id: this.userId,
-        send_page_view: false, // We'll handle page views manually
-      });
-    }
 
     // Initialize Mixpanel
     if (mixpanelToken) {
-      mixpanel.init(mixpanelToken, {
+      this.mixPanelServerInstance = mixpanelServer.init(mixpanelToken, {
         debug: process.env.NODE_ENV === 'development',
-        track_pageview: true,
-        persistence: "localStorage",
-        record_sessions_percent: 100, 
-        record_heatmap_data: true,
       });
       this.mixpanelInitialized = true;
     }
@@ -83,33 +42,18 @@ class AnalyticsService {
     this.isInitialized = true;
   }
 
-  // Track custom events
+  // Track custom events on server
   trackEvent(event: AnalyticsEvent) {
-    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) {
-      console.log('Analytics event (not sent - not enabled or not initialized):', event);
+    if (!this.isInitialized) {
+      console.log('Analytics event (not sent - not initialized):', event);
       return;
-    }
-
-    // Track with Google Analytics
-    if (this.measurementId && window.gtag) {
-      const eventData: any = {
-        event_category: event.category,
-        event_label: event.label,
-        value: event.value,
-      };
-
-      // Add custom parameters
-      if (event.custom_parameters) {
-        Object.assign(eventData, event.custom_parameters);
-      }
-
-      window.gtag('event', event.action, eventData);
     }
 
     // Track with Mixpanel
     if (this.mixpanelInitialized) {
       const mixpanelEvent = `${event.category}_${event.action}`;
       const mixpanelProperties: any = {
+        distinct_id: event.custom_parameters?.user_id,
         category: event.category,
         label: event.label,
         value: event.value,
@@ -120,65 +64,27 @@ class AnalyticsService {
         Object.assign(mixpanelProperties, event.custom_parameters);
       }
 
-      mixpanel.track(mixpanelEvent, mixpanelProperties);
-    }
-  }
-
-  // Track page views
-  trackPageView(pagePath: string, pageTitle?: string) {
-    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) return;
-
-    // Track with Google Analytics
-    if (this.measurementId && window.gtag) {
-      window.gtag('event', 'page_view', {
-        page_path: pagePath,
-        page_title: pageTitle,
-      });
-    }
-
-    // Track with Mixpanel
-    if (this.mixpanelInitialized) {
-      mixpanel.track('Page View', {
-        page_path: pagePath,
-        page_title: pageTitle,
-      });
+      this.mixPanelServerInstance.track(mixpanelEvent, mixpanelProperties);
     }
   }
 
   // Set user properties
   setUserProperties(properties: UserProperties) {
-    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) return;
-
-    // Set user properties in Google Analytics
-    if (this.measurementId && window.gtag) {
-      window.gtag('config', this.measurementId, {
-        user_id: properties.user_id || this.userId,
-        custom_map: {
-          user_type: properties.user_type,
-          dietary_preference: properties.dietary_preference,
-          language: properties.language,
-          has_ai_history: properties.has_ai_history,
-        },
-      });
-    }
+    if (!this.isInitialized) return;
 
     // Set user properties in Mixpanel
-    if (this.mixpanelInitialized) {
+    if (this.mixpanelInitialized && properties.user_id) {
       const mixpanelProperties: any = {};
-      
-      if (properties.user_id || this.userId) {
-        mixpanel.identify(properties.user_id || this.userId || '');
-      }
       
       if (properties.user_type) mixpanelProperties.user_type = properties.user_type;
       if (properties.dietary_preference) mixpanelProperties.dietary_preference = properties.dietary_preference;
       if (properties.language) mixpanelProperties.language = properties.language;
       if (properties.has_ai_history !== undefined) mixpanelProperties.has_ai_history = properties.has_ai_history;
-      if (properties.email) mixpanelProperties.email = properties.email;
-      if (properties.name) mixpanelProperties.name = properties.name;
+      if (properties.email) mixpanelProperties.$email = properties.email;
+      if (properties.name) mixpanelProperties.$name = properties.name;
 
       if (Object.keys(mixpanelProperties).length > 0) {
-        mixpanel.people.set(mixpanelProperties);
+        this.mixPanelServerInstance.people.set(properties.user_id, mixpanelProperties);
       }
     }
   }
@@ -214,17 +120,9 @@ class AnalyticsService {
 }
 
 // Create singleton instance
-export const analytics = new AnalyticsService();
+export const analyticsServer = new AnalyticsServerService();
 
-// Declare gtag for TypeScript
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
-  }
-}
-
-// Predefined event types for consistency
+// Predefined event types for consistency (shared with client)
 export const AnalyticsEvents = {
   // Authentication events
   AUTH: {
@@ -298,3 +196,4 @@ export const AnalyticsEvents = {
     UNSUBSCRIBE: 'email_unsubscribe',
   },
 } as const;
+
