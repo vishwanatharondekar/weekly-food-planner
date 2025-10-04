@@ -3,7 +3,7 @@ import { analytics } from '@/lib/analytics';
 
 // Initialize analytics with server-side Mixpanel token
 if (process.env.MIXPANEL_TOKEN) {
-  analytics.init('', undefined, process.env.MIXPANEL_TOKEN);
+  analytics.initServer(process.env.MIXPANEL_TOKEN);
 }
 
 export async function GET(request: NextRequest) {
