@@ -53,7 +53,7 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
             <h1 style="color: #2c3e50; margin: 0 0 8px 0; font-size: 28px;">🍽️ Your Weekly Meal Plan</h1>
             <p style="color: #6c757d; margin: 0 0 12px 0; font-size: 16px;">Hello ${userName}! Here's your personalized meal plan for the week.</p>
             <p style="margin: 0; font-size: 14px;">
-                <a href="${trackingUrls.mainAppLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open https://khanakyabanau.in</a>
+                <a href="${trackingUrls.mainAppLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open https://www.khanakyabanau.in</a>
             </p>
         </div>
         

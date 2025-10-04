@@ -49,7 +49,7 @@ This document explains the secure unsubscribe system implemented for the weekly 
 
 ### **Unsubscribe Link Format**
 ```
-https://khanakyabanau.in/unsubscribe?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+https://www.khanakyabanau.in/unsubscribe?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### **Email Template Updates**
@@ -111,10 +111,10 @@ emailPreferences: {
 ### **Test API Endpoints**
 ```bash
 # Verify token
-curl "https://khanakyabanau.in/api/unsubscribe?token=YOUR_TOKEN"
+curl "https://www.khanakyabanau.in/api/unsubscribe?token=YOUR_TOKEN"
 
 # Process unsubscribe
-curl -X POST "https://khanakyabanau.in/api/unsubscribe" \
+curl -X POST "https://www.khanakyabanau.in/api/unsubscribe" \
   -H "Content-Type: application/json" \
   -d '{"token":"YOUR_TOKEN"}'
 ```
@@ -127,7 +127,7 @@ curl -X POST "https://khanakyabanau.in/api/unsubscribe" \
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 
 # App URL (for unsubscribe links)
-NEXT_PUBLIC_APP_URL=https://khanakyabanau.in
+NEXT_PUBLIC_APP_URL=https://www.khanakyabanau.in
 ```
 
 ### **Generate JWT Secret**
