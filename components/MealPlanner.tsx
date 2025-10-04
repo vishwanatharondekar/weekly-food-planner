@@ -1446,23 +1446,78 @@ function PlanModeView({
         </div>
       </div>
 
+      {/* Action Buttons - Sticky on Mobile */}
+      <div className={`md:hidden sticky z-40 bg-gradient-to-r from-slate-50 to-blue-50 backdrop-blur-sm px-4 py-3 border-b border-slate-200 shadow-md ${user?.isGuest ? 'top-[7.25rem]' : 'top-16'}`}>
+        <div className="flex items-center space-x-2 w-full">
+          {/* 1. Fill with AI */}
+          <button
+            onClick={onGenerateAIMeals}
+            disabled={loading}
+            className="flex flex-col items-center justify-center flex-1 px-2 py-2 text-sm font-medium text-purple-700 bg-white hover:bg-slate-50 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative shadow-sm"
+          >
+            <Sparkles className="w-4 h-4 text-purple-600 mb-1" />
+            <span className="text-xs">AI</span>
+            {isGuestUser(user?.id) && (
+              <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px]">
+                {getRemainingGuestUsage('ai', user)}
+              </span>
+            )}
+          </button>
+          
+          {/* 2. Download PDF */}
+          <button
+            onClick={onGeneratePDF}
+            className="flex flex-col items-center justify-center flex-1 px-2 py-2 text-sm font-medium text-blue-700 bg-white hover:bg-slate-50 border border-blue-200 rounded-lg transition-colors shadow-sm"
+          >
+            <FileDown className="w-4 h-4 text-blue-600 mb-1" />
+            <span className="text-xs">PDF</span>
+          </button>
+          
+          {/* 3. Shopping List */}
+          <button
+            onClick={onGenerateShoppingList}
+            disabled={loading}
+            className="flex flex-col items-center justify-center flex-1 px-2 py-2 text-sm font-medium text-green-700 bg-white hover:bg-slate-50 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative shadow-sm"
+          >
+            <ShoppingCart className="w-4 h-4 text-green-600 mb-1" />
+            <span className="text-xs">List</span>
+            {isGuestUser(user?.id) && (
+              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px]">
+                {getRemainingGuestUsage('shopping_list', user)}
+              </span>
+            )}
+          </button>
+          
+          {/* 4. Clear Week */}
+          <button
+            onClick={onClearMeals}
+            disabled={loading}
+            className="flex flex-col items-center justify-center flex-1 px-2 py-2 text-sm font-medium text-red-700 bg-white hover:bg-slate-50 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          >
+            <Trash2 className="w-4 h-4 text-red-600 mb-1" />
+            <span className="text-xs">Clear</span>
+          </button>
+        </div>
+      </div>
+
       {/* Meal Planning Table */}
       <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden border border-slate-200">
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
+      {/* Action Buttons - Desktop Only */}
+      <div className="hidden md:block bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
         <div className="flex justify-between items-center">
           <div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3 md:space-x-3 w-full md:w-auto">
+          <div className="flex items-center space-x-3 w-full md:w-auto">
             {/* 1. Fill with AI */}
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+              className="flex flex-row items-center justify-center px-4 py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
-              <Sparkles className="w-4 h-4 text-purple-600 mb-1 md:mb-0 md:mr-2" />
-              <span className="text-xs md:text-sm">AI</span>
+              <Sparkles className="w-4 h-4 text-purple-600 mr-2" />
+              <span className="text-sm">AI</span>
               {isGuestUser(user?.id) && (
                 <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {getRemainingGuestUsage('ai', user)}
@@ -1473,20 +1528,20 @@ function PlanModeView({
             {/* 2. Download PDF */}
             <button
               onClick={onGeneratePDF}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
+              className="flex flex-row items-center justify-center px-4 py-2 text-sm font-medium text-blue-700 bg-slate-50 hover:bg-slate-100 border border-blue-200 rounded-lg transition-colors"
             >
-              <FileDown className="w-4 h-4 text-blue-600 mb-1 md:mb-0 md:mr-2" />
-              <span className="text-xs md:text-sm">PDF</span>
+              <FileDown className="w-4 h-4 text-blue-600 mr-2" />
+              <span className="text-sm">PDF</span>
             </button>
             
             {/* 3. Shopping List */}
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+              className="flex flex-row items-center justify-center px-4 py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
-              <ShoppingCart className="w-4 h-4 text-green-600 mb-1 md:mb-0 md:mr-2" />
-              <span className="text-xs md:text-sm">List</span>
+              <ShoppingCart className="w-4 h-4 text-green-600 mr-2" />
+              <span className="text-sm">List</span>
               {isGuestUser(user?.id) && (
                 <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {getRemainingGuestUsage('shopping_list', user)}
@@ -1498,10 +1553,10 @@ function PlanModeView({
             <button
               onClick={onClearMeals}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-row items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-slate-50 hover:bg-slate-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4 text-red-600 mb-1 md:mb-0 md:mr-2" />
-              <span className="text-xs md:text-sm">Clear</span>
+              <Trash2 className="w-4 h-4 text-red-600 mr-2" />
+              <span className="text-sm">Clear</span>
             </button>
           </div>
         </div>
