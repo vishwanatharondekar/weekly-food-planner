@@ -115,6 +115,31 @@ class AnalyticsService {
     }
   }
 
+  // Track custom events
+  trackEventServer(event: AnalyticsEvent) {
+    if (!this.isInitialized) {
+      console.log('Analytics event (not sent - not initialized):', event);
+      return;
+    }
+
+    // Track with Mixpanel
+    if (this.mixpanelInitialized) {
+      const mixpanelEvent = `${event.category}_${event.action}`;
+      const mixpanelProperties: any = {
+        category: event.category,
+        label: event.label,
+        value: event.value,
+      };
+
+      // Add custom parameters
+      if (event.custom_parameters) {
+        Object.assign(mixpanelProperties, event.custom_parameters);
+      }
+
+      mixpanel.track(mixpanelEvent, mixpanelProperties);
+    }
+  }
+
   // Track page views
   trackPageView(pagePath: string, pageTitle?: string) {
     if (!this.isInitialized || typeof window === 'undefined') return;
