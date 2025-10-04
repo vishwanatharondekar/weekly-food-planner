@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -32,6 +34,53 @@ export async function POST(request: NextRequest) {
 
     if (!meals || !Array.isArray(meals)) {
       return NextResponse.json({ error: 'Invalid meals data' }, { status: 400 });
+    }
+
+    // Check if this is a guest user and enforce usage limits for shopping list generation
+    if (userId.startsWith('guest_')) {
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID
+      };
+
+      if (!getApps().length) {
+        initializeApp(firebaseConfig);
+      }
+
+      const db = getFirestore();
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('__name__', '==', userId));
+      const userSnapshot = await getDocs(userQuery);
+      const userData = userSnapshot.docs[0]?.data();
+      
+      if (userData) {
+        const currentUsage = userData.shoppingListUsageCount || 0;
+        const usageLimit = userData.guestUsageLimits?.shoppingList || parseInt(process.env.GUEST_SHOPPING_LIST_LIMIT || '3');
+        
+        if (currentUsage >= usageLimit) {
+          return NextResponse.json(
+            { 
+              error: `Guest users are limited to ${usageLimit} shopping list generations. Please create an account for unlimited access.`,
+              isGuestLimitReached: true,
+              usageLimit,
+              currentUsage
+            },
+            { status: 403 }
+          );
+        }
+        
+        // Increment usage count
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, { 
+          ...userData, 
+          shoppingListUsageCount: currentUsage + 1 
+        }, { merge: true });
+      }
     }
 
     const result = await extractIngredientsWithAI(meals);

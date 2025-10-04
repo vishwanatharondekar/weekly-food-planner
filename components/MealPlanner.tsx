@@ -10,7 +10,9 @@ import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generato
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
+import GuestUpgradeModal from './GuestUpgradeModal';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
 interface MealData {
   [day: string]: {
@@ -68,11 +70,23 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   // Preferences modal state
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
+  const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
     loadMealSettings();
     loadUserLanguagePreferences();
   }, []);
+
+  // React to user prop changes - reload settings when user is updated
+  useEffect(() => {
+    if (user) {
+      loadMealSettings();
+      loadUserLanguagePreferences();
+    }
+  }, [user]);
 
   useEffect(() => {
     loadMeals();
@@ -84,6 +98,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
+        // Check guest limits for onboarding flow too
+        if (isGuestUser(user?.id) && hasExceededGuestLimit('ai', user)) {
+          console.log('Guest user has exceeded AI limit during onboarding flow');
+          setUpgradeModalType('ai');
+          setShowUpgradeModal(true);
+          return;
+        }
         performAIGeneration();
       }, 1000);
       
@@ -411,9 +432,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setSelectedMeal(null);
   };
 
-  const focusMealInput = (day: string, mealType: string) => {
+  const focusMealInput = (day: string, mealType: string, formFactor?: string) => {
     // Find the input element for the specific day and meal type
-    const inputId = `meal-input-${day}-${mealType}`;
+    const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
     const inputElement = document.getElementById(inputId);
     if (inputElement) {
       inputElement.focus();
@@ -458,7 +479,45 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     closeVideoModal();
   };
 
+  // Function to check if there are empty slots in the meal plan
+  const hasEmptySlots = () => {
+    for (const day of DAYS_OF_WEEK) {
+      for (const mealType of mealSettings.enabledMealTypes) {
+        const meal = meals[day]?.[mealType];
+        const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+        if (!mealName.trim()) {
+          return true; // Found at least one empty slot
+        }
+      }
+    }
+    return false; // No empty slots found
+  };
+
   const generateAIMeals = () => {
+    console.log('AI button clicked - checking for empty slots first');
+    
+    // First check if there are empty slots
+    if (!hasEmptySlots()) {
+      setShowNoEmptySlotsModal(true);
+      return;
+    }
+    
+    console.log('Empty slots found - checking guest limits');
+    
+    // Check guest usage limits before opening preferences modal
+    if (isGuestUser(user?.id)) {
+      if (hasExceededGuestLimit('ai', user)) {
+        setUpgradeModalType('ai');
+        setShowUpgradeModal(true);
+        return;
+      }
+      
+        const remaining = getRemainingGuestUsage('ai', user);
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+        }
+    }
+    
     console.log('Opening preferences modal for AI generation');
     setShowPreferencesModal(true);
   };
@@ -513,6 +572,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           has_ingredients: !!ingredients,
           ingredient_count: ingredients?.length || 0,
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -567,22 +627,39 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       hideFullScreenLoader();
       toast.success('AI meal suggestions applied to empty slots!');
       await checkAIStatus();
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
     } catch (error: any) {
       console.error('Error generating AI meals:', error);
       hideFullScreenLoader();
-      toast.error(error.message || 'Failed to generate AI suggestions');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error(error.message || 'Failed to generate AI suggestions');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const clearMeals = async () => {
-    // Add confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to clear all meals for this week? This action cannot be undone.');
-    if (!confirmed) {
-      return;
-    }
+  const clearMeals = () => {
+    // Show custom confirmation modal instead of browser dialog
+    setShowClearModal(true);
+  };
 
+  const handleClearConfirm = async () => {
+    setShowClearModal(false);
+    
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Clearing Meals', 'Removing all meals from this week...');
@@ -693,6 +770,20 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const handleGenerateShoppingList = async () => {
     try {
+      // Check guest usage limits before proceeding
+      if (isGuestUser(user?.id)) {
+        if (hasExceededGuestLimit('shopping_list', user)) {
+          setUpgradeModalType('shopping_list');
+          setShowUpgradeModal(true);
+          return;
+        }
+        
+        const remaining = getRemainingGuestUsage('shopping_list', user);
+        if (remaining <= 1) {
+          toast.success(`You have ${remaining} shopping list generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+        }
+      }
+
       showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
       
       // Track shopping list generation event
@@ -706,6 +797,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             return total + Object.values(dayMeals).filter(meal => meal.name?.trim()).length;
           }, 0),
           user_id: user?.id,
+          is_guest: isGuestUser(user?.id),
         },
       });
       
@@ -742,10 +834,26 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('Shopping list downloaded successfully!');
-    } catch (error) {
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
+    } catch (error: any) {
       console.error('Error generating shopping list:', error);
       hideFullScreenLoader();
-      toast.error('Failed to generate shopping list');
+      
+      // Handle guest limit reached error
+      if (error.message && error.message.includes('Guest users are limited to')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to generate shopping list');
+      }
     }
 
   };
@@ -880,45 +988,11 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     };
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="space-y-6">
-
-        {/* Onboarding Tooltip */}
-        {continueFromOnboarding && showOnboardingTooltip && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm relative">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-blue-900">
-                  Your meal plan is ready!
-                </h3>
-                <p className="mt-1 text-sm text-blue-700">
-                  You're free to edit/delete any meal in the plan below. Click on any meal to modify it, or use the AI assistant to fill the empty slots.
-                </p>
-              </div>
-              <div className="ml-4 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowOnboardingTooltip(false)}
-                  className="bg-blue-50 rounded-md p-1.5 text-blue-400 hover:bg-blue-100 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-blue-50"
-                >
-                  <span className="sr-only">Dismiss</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Mode Switcher - Chrome-like Full Width Tabs */}
         {!continueFromOnboarding && <div className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-slate-200 border-b-0">
@@ -927,7 +1001,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             <button
               onClick={switchToCookMode}
               disabled={!hasTodaysMeals}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-2 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'cook'
                   ? 'bg-white text-gray-900 border-b-2 border-orange-500'
                   : hasTodaysMeals
@@ -950,7 +1024,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             {/* Plan Mode Tab - Right Side */}
             <button
               onClick={switchToPlanMode}
-              className={`relative flex-1 flex items-center justify-center px-8 py-4 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex-1 flex items-center justify-center px-4 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'plan'
                   ? 'bg-white text-gray-900 border-b-2 border-blue-500'
                   : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -987,6 +1061,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             mealSettings={mealSettings}
             savingMeals={savingMeals}
             enabledMealTypes={enabledMealTypes}
+            user={user}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
@@ -1035,6 +1110,94 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         user={user}
         isLoading={isUpdatingPreferences}
       />
+
+      {/* Guest Upgrade Modal */}
+      <GuestUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onSuccess={(token, upgradedUser) => {
+          // Update the user state with the new registered user
+          if (onUserUpdate) {
+            onUserUpdate(upgradedUser);
+          }
+          setShowUpgradeModal(false);
+        }}
+        limitType={upgradeModalType}
+        currentUsage={upgradeModalType === 'ai' ? (user?.aiUsageCount || 0) : (user?.shoppingListUsageCount || 0)}
+        usageLimit={upgradeModalType === 'ai' ? (user?.guestUsageLimits?.aiGeneration || 3) : (user?.guestUsageLimits?.shoppingList || 3)}
+      />
+
+      {/* No Empty Slots Modal */}
+      {showNoEmptySlotsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <Sparkles className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    No Empty Slots Available
+                  </h3>
+                </div>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  AI will be used only for filling empty slots. Clear the complete plan if you wish to regenerate the whole plan.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowNoEmptySlotsModal(false)}
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Clear All Meals
+                  </h3>
+                </div>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to clear all meals for this week? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowClearModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearConfirm}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
@@ -1177,13 +1340,14 @@ interface PlanModeViewProps {
   mealSettings: MealSettings;
   savingMeals: Set<string>;
   enabledMealTypes: string[];
+  user: any;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
-  onFocusMealInput: (day: string, mealType: string) => void;
+  onFocusMealInput: (day: string, mealType: string, formFactor?: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
   onPdfTooltipEnd: () => void;
@@ -1204,6 +1368,7 @@ function PlanModeView({
   mealSettings,
   savingMeals,
   enabledMealTypes,
+  user,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
@@ -1223,7 +1388,7 @@ function PlanModeView({
   showAiTooltip,
 }: PlanModeViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Week Navigation - Desktop */}
       <div className="hidden md:flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 border border-slate-200">
         <button
@@ -1294,10 +1459,15 @@ function PlanModeView({
             <button
               onClick={onGenerateAIMeals}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-purple-700 bg-slate-50 hover:bg-slate-100 border border-purple-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
               <Sparkles className="w-4 h-4 text-purple-600 mb-1 md:mb-0 md:mr-2" />
               <span className="text-xs md:text-sm">AI</span>
+              {isGuestUser(user?.id) && (
+                <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {getRemainingGuestUsage('ai', user)}
+                </span>
+              )}
             </button>
             
             {/* 2. Download PDF */}
@@ -1313,10 +1483,15 @@ function PlanModeView({
             <button
               onClick={onGenerateShoppingList}
               disabled={loading}
-              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex flex-col md:flex-row items-center justify-center flex-1 md:flex-none px-2 md:px-4 py-3 md:py-2 text-sm font-medium text-green-700 bg-slate-50 hover:bg-slate-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
             >
               <ShoppingCart className="w-4 h-4 text-green-600 mb-1 md:mb-0 md:mr-2" />
               <span className="text-xs md:text-sm">List</span>
+              {isGuestUser(user?.id) && (
+                <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {getRemainingGuestUsage('shopping_list', user)}
+                </span>
+              )}
             </button>
             
             {/* 4. Clear Week */}
@@ -1371,7 +1546,7 @@ function PlanModeView({
                       <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
                         <div className="relative group h-full">
                           <input
-                            id={`meal-input-${day}-${mealType}`}
+                            id={`meal-input-desktop-${day}-${mealType}`}
                             type="text"
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1401,7 +1576,7 @@ function PlanModeView({
                               {/* Edit button - always visible when text exists */}
                               <button
                                 type="button"
-                                onClick={() => onFocusMealInput(day, mealType)}
+                                onClick={() => onFocusMealInput(day, mealType, 'desktop')}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                 title="Edit meal"
                               >
@@ -1466,7 +1641,7 @@ function PlanModeView({
                           </label>
                           <div className="relative group">
                             <input
-                              id={`meal-input-${day}-${mealType}`}
+                              id={`meal-input-mobile-${day}-${mealType}`}
                               type="text"
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
@@ -1496,7 +1671,7 @@ function PlanModeView({
                                 {/* Edit button - always visible when text exists */}
                                 <button
                                   type="button"
-                                  onClick={() => onFocusMealInput(day, mealType)}
+                                  onClick={() => onFocusMealInput(day, mealType, 'mobile')}
                                   className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                   title="Edit meal"
                                 >

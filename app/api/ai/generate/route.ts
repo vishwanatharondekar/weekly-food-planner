@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, setDoc } from 'firebase/firestore';
 import { formatDate } from '@/lib/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
@@ -51,6 +51,38 @@ export async function POST(request: NextRequest) {
     }
 
     const { weekStartDate, ingredients = [] } = await request.json();
+
+    // Check if this is a guest user and enforce usage limits
+    if (userId.startsWith('guest_')) {
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('__name__', '==', userId));
+      const userSnapshot = await getDocs(userQuery);
+      const userData = userSnapshot.docs[0]?.data();
+      
+      if (userData) {
+        const currentUsage = userData.aiUsageCount || 0;
+        const usageLimit = userData.guestUsageLimits?.aiGeneration || parseInt(process.env.GUEST_AI_LIMIT || '3');
+        
+        if (currentUsage >= usageLimit) {
+          return NextResponse.json(
+            { 
+              error: `Guest users are limited to ${usageLimit} AI generations. Please create an account for unlimited access.`,
+              isGuestLimitReached: true,
+              usageLimit,
+              currentUsage
+            },
+            { status: 403 }
+          );
+        }
+        
+        // Increment usage count
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, { 
+          ...userData, 
+          aiUsageCount: currentUsage + 1 
+        }, { merge: true });
+      }
+    }
 
     // Get meal history for the target week
     const referenceWeekStart = new Date(weekStartDate);
@@ -137,7 +169,7 @@ function getDietaryInfo(dietaryPreferences: any) {
 Exclude any dish with meat, fish, or eggs. 
 If uncertain, default to a vegetarian option.`;
   } else {
-    returnString += `Non-vegetarian,User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}. Exclude any dish with meat, fish, or eggs on other days.`;
+    returnString += dietaryPreferences.nonVegDays ? `Non-vegetarian, User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ')}. Exclude any dish with meat, fish, or eggs on other days.` : `Non-vegetarian, User can eat non veg on any day. Have a mix of vegetarian and non-vegetarian meals.`;
   }
 
   return returnString;
@@ -163,7 +195,6 @@ function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
 }
 
 function isWeekEmpty(meals: any, enabledMeals: string[]) {
-  console.log('meals : ', meals);
   return !Object.keys(meals).every(day => isDayEmpty(meals?.[day], enabledMeals));
 }
 
@@ -210,7 +241,7 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   if (hasDishPreferences) {
     // Use user's specific dish preferences from onboarding
     cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')} cuisine`;
-    availableDishes = `User's likes following dishes:
+    availableDishes = `User likes following dishes:
       Breakfast: ${dishPreferences.breakfast.join(', ')}
       Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }

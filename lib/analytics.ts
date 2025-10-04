@@ -29,11 +29,20 @@ class AnalyticsService {
   private mixpanelToken: string | null = null;
   private mixpanelInitialized = false;
   private mixPanelServerInstance: any = null;
+  private isEnabled = false;
 
   // Initialize analytics service
   init(measurementId: string, userId?: string, mixpanelToken?: string) {
     if (typeof window === 'undefined') {
       console.log('Analytics: Running on server side, skipping initialization');
+      return;
+    }
+
+    // Check if analytics is enabled via environment variable
+    this.isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
+    
+    if (!this.isEnabled) {
+      console.log('Analytics: Disabled - ANALYTICS_ENABLED environment variable not set to true');
       return;
     }
 
@@ -95,8 +104,8 @@ class AnalyticsService {
 
   // Track custom events
   trackEvent(event: AnalyticsEvent) {
-    if (!this.isInitialized || typeof window === 'undefined') {
-      console.log('Analytics event (not sent - not initialized):', event);
+    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) {
+      console.log('Analytics event (not sent - not enabled or not initialized):', event);
       return;
     }
 
@@ -162,7 +171,7 @@ class AnalyticsService {
 
   // Track page views
   trackPageView(pagePath: string, pageTitle?: string) {
-    if (!this.isInitialized || typeof window === 'undefined') return;
+    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) return;
 
     // Track with Google Analytics
     if (this.measurementId && window.gtag) {
@@ -183,7 +192,7 @@ class AnalyticsService {
 
   // Set user properties
   setUserProperties(properties: UserProperties) {
-    if (!this.isInitialized || typeof window === 'undefined') return;
+    if (!this.isInitialized || typeof window === 'undefined' || !this.isEnabled) return;
 
     // Set user properties in Google Analytics
     if (this.measurementId && window.gtag) {

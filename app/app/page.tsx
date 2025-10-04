@@ -11,10 +11,12 @@ import MealSettingsComponent from '@/components/MealSettings';
 import VideoURLManager from '@/components/VideoURLManager';
 import LanguagePreferences from '@/components/LanguagePreferences';
 import CuisineOnboarding from '@/components/CuisineOnboarding';
+import GuestUpgradeModal from '@/components/GuestUpgradeModal';
 import { authAPI } from '@/lib/api';
-import { ChevronDown, Settings, Leaf, Video, Globe } from 'lucide-react';
+import { ChevronDown, Settings, Leaf, Video, Globe, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
+import { getGuestDeviceId, isGuestUser, clearGuestData } from '@/lib/guest-utils';
 
 export default function Home() {
   const router = useRouter();
@@ -29,6 +31,7 @@ export default function Home() {
   const [showVideoURLManager, setShowVideoURLManager] = useState(false);
   const [showLanguagePreferences, setShowLanguagePreferences] = useState(false);
   const [showCuisineOnboarding, setShowCuisineOnboarding] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
 
   useEffect(() => {
@@ -37,10 +40,41 @@ export default function Home() {
       setToken(savedToken);
       loadUserProfile();
     } else {
+      // No token found, show welcome screen (onboarding will handle guest user creation)
       setLoading(false);
-      // Let unauthenticated users see the login form
+      setShowCuisineOnboarding(true);
     }
   }, [router]);
+
+  const createGuestUser = async () => {
+    try {
+      const deviceId = getGuestDeviceId();
+      const response = await authAPI.createGuestUser(deviceId);
+      
+      setToken(response.token);
+      setUser(response.user);
+      localStorage.setItem('token', response.token);
+      
+      // Initialize analytics for guest user
+      analytics.setUserProperties({
+        user_id: response.user.id,
+        user_type: 'new',
+        dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
+        language: 'en',
+        has_ai_history: false,
+      });
+      
+      // Show onboarding for new guest users
+      if (!response.user.onboardingCompleted) {
+        setShowCuisineOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error creating guest user:', error);
+      toast.error('Failed to initialize app. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -94,14 +128,35 @@ export default function Home() {
       category: 'authentication',
       custom_parameters: {
         user_id: user?.id,
+        user_type: user?.isGuest ? 'guest' : 'registered',
       },
     });
     
+    // Logout for registered users only
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     setShowSettingsDropdown(false);
+  };
+
+  const handleSignUp = () => {
+    setShowSettingsDropdown(false);
+    // Redirect to sign-in page (which includes both login and register)
+    router.push('/signin');
+  };
+
+  const handleUpgradeSuccess = (token: string, newUser: any) => {
+    // Update the user state with the new registered user
+    setUser(newUser);
+    setToken(token);
+    
+    // Close the modal
+    setShowUpgradeModal(false);
+    
+    // Show success message (handled by the modal itself)
+    // Refresh the page data to reflect the new user status
+    loadUserProfile();
   };
 
   const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
@@ -144,13 +199,22 @@ export default function Home() {
         has_ai_history: true,
       });
       
-      // Update local user state
-      setUser((prev: any) => ({
-        ...prev,
-        cuisinePreferences: selectedCuisines,
-        dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
-        onboardingCompleted: true,
-      }));
+      // Fetch complete user profile to ensure all preferences are available
+      // This is crucial for the AI modal to have access to dishPreferences
+      try {
+        const response = await authAPI.getProfile();
+        setUser(response.user);
+      } catch (profileError) {
+        console.error('Error fetching updated profile:', profileError);
+        // Fallback to manual state update if profile fetch fails
+        setUser((prev: any) => ({
+          ...prev,
+          cuisinePreferences: selectedCuisines,
+          dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
+          dishPreferences: selectedDishes,
+          onboardingCompleted: true,
+        }));
+      }
       
       setShowCuisineOnboarding(false);
       setContinueFromOnboarding(true);
@@ -196,50 +260,71 @@ export default function Home() {
     );
   }
 
-  if (!token || !user) {
-    return (
-      <StorageInitializer>
-        <AuthForm
-          mode={authMode}
-          onSuccess={handleAuthSuccess}
-          onToggleMode={toggleAuthMode}
-        />
-      </StorageInitializer>
-    );
-  }
+  // Remove the old auth form logic since we automatically create guest users
 
   return (
     <StorageInitializer>
       <div className="min-h-screen bg-slate-50">
         {/* Header with logout */}
-        <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-                  <img 
-                    src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
-                    alt="खाना क्या बनाऊं Logo" 
-                    className="w-10 h-10 object-contain"
-                  />
+        {user && (
+          <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                    <img 
+                      src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
+                      alt="खाना क्या बनाऊं Logo" 
+                      className="w-10 h-10 object-contain"
+                    />
+                  </div>
+                  <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
                 </div>
-                <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
-              </div>
-              <div className="flex items-center space-x-4">
-
-                
-                {/* Settings Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                    className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    <span>{user.name}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
-                  </button>
+                <div className="flex items-center space-x-4">
+                  {/* Login CTA for Guest Users - Desktop Only */}
+                  {user?.isGuest && (
+                    <div className="hidden md:flex items-center space-x-2 text-sm text-blue-700">
+                      <span>Already have an account?</span>
+                      <button
+                        onClick={() => {
+                          window.location.href = '/signin';
+                        }}
+                        className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Settings Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                      className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      {user?.isGuest && <User className="w-4 h-4 text-blue-500" />}
+                      <span>{user?.isGuest ? 'Guest User' : user.name}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
+                    </button>
                   
                   {showSettingsDropdown && (
                     <div data-dropdown="settings" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                      {user?.isGuest && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setShowUpgradeModal(true);
+                              setShowSettingsDropdown(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+                          >
+                            <User className="w-4 h-4 mr-3 text-blue-600" />
+                            Create Account
+                          </button>
+                          <div className="border-t border-gray-200 my-1"></div>
+                        </>
+                      )}
+                      
                       <button
                         onClick={() => {
                           setShowDietaryPreferences(true);
@@ -284,53 +369,83 @@ export default function Home() {
                         Language Preferences
                       </button>
                       
-                      <div className="border-t border-gray-200 my-1"></div>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleLogout();
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        Logout
-                      </button>
+                      {/* Only show logout for registered users */}
+                      {!user?.isGuest && (
+                        <>
+                          <div className="border-t border-gray-200 my-1"></div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLogout();
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Logout
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
+          </nav>
+        )}
+
+        {/* Login CTA Banner for Guest Users - Mobile Only */}
+        {user?.isGuest && (
+          <div className="md:hidden bg-blue-50 border-b border-blue-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="py-3 text-center">
+                <span className="text-sm text-blue-700">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => {
+                      // Redirect to dedicated sign-in page
+                      window.location.href = '/signin';
+                    }}
+                    className="font-medium text-blue-600 hover:text-blue-800 underline transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </span>
+              </div>
+            </div>
           </div>
-        </nav>
+        )}
         
-        {user.onboardingCompleted ? (
+        {user && user.onboardingCompleted ? (
           <MealPlanner 
             user={user} 
             continueFromOnboarding={continueFromOnboarding}
             onUserUpdate={setUser}
           />
-        ) : (
+        ) : user && !user.onboardingCompleted ? (
           <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading your meal planner...</p>
             </div>
           </div>
-        )}
+        ) : null}
         {/* Settings Modals */}
-        {showMealSettings && (
+        {showMealSettings && user && (
           <MealSettingsComponent
             user={user}
             onSettingsChange={() => {}} // This will be handled by MealPlanner
             onClose={() => setShowMealSettings(false)}
+            onUserUpdate={setUser}
           />
         )}
         
-        {showDietaryPreferences && (
+        {showDietaryPreferences && user && (
           <DietaryPreferences
             user={user}
             onClose={() => setShowDietaryPreferences(false)}
+            onUserUpdate={setUser}
           />
         )}
         
@@ -341,16 +456,30 @@ export default function Home() {
           />
         )}
         
-        {showLanguagePreferences && (
+        {showLanguagePreferences && user && (
           <LanguagePreferences
             user={user}
             onClose={() => setShowLanguagePreferences(false)}
+            onUserUpdate={setUser}
+          />
+        )}
+        
+        {showUpgradeModal && user && (
+          <GuestUpgradeModal
+            isOpen={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
+            onSuccess={handleUpgradeSuccess}
+            limitType="ai" // Default to ai type for manual upgrade
+            currentUsage={user?.aiUsageCount || 0}
+            usageLimit={user?.guestUsageLimits?.ai || 3}
+            isManualRegistration={true} // Hide limit message for manual registration
           />
         )}
         
         {showCuisineOnboarding && (
           <CuisineOnboarding
             onComplete={handleCuisineOnboardingComplete}
+            onCreateGuestUser={createGuestUser}
           />
         )}
       </div>
