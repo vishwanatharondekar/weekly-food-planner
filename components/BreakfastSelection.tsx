@@ -69,23 +69,14 @@ export default function BreakfastSelection({ selectedCuisines, initialBreakfast 
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center">
-                <span className="text-lg font-bold">3</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">Select <span className="underline">Breakfast</span> Dishes you like</h2>
-                <p className="text-orange-100">Choose your favorite breakfast dishes</p>
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="bg-white bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center">
+              <span className="text-lg font-bold">3</span>
             </div>
-            <button
-              onClick={onBack}
-              className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </button>
+            <div>
+              <h2 className="text-2xl font-bold">Select <span className="underline">Breakfast</span> Dishes you like</h2>
+              <p className="text-orange-100">Choose your favorite breakfast dishes</p>
+            </div>
           </div>
         </div>
 
@@ -106,11 +97,18 @@ export default function BreakfastSelection({ selectedCuisines, initialBreakfast 
 
         {/* Footer */}
         <div className="border-t bg-gray-50 p-4 sm:p-6 flex-shrink-0">
-          <div className="flex justify-end items-center">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={onBack}
+              className="px-4 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </button>
             <button
               onClick={handleSubmit}
               disabled={selectedBreakfast.length === 0 || isSubmitting}
-              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+              className="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
             >
               {isSubmitting ? (
                 <>
