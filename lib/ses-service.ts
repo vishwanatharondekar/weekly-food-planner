@@ -1,9 +1,9 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { analytics, AnalyticsEvents } from './analytics';
+import { analyticsServer, AnalyticsEvents } from './analytics-server';
 
 // Initialize analytics with Mixpanel token for server-side tracking
 if (process.env.MIXPANEL_TOKEN) {
-  analytics.init('', undefined, process.env.MIXPANEL_TOKEN);
+  analyticsServer.initServer(process.env.MIXPANEL_TOKEN);
 }
 
 // Initialize SES client
@@ -57,7 +57,7 @@ export async function sendEmail({ to, subject, htmlBody, textBody, userId, weekS
     // Track email sent event
     if (userId) {
       try {
-        analytics.trackEvent({
+        analyticsServer.trackEvent({
           action: AnalyticsEvents.EMAIL.SENT,
           category: 'email_delivery',
           label: 'weekly_meal_plan',

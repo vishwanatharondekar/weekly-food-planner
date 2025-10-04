@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analytics } from '@/lib/analytics';
+import { analyticsServer } from '@/lib/analytics-server';
 
 // Initialize analytics with server-side Mixpanel token
 if (process.env.MIXPANEL_TOKEN) {
-  analytics.initServer(process.env.MIXPANEL_TOKEN);
+  analyticsServer.initServer(process.env.MIXPANEL_TOKEN);
 }
 
 export async function GET(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     try {
       // Set user properties for better tracking
       if (userEmail) {
-        analytics.setUserProperties({
+        analyticsServer.setUserProperties({
           user_id: userId,
           email: userEmail,
         });
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       // Track the event based on type
       switch (eventType) {
         case 'open':
-          analytics.trackEventServer({
+          analyticsServer.trackEvent({
             action: 'email_open',
             category: 'email_engagement',
             label: 'weekly_meal_plan',
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
           break;
 
         case 'click':
-          analytics.trackEventServer({
+          analyticsServer.trackEvent({
             action: 'email_click',
             category: 'email_engagement',
             label: linkType || 'unknown_link',
@@ -103,14 +103,14 @@ export async function POST(request: NextRequest) {
     if (eventType && userId) {
       // Set user properties for better tracking
       if (userEmail) {
-        analytics.setUserProperties({
+        analyticsServer.setUserProperties({
           user_id: userId,
           email: userEmail,
         });
       }
 
       // Track the event
-      analytics.trackEventServer({
+      analyticsServer.trackEvent({
         action: `email_${eventType}`,
         category: 'email_engagement',
         label: linkType || 'weekly_meal_plan',
