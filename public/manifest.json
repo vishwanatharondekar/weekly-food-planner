@@ -1,0 +1,59 @@
+{
+  "name": "खाना क्या बनाऊं - Weekly Meal Planner",
+  "short_name": "खाना क्या बनाऊं",
+  "description": "Plan your weekly meals with AI-powered suggestions and smart shopping lists. Perfect for households and cooking enthusiasts!",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "food",
+    "lifestyle",
+    "productivity"
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "View Meal Plan",
+      "short_name": "Meal Plan",
+      "description": "View your weekly meal plan",
+      "url": "/app",
+      "icons": [
+        {
+          "src": "/favicon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}
