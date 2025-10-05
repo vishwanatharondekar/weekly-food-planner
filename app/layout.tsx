@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'खाना क्या बनाऊं - Weekly Meal Planning',
   description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -17,6 +18,11 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon-192x192.png',
     apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'खाना क्या बनाऊं',
   },
   openGraph: {
     type: 'website',
@@ -39,6 +45,12 @@ export const metadata: Metadata = {
     title: 'खाना क्या बनाऊं - Weekly Meal Planning',
     description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
     images: ['/images/logos/logo-pack-fe229c/icon-transparent.png'],
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
   },
 }
 
