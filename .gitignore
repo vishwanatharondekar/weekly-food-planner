@@ -167,3 +167,6 @@ config.local.json
 # IndexedDB files (for development)
 IndexedDB/ 
 .vercel
+
+# User export CSV files
+users-export-*.csv
