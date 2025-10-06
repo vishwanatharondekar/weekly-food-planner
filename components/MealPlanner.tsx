@@ -435,13 +435,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const startEditingMeal = (day: string, mealType: string, formFactor?: 'mobile' | 'desktop') => {
     setEditingMeal({ day, mealType });
-    // Small delay to ensure input is rendered before focusing
+    // Small delay to ensure input/textarea is rendered before focusing
     setTimeout(() => {
       const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
-      const inputElement = document.getElementById(inputId) as HTMLInputElement;
+      const inputElement = document.getElementById(inputId) as HTMLInputElement | HTMLTextAreaElement;
       if (inputElement) {
         inputElement.focus();
-        // inputElement.select();
+        // Move cursor to end of text
+        const length = inputElement.value.length;
+        inputElement.setSelectionRange(length, length);
       }
     }, 50);
   };
@@ -1637,10 +1639,9 @@ function PlanModeView({
                       <td key={mealType} className="px-0 py-0 border-r border-gray-300 last:border-r-0 align-top">
                         <div className="relative group">
                           {isEditing || !hasText ? (
-                            // Show input when editing or when empty
-                            <input
+                            // Show textarea when editing
+                            <textarea
                               id={`meal-input-desktop-${day}-${mealType}`}
-                              type="text"
                               value={mealName}
                               onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                               onBlur={(e) => {
@@ -1648,7 +1649,8 @@ function PlanModeView({
                                 setTimeout(() => onStopEditingMeal(), 100);
                               }}
                               placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`text-black w-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                              rows={2}
+                              className={`text-black w-full px-6 py-3 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 resize-none leading-relaxed border-2 border-blue-400 rounded ${
                                 savingMeals.has(`${day}-${mealType}`) 
                                   ? 'bg-blue-50' 
                                   : ''
@@ -1657,8 +1659,7 @@ function PlanModeView({
                           ) : (
                             // Show display div when has content and not editing
                             <div 
-                              onClick={() => onStartEditingMeal(day, mealType, 'desktop')}
-                              className="text-black w-full px-6 py-3 pr-16 cursor-text hover:bg-blue-50/20 transition-all duration-200 min-h-[60px] flex items-center"
+                              className="text-black w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-center"
                             >
                               <span className="line-clamp-2 leading-relaxed break-words">{mealName}</span>
                             </div>
@@ -1741,10 +1742,9 @@ function PlanModeView({
                           </div>
                           <div className="relative group">
                             {isEditing || !hasText ? (
-                              // Show input when editing or when empty
-                              <input
+                              // Show textarea when editing
+                              <textarea
                                 id={`meal-input-mobile-${day}-${mealType}`}
-                                type="text"
                                 value={mealName}
                                 onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                                 onBlur={(e) => {
@@ -1752,7 +1752,8 @@ function PlanModeView({
                                   setTimeout(() => onStopEditingMeal(), 100);
                                 }}
                                 placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                                className={`text-black w-full px-0 py-1 pr-16 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                                rows={2}
+                                className={`text-black w-full px-2 py-1 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 resize-none leading-relaxed border-2 border-blue-400 rounded ${
                                   savingMeals.has(`${day}-${mealType}`) 
                                     ? 'bg-blue-50' 
                                     : ''
@@ -1761,8 +1762,7 @@ function PlanModeView({
                             ) : (
                               // Show display div when has content and not editing
                               <div 
-                                onClick={() => onStartEditingMeal(day, mealType, 'mobile')}
-                                className="text-black w-full px-0 py-1 pr-16 cursor-text hover:bg-blue-50/20 transition-all duration-200 rounded min-h-[32px]"
+                                className="text-black w-full px-0 py-1 pr-16 transition-all duration-200 rounded min-h-[32px]"
                               >
                                 <span className="line-clamp-2 leading-relaxed break-words block">{mealName}</span>
                               </div>
