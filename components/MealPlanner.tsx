@@ -1638,7 +1638,7 @@ function PlanModeView({
                     return (
                       <td key={mealType} className="px-0 py-0 border-r border-gray-300 last:border-r-0 align-top">
                         <div className="relative group">
-                          {isEditing || !hasText ? (
+                          {isEditing ? (
                             // Show textarea when editing
                             <textarea
                               id={`meal-input-desktop-${day}-${mealType}`}
@@ -1656,6 +1656,13 @@ function PlanModeView({
                                   : ''
                               }`}
                             />
+                          ) : !hasText ? (
+                            // Show placeholder state when empty and not editing
+                            <div 
+                              className="w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-center text-gray-400 italic"
+                            >
+                              Click edit to add meal
+                            </div>
                           ) : (
                             // Show display div when has content and not editing
                             <div 
@@ -1672,15 +1679,17 @@ function PlanModeView({
                             </div>
                           )}
                           
-                          {/* Action buttons - only show when there's text and not editing */}
-                          {hasText && !isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                          {/* Action buttons - show when not editing */}
+                          {!isEditing && !savingMeals.has(`${day}-${mealType}`) && (
                             <div className="absolute top-3 right-2 flex items-center space-x-1">
-                              {/* Video button - only visible on hover */}
-                              <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                {onGetVideoIcon(day, mealType)}
-                              </div>
+                              {/* Video button - only show when there's text and only visible on hover */}
+                              {hasText && (
+                                <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  {onGetVideoIcon(day, mealType)}
+                                </div>
+                              )}
                               
-                              {/* Edit button - always visible when text exists */}
+                              {/* Edit button - always visible */}
                               <button
                                 type="button"
                                 onMouseDown={(e) => {
@@ -1741,7 +1750,7 @@ function PlanModeView({
                             {getMealDisplayName(mealType)}
                           </div>
                           <div className="relative group">
-                            {isEditing || !hasText ? (
+                            {isEditing ? (
                               // Show textarea when editing
                               <textarea
                                 id={`meal-input-mobile-${day}-${mealType}`}
@@ -1759,6 +1768,13 @@ function PlanModeView({
                                     : ''
                                 }`}
                               />
+                            ) : !hasText ? (
+                              // Show placeholder state when empty and not editing
+                              <div 
+                                className="w-full px-0 py-1 pr-16 transition-all duration-200 rounded min-h-[32px] text-gray-400 italic"
+                              >
+                                Click edit to add meal
+                              </div>
                             ) : (
                               // Show display div when has content and not editing
                               <div 
@@ -1775,15 +1791,17 @@ function PlanModeView({
                               </div>
                             )}
                             
-                            {/* Action buttons - only show when there's text and not editing */}
-                            {hasText && !isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                            {/* Action buttons - show when not editing */}
+                            {!isEditing && !savingMeals.has(`${day}-${mealType}`) && (
                               <div className="absolute top-0 right-0 flex items-center space-x-1">
-                                {/* Video button */}
-                                <div className="p-1">
-                                  {onGetVideoIcon(day, mealType)}
-                                </div>
+                                {/* Video button - only show when there's text */}
+                                {hasText && (
+                                  <div className="p-1">
+                                    {onGetVideoIcon(day, mealType)}
+                                  </div>
+                                )}
                                 
-                                {/* Edit button */}
+                                {/* Edit button - always visible */}
                                 <button
                                   type="button"
                                   onMouseDown={(e) => {
