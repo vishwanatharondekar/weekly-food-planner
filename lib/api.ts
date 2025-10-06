@@ -132,6 +132,8 @@ export const authAPI = {
   updateDietaryPreferences: async (preferences: {
     nonVegDays: string[];
     isVegetarian: boolean;
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
   }) => {
     try {
       const token = localStorage.getItem('token');

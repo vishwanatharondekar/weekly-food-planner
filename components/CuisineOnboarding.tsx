@@ -10,14 +10,14 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 interface CuisineOnboardingProps {
-  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => void;
+  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => void;
   onCreateGuestUser: () => Promise<void>;
 }
 
 export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
-  const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[] } | null>(null);
+  const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number } | null>(null);
   const [currentStep, setCurrentStep] = useState<'welcome' | 'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('welcome');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,7 +50,7 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: Cui
     }
   };
 
-  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[] }) => {
+  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => {
     setDietaryPreferences(preferences);
     setCurrentStep('breakfast');
   };

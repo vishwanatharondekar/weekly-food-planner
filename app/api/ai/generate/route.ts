@@ -172,15 +172,26 @@ If uncertain, default to a vegetarian option.`;
     returnString += dietaryPreferences.nonVegDays ? `Non-vegetarian, User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ')}. Exclude any dish with meat, fish, or eggs on other days.` : `Non-vegetarian, User can eat non veg on any day. Have a mix of vegetarian and non-vegetarian meals.`;
   }
 
+  // Add calorie information if enabled
+  if (dietaryPreferences.showCalories) {
+    returnString += `\n\nCalorie Tracking: ENABLED`;
+    if (dietaryPreferences.dailyCalorieTarget && dietaryPreferences.dailyCalorieTarget > 0) {
+      returnString += `\nDaily Calorie Target: ${dietaryPreferences.dailyCalorieTarget} kcal`;
+      returnString += `\nPlease suggest meals that help stay within this daily calorie target.`;
+    }
+  }
+
   return returnString;
 }
 
-function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }){
+function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }, showCalories?: boolean){
   // Default to all meal types if no settings provided (backward compatibility)
   const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
   
   // Create meal entries for each enabled meal type
-  const mealEntries = enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(', ');
+  const mealEntries = showCalories 
+    ? enabledMeals.map(mealType => `"${mealType}": { "name": "meal name", "calories": 500 }`).join(', ')
+    : enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(', ');
   
   // Create the JSON structure for each day
   const dayStructure = `{ ${mealEntries} }`;
@@ -233,7 +244,8 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
   let availableDishes = '';
   
   // Get JSON format for the prompt (needed regardless of cuisine/dish preferences)
-  const jsonFormat = getJsonFormat(mealSettings);
+  const showCalories = dietaryPreferences?.showCalories || false;
+  const jsonFormat = getJsonFormat(mealSettings, showCalories);
   
   // Check if user has specific dish preferences (from onboarding)
   const hasDishPreferences = dishPreferences.breakfast.length > 0 && dishPreferences.lunch_dinner.length > 0;
@@ -245,6 +257,14 @@ async function generateAISuggestions(history: any[], weekStartDate: string, diet
       Breakfast: ${dishPreferences.breakfast.join(', ')}
       Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }
+
+  const calorieInstructions = showCalories 
+    ? `\n\nIMPORTANT - Calorie Information:
+- Include calorie count for EACH meal in the response
+- Provide realistic calorie estimates based on typical portion sizes
+- Format: { "name": "meal name", "calories": number }
+${dietaryPreferences?.dailyCalorieTarget ? `- Try to keep total daily calories around ${dietaryPreferences.dailyCalorieTarget} kcal` : ''}`
+    : '';
 
   const prompt = `Based on the following meal history, dietary preferences, available ingredients, and preferences, suggest meals for the week of ${weekStartDate}.
 ${dietaryInfo}
@@ -263,8 +283,9 @@ ${history.length > 0 ? '1. Similar to the users meal history but do not repeat t
 5. Easy to prepare
 6. Include authentic dishes from: ${cuisinePreferences.join(', ')}
 7. Use the dishes provided above as reference for selecting other dishes
-7. Do not repeat the suggestions. Provide new suggestions for each day.
-8. Do not suggest the options which are present in the meal history provided above.
+8. Do not repeat the suggestions. Provide new suggestions for each day.
+9. Do not suggest the options which are present in the meal history provided above.
+${calorieInstructions}
 
 Return the suggestions in this exact JSON format:
 ${jsonFormat}`;

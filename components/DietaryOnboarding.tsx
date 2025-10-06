@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Leaf, Beef, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Leaf, Beef, ArrowRight, ArrowLeft, Settings, Plus, Minus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DAYS_OF_WEEK = [
@@ -15,13 +15,20 @@ const DAYS_OF_WEEK = [
 ];
 
 interface DietaryOnboardingProps {
-  onComplete: (dietaryPreferences: { isVegetarian: boolean; nonVegDays: string[] }) => void;
+  onComplete: (dietaryPreferences: { 
+    isVegetarian: boolean; 
+    nonVegDays: string[];
+    showCalories: boolean;
+    dailyCalorieTarget: number;
+  }) => void;
   onBack: () => void;
 }
 
 export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboardingProps) {
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [nonVegDays, setNonVegDays] = useState<string[]>([]);
+  const [showCalories, setShowCalories] = useState(false);
+  const [dailyCalorieTarget, setDailyCalorieTarget] = useState<number>(2000);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDayToggle = (dayKey: string) => {
@@ -32,6 +39,12 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
     );
   };
 
+  const updateCalorieTarget = (change: number) => {
+    const currentTarget = dailyCalorieTarget || 2000;
+    const newTarget = Math.max(500, Math.min(5000, currentTarget + change)); // Min 500, Max 5000
+    setDailyCalorieTarget(newTarget);
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -40,7 +53,9 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
       
       onComplete({
         isVegetarian,
-        nonVegDays: isVegetarian ? [] : nonVegDays
+        nonVegDays: isVegetarian ? [] : nonVegDays,
+        showCalories,
+        dailyCalorieTarget
       });
       
       toast.success('Dietary preferences saved! Moving to next step...');
@@ -169,6 +184,103 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
               </div>
             </div>
           )}
+
+          {/* Calorie Tracking */}
+          <div className="mb-8">
+            <div className="flex items-center mb-6">
+              <div className="p-3 bg-orange-100 rounded-full mr-4">
+                <Settings className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Calorie Tracking</h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                    Experimental
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">Track calories for your meals</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+              {/* Show Calories Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-lg font-medium text-gray-700">Show Calorie Count</span>
+                  <p className="text-sm text-gray-500 mt-1">Display calorie information for meals</p>
+                </div>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showCalories}
+                    onChange={(e) => setShowCalories(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${
+                    showCalories ? 'bg-orange-500' : 'bg-gray-300'
+                  }`}>
+                    <div className={`absolute top-0.5 left-0.5 w-7 h-7 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      showCalories ? 'translate-x-8' : 'translate-x-0'
+                    }`}></div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Daily Calorie Target */}
+              {showCalories && (
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Daily Calorie Target
+                  </label>
+                  <div className="flex items-center justify-center space-x-4">
+                    <button
+                      onClick={() => updateCalorieTarget(-50)}
+                      className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      title="Decrease by 50"
+                    >
+                      <Minus className="w-5 h-5" />
+                    </button>
+                    
+                    <div className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-white border-2 border-orange-300 rounded-lg">
+                      <span className="text-2xl font-bold text-orange-600">
+                        {dailyCalorieTarget || 2000}
+                      </span>
+                      <span className="text-sm text-gray-500 ml-2">kcal</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => updateCalorieTarget(50)}
+                      className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      title="Increase by 50"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Range: 500 - 5000 kcal • AI will try to suggest meals within your target
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {showCalories && (
+              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-start">
+                  <span className="text-orange-600 mr-3 mt-0.5 flex-shrink-0">📊</span>
+                  <div>
+                    <p className="text-sm font-medium text-orange-800">
+                      Calorie tracking enabled
+                    </p>
+                    <p className="text-xs text-orange-700 mt-1">
+                      {dailyCalorieTarget > 0 
+                        ? `AI will try to suggest meals within ${dailyCalorieTarget} calories per day`
+                        : 'Calorie information will be displayed for each meal'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

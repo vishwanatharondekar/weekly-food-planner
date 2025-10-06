@@ -159,7 +159,7 @@ export default function Home() {
     loadUserProfile();
   };
 
-  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[] }) => {
+  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => {
     try {
       // Save cuisine preferences
       await authAPI.updateCuisinePreferences({
@@ -172,6 +172,8 @@ export default function Home() {
         await authAPI.updateDietaryPreferences({
           isVegetarian: dietaryPreferences.isVegetarian,
           nonVegDays: dietaryPreferences.nonVegDays,
+          showCalories: dietaryPreferences.showCalories,
+          dailyCalorieTarget: dietaryPreferences.dailyCalorieTarget,
         });
       }
       

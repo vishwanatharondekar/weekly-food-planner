@@ -25,6 +25,7 @@ interface MealDataWithVideos {
     [mealType: string]: {
       name: string;
       videoUrl?: string;
+      calories?: number;
     };
   };
 }
@@ -45,6 +46,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
   const [userLanguage, setUserLanguage] = useState<string>('en'); // Default to English
+  const [editingMeal, setEditingMeal] = useState<{day: string, mealType: string} | null>(null); // Track which meal is being edited
   
   // Mode switching state
   const [currentMode, setCurrentMode] = useState<'plan' | 'cook'>('plan');
@@ -269,13 +271,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           if (meal) {
             // Handle different meal data formats
             let mealName = '';
+            let calories: number | undefined = undefined;
+            
             if (typeof meal === 'string') {
               mealName = meal;
-            } else if (typeof meal === 'object' && meal.name) {
-              mealName = meal.name;
-            } else {
-              // Fallback: convert to string if it's an object
-              mealName = String(meal);
+            } else if (typeof meal === 'object') {
+              if (meal.name) {
+                mealName = meal.name;
+                calories = meal.calories;
+              } else {
+                // Fallback: convert to string if it's an object
+                mealName = String(meal);
+              }
             }
             
             // Look up video URL for this recipe
@@ -284,7 +291,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             
             convertedMeals[day][mealType] = {
               name: mealName,
-              videoUrl: videoUrl || undefined
+              videoUrl: videoUrl || undefined,
+              calories: calories
             };
           }
         });
@@ -378,13 +386,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     });
 
     // Update local state immediately for responsive UI
+    // Clear calories when user edits the meal (backend will remove it too)
     setMeals(prev => ({
       ...prev,
       [day]: {
         ...prev[day],
         [mealType]: {
           ...prev[day]?.[mealType],
-          name: value
+          name: value,
+          calories: undefined // Clear calories on user edit
         }
       }
     }));
@@ -432,13 +442,32 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setSelectedMeal(null);
   };
 
+  const startEditingMeal = (day: string, mealType: string, formFactor?: 'mobile' | 'desktop') => {
+    setEditingMeal({ day, mealType });
+    // Small delay to ensure input/textarea is rendered before focusing
+    setTimeout(() => {
+      const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
+      const inputElement = document.getElementById(inputId) as HTMLInputElement | HTMLTextAreaElement;
+      if (inputElement) {
+        inputElement.focus();
+        // Move cursor to end of text
+        const length = inputElement.value.length;
+        inputElement.setSelectionRange(length, length);
+        
+        // For textarea, scroll to bottom to show cursor position
+        if (inputElement instanceof HTMLTextAreaElement) {
+          inputElement.scrollTop = inputElement.scrollHeight;
+        }
+      }
+    }, 50);
+  };
+
+  const stopEditingMeal = () => {
+    setEditingMeal(null);
+  };
+
   const focusMealInput = (day: string, mealType: string, formFactor?: string) => {
-    // Find the input element for the specific day and meal type
-    const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
-    const inputElement = document.getElementById(inputId);
-    if (inputElement) {
-      inputElement.focus();
-    }
+    startEditingMeal(day, mealType);
   };
 
   const saveVideoUrl = async (videoUrl: string) => {
@@ -590,15 +619,28 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       // Only update empty meals, preserve existing user input
       for (const [day, dayMeals] of Object.entries(suggestions)) {
-        for (const [mealType, mealName] of Object.entries(dayMeals as any)) {
+        for (const [mealType, mealData] of Object.entries(dayMeals as any)) {
           // Only update if the meal type is enabled in settings
           if (mealSettings.enabledMealTypes.includes(mealType)) {
             const currentMeal = meals[day]?.[mealType]?.name || '';
           if (!currentMeal.trim()) {
+            // Handle both string and object formats
+            let mealName: string;
+            let calories: number | undefined = undefined;
+            
+            if (typeof mealData === 'string') {
+              mealName = mealData;
+            } else if (typeof mealData === 'object' && mealData !== null && 'name' in mealData) {
+              mealName = (mealData as any).name;
+              calories = (mealData as any).calories;
+            } else {
+              mealName = String(mealData);
+            }
+            
             // Check if there's a saved video URL for this recipe
             let videoUrl: string | undefined = undefined;
             try {
-              const normalizedRecipeName = (mealName as string).toLowerCase().trim();
+              const normalizedRecipeName = mealName.toLowerCase().trim();
               videoUrl = userVideoURLs[normalizedRecipeName];
             } catch (error) {
               console.warn('Failed to check for video URL:', error);
@@ -608,8 +650,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             updatedMeals[day] = {
               ...updatedMeals[day],
                 [mealType]: {
-                  name: mealName as string,
-                  videoUrl: videoUrl
+                  name: mealName,
+                  videoUrl: videoUrl,
+                  calories: calories
                 }
             };
             hasUpdates = true;
@@ -1062,12 +1105,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             savingMeals={savingMeals}
             enabledMealTypes={enabledMealTypes}
             user={user}
+            editingMeal={editingMeal}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
             onGenerateShoppingList={handleGenerateShoppingList}
             onClearMeals={clearMeals}
             onUpdateMeal={updateMeal}
+            onStartEditingMeal={startEditingMeal}
+            onStopEditingMeal={stopEditingMeal}
             onFocusMealInput={focusMealInput}
             onGetVideoIcon={getVideoIcon}
             onPdfTooltipStart={handlePdfTooltipStart}
@@ -1274,6 +1320,7 @@ function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewPr
             {enabledMealTypes.map((mealType) => {
               const meal = meals[mealType];
               const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+              const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
               const hasMeal = mealName.trim().length > 0;
               
               return (
@@ -1295,6 +1342,12 @@ function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewPr
                   {hasMeal ? (
                     <div className="space-y-2">
                       <p className="text-gray-800 font-medium text-lg">{mealName}</p>
+                      {calories && (
+                        <div className="flex items-center text-sm text-orange-600">
+                          <span className="mr-1">📊</span>
+                          <span className="font-semibold">{calories} kcal</span>
+                        </div>
+                      )}
                       {meal?.videoUrl && (
                         <div className="flex items-center text-sm text-green-600">
                           <span className="mr-1">🎥</span>
@@ -1341,12 +1394,15 @@ interface PlanModeViewProps {
   savingMeals: Set<string>;
   enabledMealTypes: string[];
   user: any;
+  editingMeal: {day: string, mealType: string} | null;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
+  onStartEditingMeal: (day: string, mealType: string, formFactor?: 'mobile' | 'desktop') => void;
+  onStopEditingMeal: () => void;
   onFocusMealInput: (day: string, mealType: string, formFactor?: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
@@ -1369,12 +1425,15 @@ function PlanModeView({
   savingMeals,
   enabledMealTypes,
   user,
+  editingMeal,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
   onGenerateShoppingList,
   onClearMeals,
   onUpdateMeal,
+  onStartEditingMeal,
+  onStopEditingMeal,
   onFocusMealInput,
   onGetVideoIcon,
   onPdfTooltipStart,
@@ -1387,6 +1446,19 @@ function PlanModeView({
   showShoppingTooltip,
   showAiTooltip,
 }: PlanModeViewProps) {
+  // Helper function to get meal type pill colors
+  const getMealTypePillClasses = (mealType: string) => {
+    const colorMap: { [key: string]: string } = {
+      'breakfast': 'bg-amber-100 text-amber-700',
+      'lunch': 'bg-green-100 text-green-700',
+      'dinner': 'bg-blue-100 text-blue-700',
+      'snack': 'bg-purple-100 text-purple-700',
+      'snack1': 'bg-purple-100 text-purple-700',
+      'snack2': 'bg-pink-100 text-pink-700',
+    };
+    return colorMap[mealType] || 'bg-gray-100 text-gray-700';
+  };
+
   return (
     <div className="space-y-2">
       {/* Week Navigation - Desktop */}
@@ -1447,7 +1519,7 @@ function PlanModeView({
       </div>
 
       {/* Action Buttons - Sticky on Mobile */}
-      <div className={`md:hidden sticky z-40 bg-gradient-to-r from-slate-50 to-blue-50 backdrop-blur-sm px-4 py-3 border-b border-slate-200 shadow-md ${user?.isGuest ? 'top-[7.25rem]' : 'top-16'}`}>
+      <div className="md:hidden sticky top-16 z-40 bg-gradient-to-r from-slate-50 to-blue-50 backdrop-blur-sm px-4 py-3 border-b border-slate-200 shadow-md">
         <div className="flex items-center space-x-2 w-full">
           {/* 1. Fill with AI */}
           <button
@@ -1595,23 +1667,54 @@ function PlanModeView({
                   {enabledMealTypes.map(mealType => {
                     const meal = meals[day]?.[mealType];
                     const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                    const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
                     const hasText = mealName.trim().length > 0;
+                    const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
+                    const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                     
                     return (
-                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
-                        <div className="relative group h-full">
-                          <input
-                            id={`meal-input-desktop-${day}-${mealType}`}
-                            type="text"
-                            value={mealName}
-                            onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
-                            placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`text-black w-full h-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
-                              savingMeals.has(`${day}-${mealType}`) 
-                                ? 'bg-blue-50' 
-                                : ''
-                            }`}
-                          />
+                      <td key={mealType} className="px-0 py-0 border-r border-gray-300 last:border-r-0 align-top">
+                        <div className="relative group">
+                          {isEditing ? (
+                            // Show textarea when editing
+                            <textarea
+                              id={`meal-input-desktop-${day}-${mealType}`}
+                              value={mealName}
+                              onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
+                              onBlur={(e) => {
+                                // Delay blur to allow button clicks to complete
+                                setTimeout(() => onStopEditingMeal(), 100);
+                              }}
+                              placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                              rows={2}
+                              className={`text-black w-full px-6 py-3 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 resize-none leading-relaxed border-2 border-blue-400 rounded ${
+                                savingMeals.has(`${day}-${mealType}`) 
+                                  ? 'bg-blue-50' 
+                                  : ''
+                              }`}
+                            />
+                          ) : !hasText ? (
+                            // Show placeholder state when empty and not editing
+                            <div 
+                              className="w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-center text-gray-400 italic"
+                            >
+                              Click edit to add meal
+                            </div>
+                          ) : (
+                            // Show display div when has content and not editing
+                            <div 
+                              className="text-black w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-center"
+                            >
+                              <span className="line-clamp-2 leading-relaxed break-words">{mealName}</span>
+                            </div>
+                          )}
+                          
+                          {/* Calorie badge - top right, separate from action buttons */}
+                          {showCalorieInfo && hasText && (
+                            <div className="absolute top-0 right-0 bg-orange-50 text-orange-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-orange-200">
+                              {calories} kcal
+                            </div>
+                          )}
                           
                           {/* Loading spinner */}
                           {savingMeals.has(`${day}-${mealType}`) && (
@@ -1620,33 +1723,28 @@ function PlanModeView({
                             </div>
                           )}
                           
-                          {/* Action buttons - only show when there's text */}
-                          {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                            <div className="absolute inset-y-0 right-2 flex items-center space-x-1">
-                              {/* Video button - only visible on hover */}
-                              <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                {onGetVideoIcon(day, mealType)}
-                              </div>
+                          {/* Action buttons - show when not editing */}
+                          {!isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                            <div className="absolute top-4 right-2 flex items-center space-x-1 pt-1">
+                              {/* Video button - only show when there's text and only visible on hover */}
+                              {hasText && (
+                                <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  {onGetVideoIcon(day, mealType)}
+                                </div>
+                              )}
                               
-                              {/* Edit button - always visible when text exists */}
+                              {/* Edit button - always visible */}
                               <button
                                 type="button"
-                                onClick={() => onFocusMealInput(day, mealType, 'desktop')}
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevent input blur
+                                }}
+                                onClick={() => onStartEditingMeal(day, mealType, 'desktop')}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                 title="Edit meal"
                               >
                                 <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                               </button>
-                            </div>
-                          )}
-                          
-                          {/* Tooltip for meal name */}
-                          {hasText && (
-                            <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                              <div className="text-white">
-                                {mealName}
-                              </div>
-                              <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                             </div>
                           )}
                         </div>
@@ -1684,64 +1782,93 @@ function PlanModeView({
                 {enabledMealTypes.map((mealType, mealIndex) => {
                   const meal = meals[day]?.[mealType];
                   const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                  const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
                   const hasText = mealName.trim().length > 0;
+                  const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                   const isLastMeal = mealIndex === enabledMealTypes.length - 1;
+                  const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                   
                   return (
                     <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-2 mr-2 ${getMealTypePillClasses(mealType)}`}>
                             {getMealDisplayName(mealType)}
-                          </label>
+                          </div>
+                          {/* Calorie badge - next to meal name for mobile */}
+                          {showCalorieInfo && hasText && (
+                              <span className="bg-orange-50 text-orange-600 text-xs font-medium px-2 py-0.5 rounded border border-orange-200">
+                                {calories} kcal
+                              </span>
+                            )}
                           <div className="relative group">
-                            <input
-                              id={`meal-input-mobile-${day}-${mealType}`}
-                              type="text"
-                              value={mealName}
-                              onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
-                              placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`text-black w-full px-0 py-1 pr-16 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
-                                savingMeals.has(`${day}-${mealType}`) 
-                                  ? 'bg-blue-50' 
-                                  : ''
-                              }`}
-                            />
+                            {isEditing ? (
+                              // Show textarea when editing
+                              <textarea
+                                id={`meal-input-mobile-${day}-${mealType}`}
+                                value={mealName}
+                                onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
+                                onBlur={(e) => {
+                                  // Delay blur to allow button clicks to complete
+                                  setTimeout(() => onStopEditingMeal(), 100);
+                                }}
+                                placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                                rows={2}
+                                className={`text-black w-full px-2 py-1 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 resize-none leading-relaxed border-2 border-blue-400 rounded ${
+                                  savingMeals.has(`${day}-${mealType}`) 
+                                    ? 'bg-blue-50' 
+                                    : ''
+                                }`}
+                              />
+                            ) : !hasText ? (
+                              // Show placeholder state when empty and not editing
+                              <div 
+                                className="w-full px-0 py-1 pr-16 transition-all duration-200 rounded min-h-[32px] text-gray-400 italic"
+                              >
+                                Click edit to add meal
+                              </div>
+                            ) : (
+                              // Show display div when has content and not editing
+                              <div 
+                                className="text-black w-full px-0 py-1 pr-16 transition-all duration-200 rounded min-h-[32px]"
+                              >
+                                <span className="line-clamp-2 leading-relaxed break-words block">{mealName}</span>
+                              </div>
+                            )}
                             
                             {/* Loading spinner */}
                             {savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 flex items-center">
+                              <div className="absolute top-1 right-0 flex items-center">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                               </div>
                             )}
                             
-                            {/* Action buttons - only show when there's text */}
-                            {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 flex items-center space-x-1">
-                                {/* Video button - only visible on hover */}
-                                <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                  {onGetVideoIcon(day, mealType)}
-                                </div>
+                            {/* Action buttons - show when not editing */}
+                            {!isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                              <div className="absolute top-0 right-0 flex items-center space-x-1">
+                                {/* Video button - only show when there's text */}
+                                {hasText && (
+                                  <div className="p-1">
+                                    {onGetVideoIcon(day, mealType)}
+                                  </div>
+                                )}
                                 
-                                {/* Edit button - always visible when text exists */}
+                                {/* Edit button - always visible */}
                                 <button
                                   type="button"
-                                  onClick={() => onFocusMealInput(day, mealType, 'mobile')}
-                                  className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent input blur
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onStartEditingMeal(day, mealType, 'mobile');
+                                  }}
+                                  className="p-1 hover:bg-gray-200 rounded opacity-60 hover:opacity-100 transition-all duration-200"
                                   title="Edit meal"
                                 >
                                   <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                 </button>
-                              </div>
-                            )}
-                            
-                            {/* Tooltip for meal name */}
-                            {hasText && (
-                              <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                                <div className="text-white">
-                                  {mealName}
-                                </div>
-                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                               </div>
                             )}
                           </div>

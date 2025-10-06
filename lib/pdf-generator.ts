@@ -148,7 +148,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
-        if (meal && meal.trim()) {
+        if (meal && meal instanceof Object && 'name' in meal && meal.name.trim()) {
+          mealNamesToTranslate.push(meal.name.trim());
+        } else if (meal && typeof meal === 'string' && meal.trim()) {
           mealNamesToTranslate.push(meal.trim());
         }
       });
@@ -288,16 +290,14 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
       // Add meals as columns
       for (const mealType of enabledMealTypes) {
         const meal = mealPlan.meals[day]?.[mealType] || '';
-        if (meal && meal.trim()) {
+        const mealName = meal instanceof Object && 'name' in meal ? meal.name : meal;
+        if (mealName) {
           // Use stored video URL if available, otherwise generate search URL
           const storedVideoUrl = mealPlan.videoURLs?.[day]?.[mealType];
           const youtubeURL = storedVideoUrl || await getVideoURL(meal);
           
           // Get translated meal name
-          const translatedMealName = getTranslatedText(meal.trim());
-          
-          // Debug: Check if the translated text contains non-ASCII characters
-          const hasNonAscii = /[^\x00-\x7F]/.test(translatedMealName);
+          const translatedMealName = getTranslatedText(mealName);
           
           row.push({
             content: translatedMealName,
@@ -499,8 +499,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
-        if (meal && meal.trim()) {
-          originalMealNames.push(meal.trim());
+        const mealName = meal instanceof Object && 'name' in meal ? meal.name : meal;
+        if (mealName) {
+          originalMealNames.push(mealName);
         }
       });
     });
@@ -644,9 +645,10 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
-        if (meal && meal.trim()) {
+        const mealName = meal instanceof Object && 'name' in meal ? meal.name : meal; 
+        if (mealName) {
           // Use translated meal name if available
-          const translatedMealName = getTranslatedText(meal.trim());
+          const translatedMealName = getTranslatedText(mealName);
           allMeals.push(translatedMealName);
         }
       });
