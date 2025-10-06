@@ -246,20 +246,8 @@ export class FirebaseStorageProvider {
   async getAIStatus(userId: string): Promise<{ hasHistory: boolean; canGenerate: boolean }> {
     try {
       const history = await this.getMealHistory(userId, 10);
-      
-      // Check if there are any meal plans with actual meal data
-      const hasMealData = history.some(plan => {
-        const meals = plan.meals;
-        return Object.values(meals).some(dayMeals => 
-          Object.values(dayMeals).some(meal => meal && meal.trim() !== '')
-        );
-      });
-
-            
       const hasHistory = history.length >= 1; // Changed from 2 to 1 for new users
       const canGenerate = hasHistory; // Allow generation even with limited data
-      
-            
       return { hasHistory, canGenerate };
     } catch (error) {
       console.error('Error checking AI status:', error);
