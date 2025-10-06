@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Leaf, Beef } from 'lucide-react';
+import { Settings, Leaf, Beef, Plus, Minus } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
@@ -56,6 +56,12 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
         ? prev.filter(d => d !== dayKey)
         : [...prev, dayKey]
     );
+  };
+
+  const updateCalorieTarget = (change: number) => {
+    const currentTarget = dailyCalorieTarget || 2000;
+    const newTarget = Math.max(500, Math.min(5000, currentTarget + change)); // Min 500, Max 5000
+    setDailyCalorieTarget(newTarget);
   };
 
   const handleSave = async () => {
@@ -271,24 +277,35 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
             {/* Daily Calorie Target */}
             {showCalories && (
               <div className="pt-4 border-t border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Daily Calorie Target (optional)
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Daily Calorie Target
                 </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="500"
-                    max="5000"
-                    step="50"
-                    value={dailyCalorieTarget}
-                    onChange={(e) => setDailyCalorieTarget(parseInt(e.target.value) || 2000)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="2000"
-                  />
-                  <span className="absolute right-4 top-2 text-gray-500 text-sm">kcal/day</span>
+                <div className="flex items-center justify-center space-x-4">
+                  <button
+                    onClick={() => updateCalorieTarget(-50)}
+                    className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    title="Decrease by 50"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-white border-2 border-orange-300 rounded-lg">
+                    <span className="text-2xl font-bold text-orange-600">
+                      {dailyCalorieTarget || 2000}
+                    </span>
+                    <span className="text-sm text-gray-500 ml-2">kcal</span>
+                  </div>
+                  
+                  <button
+                    onClick={() => updateCalorieTarget(50)}
+                    className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    title="Increase by 50"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  AI will suggest meals to stay within your daily calorie target
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Range: 500 - 5000 kcal • AI will try to suggest meals within your target
                 </p>
               </div>
             )}
@@ -304,7 +321,7 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
                   </p>
                   <p className="text-xs text-orange-700 mt-1">
                     {dailyCalorieTarget > 0 
-                      ? `AI will suggest meals within ${dailyCalorieTarget} calories per day`
+                      ? `AI will try to suggest meals within ${dailyCalorieTarget} calories per day`
                       : 'Calorie information will be displayed for each meal'}
                   </p>
                 </div>
