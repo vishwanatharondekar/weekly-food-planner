@@ -10,6 +10,8 @@ interface User {
   dietaryPreferences?: {
     isVegetarian: boolean;
     nonVegDays: string[];
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
   };
   mealSettings?: {
     enabledMealTypes: string[];
@@ -23,7 +25,11 @@ interface User {
 
 interface MealData {
   [day: string]: {
-    [mealType: string]: string;
+    [mealType: string]: string | {
+      name: string;
+      videoUrl?: string;
+      calories?: number;
+    };
   };
 }
 
@@ -172,6 +178,8 @@ class StorageManager {
   async updateDietaryPreferences(userId: string, preferences: {
     nonVegDays: string[];
     isVegetarian: boolean;
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
   }): Promise<User> {
     if (typeof window === 'undefined') {
       throw new Error('Cannot update dietary preferences on server-side');
@@ -198,6 +206,8 @@ class StorageManager {
   async getDietaryPreferences(userId: string): Promise<{
     nonVegDays: string[];
     isVegetarian: boolean;
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
   } | null> {
     if (typeof window === 'undefined') {
       return null;
@@ -402,7 +412,14 @@ class StorageManager {
       const hasMealData = history.some(plan => {
         const meals = plan.meals;
         return Object.values(meals).some(dayMeals => 
-          Object.values(dayMeals).some(meal => meal && meal.trim() !== '')
+          Object.values(dayMeals).some(meal => {
+            if (typeof meal === 'string') {
+              return meal.trim() !== '';
+            } else if (meal && typeof meal === 'object' && 'name' in meal) {
+              return meal.name.trim() !== '';
+            }
+            return false;
+          })
         );
       });
       

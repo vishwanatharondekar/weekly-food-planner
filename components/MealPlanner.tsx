@@ -25,6 +25,7 @@ interface MealDataWithVideos {
     [mealType: string]: {
       name: string;
       videoUrl?: string;
+      calories?: number;
     };
   };
 }
@@ -269,13 +270,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           if (meal) {
             // Handle different meal data formats
             let mealName = '';
+            let calories: number | undefined = undefined;
+            
             if (typeof meal === 'string') {
               mealName = meal;
-            } else if (typeof meal === 'object' && meal.name) {
-              mealName = meal.name;
-            } else {
-              // Fallback: convert to string if it's an object
-              mealName = String(meal);
+            } else if (typeof meal === 'object') {
+              if (meal.name) {
+                mealName = meal.name;
+                calories = meal.calories;
+              } else {
+                // Fallback: convert to string if it's an object
+                mealName = String(meal);
+              }
             }
             
             // Look up video URL for this recipe
@@ -284,7 +290,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             
             convertedMeals[day][mealType] = {
               name: mealName,
-              videoUrl: videoUrl || undefined
+              videoUrl: videoUrl || undefined,
+              calories: calories
             };
           }
         });
@@ -590,15 +597,28 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       // Only update empty meals, preserve existing user input
       for (const [day, dayMeals] of Object.entries(suggestions)) {
-        for (const [mealType, mealName] of Object.entries(dayMeals as any)) {
+        for (const [mealType, mealData] of Object.entries(dayMeals as any)) {
           // Only update if the meal type is enabled in settings
           if (mealSettings.enabledMealTypes.includes(mealType)) {
             const currentMeal = meals[day]?.[mealType]?.name || '';
           if (!currentMeal.trim()) {
+            // Handle both string and object formats
+            let mealName: string;
+            let calories: number | undefined = undefined;
+            
+            if (typeof mealData === 'string') {
+              mealName = mealData;
+            } else if (typeof mealData === 'object' && mealData !== null && 'name' in mealData) {
+              mealName = (mealData as any).name;
+              calories = (mealData as any).calories;
+            } else {
+              mealName = String(mealData);
+            }
+            
             // Check if there's a saved video URL for this recipe
             let videoUrl: string | undefined = undefined;
             try {
-              const normalizedRecipeName = (mealName as string).toLowerCase().trim();
+              const normalizedRecipeName = mealName.toLowerCase().trim();
               videoUrl = userVideoURLs[normalizedRecipeName];
             } catch (error) {
               console.warn('Failed to check for video URL:', error);
@@ -608,8 +628,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             updatedMeals[day] = {
               ...updatedMeals[day],
                 [mealType]: {
-                  name: mealName as string,
-                  videoUrl: videoUrl
+                  name: mealName,
+                  videoUrl: videoUrl,
+                  calories: calories
                 }
             };
             hasUpdates = true;
@@ -1274,6 +1295,7 @@ function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewPr
             {enabledMealTypes.map((mealType) => {
               const meal = meals[mealType];
               const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+              const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
               const hasMeal = mealName.trim().length > 0;
               
               return (
@@ -1295,6 +1317,12 @@ function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewPr
                   {hasMeal ? (
                     <div className="space-y-2">
                       <p className="text-gray-800 font-medium text-lg">{mealName}</p>
+                      {calories && (
+                        <div className="flex items-center text-sm text-orange-600">
+                          <span className="mr-1">📊</span>
+                          <span className="font-semibold">{calories} kcal</span>
+                        </div>
+                      )}
                       {meal?.videoUrl && (
                         <div className="flex items-center text-sm text-green-600">
                           <span className="mr-1">🎥</span>
@@ -1595,7 +1623,9 @@ function PlanModeView({
                   {enabledMealTypes.map(mealType => {
                     const meal = meals[day]?.[mealType];
                     const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                    const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
                     const hasText = mealName.trim().length > 0;
+                    const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                     
                     return (
                       <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
@@ -1606,12 +1636,19 @@ function PlanModeView({
                             value={mealName}
                             onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                             placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`text-black w-full h-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                            className={`text-black w-full h-full px-6 py-6 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
                               savingMeals.has(`${day}-${mealType}`) 
                                 ? 'bg-blue-50' 
                                 : ''
                             }`}
                           />
+                          
+                          {/* Calorie badge - top right, separate from action buttons */}
+                          {showCalorieInfo && hasText && (
+                            <div className="absolute -top-1 left-4 bg-orange-50 text-orange-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-orange-200">
+                              {calories} kcal
+                            </div>
+                          )}
                           
                           {/* Loading spinner */}
                           {savingMeals.has(`${day}-${mealType}`) && (
@@ -1684,16 +1721,26 @@ function PlanModeView({
                 {enabledMealTypes.map((mealType, mealIndex) => {
                   const meal = meals[day]?.[mealType];
                   const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
+                  const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
                   const hasText = mealName.trim().length > 0;
+                  const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                   const isLastMeal = mealIndex === enabledMealTypes.length - 1;
                   
                   return (
                     <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {getMealDisplayName(mealType)}
-                          </label>
+                          <div className="flex items-center gap-2 mb-1">
+                            <label className="block text-sm font-medium text-gray-700">
+                              {getMealDisplayName(mealType)}
+                            </label>
+                            {/* Calorie badge - next to meal name for mobile */}
+                            {showCalorieInfo && hasText && (
+                              <span className="bg-orange-50 text-orange-600 text-xs font-medium px-2 py-0.5 rounded border border-orange-200">
+                                {calories} kcal
+                              </span>
+                            )}
+                          </div>
                           <div className="relative group">
                             <input
                               id={`meal-input-mobile-${day}-${mealType}`}

@@ -25,6 +25,8 @@ interface DietaryPreferencesProps {
 export default function DietaryPreferences({ user, onClose, onUserUpdate }: DietaryPreferencesProps) {
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [nonVegDays, setNonVegDays] = useState<string[]>([]);
+  const [showCalories, setShowCalories] = useState(false);
+  const [dailyCalorieTarget, setDailyCalorieTarget] = useState<number>(2000);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -38,6 +40,8 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
       if (preferences) {
         setIsVegetarian(preferences.isVegetarian);
         setNonVegDays(preferences.nonVegDays);
+        setShowCalories(preferences.showCalories || false);
+        setDailyCalorieTarget(preferences.dailyCalorieTarget || 2000);
       }
     } catch (error) {
       console.error('Error loading dietary preferences:', error);
@@ -60,6 +64,8 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
       await authAPI.updateDietaryPreferences({
         nonVegDays,
         isVegetarian,
+        showCalories,
+        dailyCalorieTarget,
       });
       
       // Track dietary preferences update
@@ -70,6 +76,8 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
           is_vegetarian: isVegetarian,
           non_veg_days: nonVegDays,
           non_veg_days_count: nonVegDays.length,
+          show_calories: showCalories,
+          daily_calorie_target: dailyCalorieTarget,
           user_id: user?.id,
         },
       });
@@ -82,7 +90,9 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
           ...user,
           dietaryPreferences: {
             isVegetarian,
-            nonVegDays
+            nonVegDays,
+            showCalories,
+            dailyCalorieTarget
           }
         };
         onUserUpdate(updatedUser);
@@ -221,6 +231,87 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
             </div>
           </div>
         )}
+
+        {/* Calorie Tracking */}
+        <div className="mb-8">
+          <div className="flex items-center mb-6">
+            <div className="p-3 bg-orange-100 rounded-full mr-4">
+              <Settings className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Calorie Tracking</h3>
+              <p className="text-sm text-gray-600">Track calories for your meals</p>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+            {/* Show Calories Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">Show Calorie Count</span>
+                <p className="text-xs text-gray-500 mt-1">Display calorie information for meals</p>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showCalories}
+                  onChange={(e) => setShowCalories(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                  showCalories ? 'bg-orange-500' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    showCalories ? 'translate-x-7' : 'translate-x-0'
+                  }`}></div>
+                </div>
+              </label>
+            </div>
+
+            {/* Daily Calorie Target */}
+            {showCalories && (
+              <div className="pt-4 border-t border-gray-200">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Daily Calorie Target (optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="500"
+                    max="5000"
+                    step="50"
+                    value={dailyCalorieTarget}
+                    onChange={(e) => setDailyCalorieTarget(parseInt(e.target.value) || 2000)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="2000"
+                  />
+                  <span className="absolute right-4 top-2 text-gray-500 text-sm">kcal/day</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  AI will suggest meals to stay within your daily calorie target
+                </p>
+              </div>
+            )}
+          </div>
+
+          {showCalories && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-start">
+                <span className="text-orange-600 mr-3 mt-0.5 flex-shrink-0">📊</span>
+                <div>
+                  <p className="text-sm font-medium text-orange-800">
+                    Calorie tracking enabled
+                  </p>
+                  <p className="text-xs text-orange-700 mt-1">
+                    {dailyCalorieTarget > 0 
+                      ? `AI will suggest meals within ${dailyCalorieTarget} calories per day`
+                      : 'Calorie information will be displayed for each meal'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Action Buttons */}
         <div className="flex space-x-4">
