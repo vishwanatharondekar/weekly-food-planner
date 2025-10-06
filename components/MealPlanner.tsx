@@ -45,6 +45,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{day: string, mealType: string} | null>(null);
   const [userLanguage, setUserLanguage] = useState<string>('en'); // Default to English
+  const [editingMeal, setEditingMeal] = useState<{day: string, mealType: string} | null>(null); // Track which meal is being edited
   
   // Mode switching state
   const [currentMode, setCurrentMode] = useState<'plan' | 'cook'>('plan');
@@ -432,13 +433,25 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setSelectedMeal(null);
   };
 
+  const startEditingMeal = (day: string, mealType: string) => {
+    setEditingMeal({ day, mealType });
+    // Small delay to ensure input is rendered before focusing
+    setTimeout(() => {
+      const inputId = `meal-input-${day}-${mealType}`;
+      const inputElement = document.getElementById(inputId) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.focus();
+        inputElement.select();
+      }
+    }, 50);
+  };
+
+  const stopEditingMeal = () => {
+    setEditingMeal(null);
+  };
+
   const focusMealInput = (day: string, mealType: string, formFactor?: string) => {
-    // Find the input element for the specific day and meal type
-    const inputId = formFactor ? `meal-input-${formFactor}-${day}-${mealType}` : `meal-input-${day}-${mealType}`;
-    const inputElement = document.getElementById(inputId);
-    if (inputElement) {
-      inputElement.focus();
-    }
+    startEditingMeal(day, mealType);
   };
 
   const saveVideoUrl = async (videoUrl: string) => {
@@ -1062,12 +1075,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             savingMeals={savingMeals}
             enabledMealTypes={enabledMealTypes}
             user={user}
+            editingMeal={editingMeal}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
             onGenerateShoppingList={handleGenerateShoppingList}
             onClearMeals={clearMeals}
             onUpdateMeal={updateMeal}
+            onStartEditingMeal={startEditingMeal}
+            onStopEditingMeal={stopEditingMeal}
             onFocusMealInput={focusMealInput}
             onGetVideoIcon={getVideoIcon}
             onPdfTooltipStart={handlePdfTooltipStart}
@@ -1341,12 +1357,15 @@ interface PlanModeViewProps {
   savingMeals: Set<string>;
   enabledMealTypes: string[];
   user: any;
+  editingMeal: {day: string, mealType: string} | null;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
   onGenerateShoppingList: () => void;
   onClearMeals: () => void;
   onUpdateMeal: (day: string, mealType: string, value: string) => void;
+  onStartEditingMeal: (day: string, mealType: string) => void;
+  onStopEditingMeal: () => void;
   onFocusMealInput: (day: string, mealType: string, formFactor?: string) => void;
   onGetVideoIcon: (day: string, mealType: string) => React.ReactNode;
   onPdfTooltipStart: () => void;
@@ -1369,12 +1388,15 @@ function PlanModeView({
   savingMeals,
   enabledMealTypes,
   user,
+  editingMeal,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
   onGenerateShoppingList,
   onClearMeals,
   onUpdateMeal,
+  onStartEditingMeal,
+  onStopEditingMeal,
   onFocusMealInput,
   onGetVideoIcon,
   onPdfTooltipStart,
@@ -1596,22 +1618,35 @@ function PlanModeView({
                     const meal = meals[day]?.[mealType];
                     const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
                     const hasText = mealName.trim().length > 0;
+                    const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                     
                     return (
-                      <td key={mealType} className="px-0 py-0 whitespace-nowrap border-r border-gray-300 last:border-r-0">
-                        <div className="relative group h-full">
-                          <input
-                            id={`meal-input-desktop-${day}-${mealType}`}
-                            type="text"
-                            value={mealName}
-                            onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
-                            placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                            className={`text-black w-full h-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
-                              savingMeals.has(`${day}-${mealType}`) 
-                                ? 'bg-blue-50' 
-                                : ''
-                            }`}
-                          />
+                      <td key={mealType} className="px-0 py-0 border-r border-gray-300 last:border-r-0 align-top">
+                        <div className="relative group">
+                          {isEditing || !hasText ? (
+                            // Show input when editing or when empty
+                            <input
+                              id={`meal-input-${day}-${mealType}`}
+                              type="text"
+                              value={mealName}
+                              onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
+                              onBlur={onStopEditingMeal}
+                              placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                              className={`text-black w-full px-6 py-4 pr-16 bg-transparent focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                                savingMeals.has(`${day}-${mealType}`) 
+                                  ? 'bg-blue-50' 
+                                  : ''
+                              }`}
+                            />
+                          ) : (
+                            // Show display div when has content and not editing
+                            <div 
+                              onClick={() => onStartEditingMeal(day, mealType)}
+                              className="text-black w-full px-6 py-3 pr-16 cursor-text hover:bg-blue-50/20 transition-all duration-200 min-h-[60px] flex items-center"
+                            >
+                              <span className="line-clamp-2 leading-relaxed break-words">{mealName}</span>
+                            </div>
+                          )}
                           
                           {/* Loading spinner */}
                           {savingMeals.has(`${day}-${mealType}`) && (
@@ -1620,9 +1655,9 @@ function PlanModeView({
                             </div>
                           )}
                           
-                          {/* Action buttons - only show when there's text */}
-                          {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                            <div className="absolute inset-y-0 right-2 flex items-center space-x-1">
+                          {/* Action buttons - only show when there's text and not editing */}
+                          {hasText && !isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                            <div className="absolute top-3 right-2 flex items-center space-x-1">
                               {/* Video button - only visible on hover */}
                               <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 {onGetVideoIcon(day, mealType)}
@@ -1631,22 +1666,12 @@ function PlanModeView({
                               {/* Edit button - always visible when text exists */}
                               <button
                                 type="button"
-                                onClick={() => onFocusMealInput(day, mealType, 'desktop')}
+                                onClick={() => onStartEditingMeal(day, mealType)}
                                 className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
                                 title="Edit meal"
                               >
                                 <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                               </button>
-                            </div>
-                          )}
-                          
-                          {/* Tooltip for meal name */}
-                          {hasText && (
-                            <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                              <div className="text-white">
-                                {mealName}
-                              </div>
-                              <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                             </div>
                           )}
                         </div>
@@ -1686,62 +1711,68 @@ function PlanModeView({
                   const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
                   const hasText = mealName.trim().length > 0;
                   const isLastMeal = mealIndex === enabledMealTypes.length - 1;
+                  const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                   
                   return (
                     <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             {getMealDisplayName(mealType)}
                           </label>
                           <div className="relative group">
-                            <input
-                              id={`meal-input-mobile-${day}-${mealType}`}
-                              type="text"
-                              value={mealName}
-                              onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
-                              placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
-                              className={`text-black w-full px-0 py-1 pr-16 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
-                                savingMeals.has(`${day}-${mealType}`) 
-                                  ? 'bg-blue-50' 
-                                  : ''
-                              }`}
-                            />
+                            {isEditing || !hasText ? (
+                              // Show input when editing or when empty
+                              <input
+                                id={`meal-input-${day}-${mealType}`}
+                                type="text"
+                                value={mealName}
+                                onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
+                                onBlur={onStopEditingMeal}
+                                placeholder={`Enter ${getMealPlaceholder(mealType)}...`}
+                                className={`text-black w-full px-0 py-1 pr-16 bg-transparent border-0 focus:outline-none focus:bg-blue-50/30 transition-all duration-200 ${
+                                  savingMeals.has(`${day}-${mealType}`) 
+                                    ? 'bg-blue-50' 
+                                    : ''
+                                }`}
+                              />
+                            ) : (
+                              // Show display div when has content and not editing
+                              <div 
+                                onClick={() => onStartEditingMeal(day, mealType)}
+                                className="text-black w-full px-0 py-1 pr-16 cursor-text hover:bg-blue-50/20 transition-all duration-200 rounded min-h-[32px]"
+                              >
+                                <span className="line-clamp-2 leading-relaxed break-words block">{mealName}</span>
+                              </div>
+                            )}
                             
                             {/* Loading spinner */}
                             {savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 flex items-center">
+                              <div className="absolute top-1 right-0 flex items-center">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                               </div>
                             )}
                             
-                            {/* Action buttons - only show when there's text */}
-                            {hasText && !savingMeals.has(`${day}-${mealType}`) && (
-                              <div className="absolute inset-y-0 right-0 flex items-center space-x-1">
-                                {/* Video button - only visible on hover */}
-                                <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            {/* Action buttons - only show when there's text and not editing */}
+                            {hasText && !isEditing && !savingMeals.has(`${day}-${mealType}`) && (
+                              <div className="absolute top-0 right-0 flex items-center space-x-1">
+                                {/* Video button */}
+                                <div className="p-1">
                                   {onGetVideoIcon(day, mealType)}
                                 </div>
                                 
-                                {/* Edit button - always visible when text exists */}
+                                {/* Edit button */}
                                 <button
                                   type="button"
-                                  onClick={() => onFocusMealInput(day, mealType, 'mobile')}
-                                  className="p-1 hover:bg-gray-200 rounded opacity-40 hover:opacity-100 transition-all duration-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onStartEditingMeal(day, mealType);
+                                  }}
+                                  className="p-1 hover:bg-gray-200 rounded opacity-60 hover:opacity-100 transition-all duration-200"
                                   title="Edit meal"
                                 >
                                   <Pencil className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                 </button>
-                              </div>
-                            )}
-                            
-                            {/* Tooltip for meal name */}
-                            {hasText && (
-                              <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs break-words shadow-lg">
-                                <div className="text-white">
-                                  {mealName}
-                                </div>
-                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                               </div>
                             )}
                           </div>
