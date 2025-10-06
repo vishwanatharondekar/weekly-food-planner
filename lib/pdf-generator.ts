@@ -148,7 +148,9 @@ export async function generateMealPlanPDF(mealPlan: PDFMealPlan): Promise<void> 
     DAYS_OF_WEEK.forEach(day => {
       enabledMealTypes.forEach(mealType => {
         const meal = mealPlan.meals[day]?.[mealType];
-        if (meal && meal.trim()) {
+        if (meal && meal instanceof Object && 'name' in meal && meal.name.trim()) {
+          mealNamesToTranslate.push(meal.name.trim());
+        } else if (meal && typeof meal === 'string' && meal.trim()) {
           mealNamesToTranslate.push(meal.trim());
         }
       });
