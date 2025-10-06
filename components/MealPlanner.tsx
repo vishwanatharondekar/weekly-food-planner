@@ -451,6 +451,11 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         // Move cursor to end of text
         const length = inputElement.value.length;
         inputElement.setSelectionRange(length, length);
+        
+        // For textarea, scroll to bottom to show cursor position
+        if (inputElement instanceof HTMLTextAreaElement) {
+          inputElement.scrollTop = inputElement.scrollHeight;
+        }
       }
     }, 50);
   };
