@@ -386,13 +386,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     });
 
     // Update local state immediately for responsive UI
+    // Clear calories when user edits the meal (backend will remove it too)
     setMeals(prev => ({
       ...prev,
       [day]: {
         ...prev[day],
         [mealType]: {
           ...prev[day]?.[mealType],
-          name: value
+          name: value,
+          calories: undefined // Clear calories on user edit
         }
       }
     }));
