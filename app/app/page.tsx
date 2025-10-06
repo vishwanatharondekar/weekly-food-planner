@@ -138,6 +138,9 @@ export default function Home() {
     setToken(null);
     setUser(null);
     setShowSettingsDropdown(false);
+    
+    // Redirect to sign-in page
+    router.push('/signin');
   };
 
   const handleSignUp = () => {
