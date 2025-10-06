@@ -12,7 +12,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
             <p>
-              By accessing and using Weekly Food Planner ("the Service"), you accept and agree to be bound by the terms 
+              By accessing and using Khana Kya Banau ("the Service"), you accept and agree to be bound by the terms 
               and provision of this agreement. If you do not agree to these terms, please do not use the Service.
             </p>
           </section>
@@ -20,7 +20,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Use of Service</h2>
             <p className="mb-3">
-              Weekly Food Planner provides meal planning, AI-powered meal suggestions, and related services. You agree to:
+              Khana Kya Banau provides meal planning, AI-powered meal suggestions, and related services. You agree to:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>Use the Service only for lawful purposes</li>
@@ -104,7 +104,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Health and Dietary Information</h2>
             <p className="mb-3">
-              Weekly Food Planner is not a substitute for professional medical or nutritional advice. You acknowledge that:
+              Khana Kya Banau is not a substitute for professional medical or nutritional advice. You acknowledge that:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>The Service does not provide medical, nutritional, or dietary advice</li>
@@ -117,7 +117,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, Weekly Food Planner and its affiliates shall not be liable for 
+              To the maximum extent permitted by law, Khana Kya Banau and its affiliates shall not be liable for 
               any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, 
               whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses 
               resulting from your use of the Service.
@@ -141,7 +141,7 @@ export default function TermsAndConditions() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Intellectual Property</h2>
             <p>
               All content, features, and functionality of the Service, including but not limited to text, graphics, 
-              logos, icons, images, and software, are the exclusive property of Weekly Food Planner and are protected 
+              logos, icons, images, and software, are the exclusive property of Khana Kya Banau and are protected 
               by copyright, trademark, and other intellectual property laws.
             </p>
           </section>
@@ -150,7 +150,7 @@ export default function TermsAndConditions() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Third-Party Services</h2>
             <p>
               The Service may contain links to third-party websites or services that are not owned or controlled by 
-              Weekly Food Planner. We assume no responsibility for the content, privacy policies, or practices of any 
+              Khana Kya Banau. We assume no responsibility for the content, privacy policies, or practices of any 
               third-party websites or services.
             </p>
           </section>
@@ -168,7 +168,7 @@ export default function TermsAndConditions() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">14. Governing Law</h2>
             <p>
               These Terms and Conditions shall be governed by and construed in accordance with the laws of the 
-              jurisdiction in which Weekly Food Planner operates, without regard to its conflict of law provisions.
+              jurisdiction in which Khana Kya Banau operates, without regard to its conflict of law provisions.
             </p>
           </section>
 
@@ -182,7 +182,7 @@ export default function TermsAndConditions() {
 
           <div className="mt-12 pt-8 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              By using Weekly Food Planner, you acknowledge that you have read, understood, and agree to be bound by 
+              By using Khana Kya Banau, you acknowledge that you have read, understood, and agree to be bound by 
               these Terms and Conditions.
             </p>
           </div>
