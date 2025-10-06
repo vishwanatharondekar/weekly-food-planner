@@ -1519,7 +1519,7 @@ function PlanModeView({
       </div>
 
       {/* Action Buttons - Sticky on Mobile */}
-      <div className={`md:hidden sticky z-40 bg-gradient-to-r from-slate-50 to-blue-50 backdrop-blur-sm px-4 py-3 border-b border-slate-200 shadow-md ${user?.isGuest ? 'top-[7.25rem]' : 'top-16'}`}>
+      <div className="md:hidden sticky top-16 z-40 bg-gradient-to-r from-slate-50 to-blue-50 backdrop-blur-sm px-4 py-3 border-b border-slate-200 shadow-md">
         <div className="flex items-center space-x-2 w-full">
           {/* 1. Fill with AI */}
           <button
