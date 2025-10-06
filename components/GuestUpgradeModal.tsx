@@ -204,6 +204,17 @@ export default function GuestUpgradeModal({
             </div>
           </div>
 
+          <p className="text-xs text-gray-600 text-center">
+            By creating an account, you agree to our{' '}
+            <a 
+              href="/terms" 
+              target="_blank"
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              Terms and Conditions
+            </a>
+          </p>
+
           <button
             type="submit"
             disabled={loading}
@@ -218,10 +229,6 @@ export default function GuestUpgradeModal({
               'Create Free Account'
             )}
           </button>
-
-          <p className="text-xs text-gray-500 text-center">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </p>
         </form>
 
         {/* Login Option for Existing Users */}

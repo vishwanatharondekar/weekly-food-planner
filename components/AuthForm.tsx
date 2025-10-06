@@ -161,6 +161,19 @@ export default function AuthForm({ mode, onSuccess, onToggleMode }: AuthFormProp
             </div>
           </div>
 
+          {mode === 'register' && (
+            <div className="text-xs text-slate-600 text-center">
+              By creating an account, you agree to our{' '}
+              <a 
+                href="/terms" 
+                target="_blank"
+                className="text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Terms and Conditions
+              </a>
+            </div>
+          )}
+
           <div>
             <button
               type="submit"
