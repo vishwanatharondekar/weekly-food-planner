@@ -1704,7 +1704,7 @@ function PlanModeView({
                           
                           {/* Calorie badge - top right, separate from action buttons */}
                           {showCalorieInfo && hasText && (
-                            <div className="absolute -top-1 left-4 bg-orange-50 text-orange-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-orange-200">
+                            <div className="absolute top-0 right-0 bg-orange-50 text-orange-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-orange-200">
                               {calories} kcal
                             </div>
                           )}
@@ -1718,7 +1718,7 @@ function PlanModeView({
                           
                           {/* Action buttons - show when not editing */}
                           {!isEditing && !savingMeals.has(`${day}-${mealType}`) && (
-                            <div className="absolute top-3 right-2 flex items-center space-x-1">
+                            <div className="absolute top-4 right-2 flex items-center space-x-1 pt-1">
                               {/* Video button - only show when there's text and only visible on hover */}
                               {hasText && (
                                 <div className="p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -1786,7 +1786,7 @@ function PlanModeView({
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
 
-                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-2 ${getMealTypePillClasses(mealType)}`}>
+                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-2 mr-2 ${getMealTypePillClasses(mealType)}`}>
                             {getMealDisplayName(mealType)}
                           </div>
                           {/* Calorie badge - next to meal name for mobile */}
