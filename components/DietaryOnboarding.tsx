@@ -191,8 +191,13 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
               <div className="p-3 bg-orange-100 rounded-full mr-4">
                 <Settings className="w-6 h-6 text-orange-600" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Calorie Tracking</h3>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Calorie Tracking</h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                    Experimental
+                  </span>
+                </div>
                 <p className="text-sm text-gray-600">Track calories for your meals</p>
               </div>
             </div>
