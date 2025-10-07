@@ -11,6 +11,7 @@ import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
 import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
 import GuestUpgradeModal from './GuestUpgradeModal';
+import YouTubeVideoSearch from './YouTubeVideoSearch';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
@@ -1899,6 +1900,7 @@ interface VideoModalProps {
 function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: VideoModalProps) {
   const [videoUrl, setVideoUrl] = useState(currentVideoUrl);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'search' | 'manual'>('search');
 
   if (!isOpen) return null;
 
@@ -1913,6 +1915,12 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
     }
   };
 
+  const handleVideoSelect = async (video: any) => {
+    setVideoUrl(video.url);
+    // Automatically save and close the modal
+    await onSave(video.url);
+  };
+
   const extractVideoId = (url: string) => {
     const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
     return match ? match[1] : null;
@@ -1921,43 +1929,80 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
   const videoId = extractVideoId(videoUrl);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-0">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full max-h-[calc(100vh-16px)] sm:max-h-[90vh] overflow-hidden mt-2 sm:mt-0">
         <h2 className="text-xl font-bold mb-4">
-          Attach YouTube Video for: {mealName}
+          {mealName}
         </h2>
         
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            YouTube Video URL:
-          </label>
-          <input
-            type="url"
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === 'search'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Search Videos
+          </button>
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === 'manual'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Enter URL Manually
+          </button>
         </div>
 
-        {videoId && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Preview:</h3>
-            <div className="aspect-video bg-gray-100 rounded">
-              <iframe
-                width="100%"
-                height="100%"
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          </div>
-        )}
+        {/* Tab Content */}
+        <div className="overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(90vh-240px)]">
+          {activeTab === 'search' ? (
+            <YouTubeVideoSearch
+              onVideoSelect={handleVideoSelect}
+              initialQuery={mealName}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  YouTube Video URL:
+                </label>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-        <div className="flex gap-2 justify-end">
+              {videoId && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Preview:</h3>
+                  <div className="aspect-video bg-gray-100 rounded">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-4 sm:mt-6 pt-4 border-t border-gray-200">
           <button
             onClick={onClose}
             disabled={saving}
@@ -1965,13 +2010,15 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
           >
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Video'}
-          </button>
+          {activeTab === 'manual' && (
+            <button
+              onClick={handleSave}
+              disabled={saving || !videoUrl.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Video'}
+            </button>
+          )}
         </div>
       </div>
     </div>
