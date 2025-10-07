@@ -42,10 +42,116 @@ export async function GET(request: NextRequest) {
       params.append('pageToken', pageToken);
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-    // console.log(url);
+    const videosResponse = [
+      {
+        "id": "VMXp9sf7AFk",
+        "title": "Stuffed Brinjal Curry | Bharwa Baingan | Badanekayi Ennegayi | भरवां बैंगन",
+        "description": "stuffedbrinjal     In this video we are going to see a recipe with small ...",
+        "thumbnail": "https://i.ytimg.com/vi/VMXp9sf7AFk/mqdefault.jpg",
+        "channelTitle": "Our Orange Kitchen",
+        "publishedAt": "2020-07-01T16:15:36Z",
+        "duration": "PT3M30S",
+        "url": "https://www.youtube.com/watch?v=VMXp9sf7AFk"
+      },
+      {
+        "id": "PdsGDOEoLEA",
+        "title": "Stuffed Brinjal Masala - Chef Aadharsh Tatpati",
+        "description": "For more videos visit – http://www.rasoismart.com Please subscribe to my channel - youtube.com/c/RasoiSmart Video URL ...",
+        "thumbnail": "https://i.ytimg.com/vi/PdsGDOEoLEA/mqdefault.jpg",
+        "channelTitle": "RASOI SMART - INDIAN RECIPES",
+        "publishedAt": "2016-02-16T13:10:10Z",
+        "duration": "PT2M40S",
+        "url": "https://www.youtube.com/watch?v=PdsGDOEoLEA"
+      },
+      {
+        "id": "hQlontBC3DU",
+        "title": "mouth watering stuffed brinjal curry easy method |grand mothers recipe",
+        "description": "stuffed brinjal curry ,stuffed brinjal curry royal daks , royal daks stuffed brinjal curry .",
+        "thumbnail": "https://i.ytimg.com/vi/hQlontBC3DU/mqdefault.jpg",
+        "channelTitle": "Royal Daks",
+        "publishedAt": "2021-05-04T09:18:16Z",
+        "duration": "PT57S",
+        "url": "https://www.youtube.com/watch?v=hQlontBC3DU"
+      },
+      {
+        "id": "FCICNFoGtpk",
+        "title": "khandeshi vangyache bharit &amp; jwarichi bhakri",
+        "description": "khandeshi vangyache bharit & jwarichi bhakri     Vangyache bharit is a popular ...",
+        "thumbnail": "https://i.ytimg.com/vi/FCICNFoGtpk/mqdefault.jpg",
+        "channelTitle": "cook with manisha",
+        "publishedAt": "2021-02-01T07:32:54Z",
+        "duration": "PT16S",
+        "url": "https://www.youtube.com/watch?v=FCICNFoGtpk"
+      },
+      {
+        "id": "H2sn2aa0Yww",
+        "title": "Bhaingan Chatni/Badanekayi Chatni/Bhaingan ka bharta/egg plant chatni perfect for jowar roti/chapati",
+        "description": "Badanekayi chatni is the most famous dish from north karnataka.. This makes the perfect breakfast or lunch or even dinner with ...",
+        "thumbnail": "https://i.ytimg.com/vi/H2sn2aa0Yww/mqdefault.jpg",
+        "channelTitle": "Megha's Style-File",
+        "publishedAt": "2017-12-06T17:36:00Z",
+        "duration": "PT3M36S",
+        "url": "https://www.youtube.com/watch?v=H2sn2aa0Yww"
+      },
+      {
+        "id": "0ho3FaA9Lgc",
+        "title": "ennegayi recipe | stuffed brinjal recipe | badanekai yennegai |",
+        "description": "",
+        "thumbnail": "https://i.ytimg.com/vi/0ho3FaA9Lgc/mqdefault.jpg",
+        "channelTitle": "Shobha Nijagal",
+        "publishedAt": "2020-07-05T13:43:36Z",
+        "duration": "PT2M58S",
+        "url": "https://www.youtube.com/watch?v=0ho3FaA9Lgc"
+      },
+      {
+        "id": "unROGwMigBE",
+        "title": "Ennegayi palya- Stuffed Brinjal Curry- baingan masala recipe- Uttarakarnataka badanekayi ennegayi",
+        "description": "How-to make Badanekayi Ennegayi palya is popular north Karnataka or uttarakarnataka recipe. badanekayi ennegayi well suits ...",
+        "thumbnail": "https://i.ytimg.com/vi/unROGwMigBE/mqdefault.jpg",
+        "channelTitle": "ARK_ ಪ್ರಪಂಚ(world)",
+        "publishedAt": "2017-10-07T02:25:21Z",
+        "duration": "PT2M32S",
+        "url": "https://www.youtube.com/watch?v=unROGwMigBE"
+      },
+      {
+        "id": "KBN5mIJJMMA",
+        "title": "Brinjal/Eggplant/Aubergine Masala Recipe | ಬದನೇಕಾಯಿ ಎಣ್ಣೆಗಾಯಿ | भरवां बैंगन | Uttara karnataka style",
+        "description": "ಬದನೇಕಾಯಿ ಎಣ್ಣೆಗಾಯಿ | Brinjal/Eggplant/Aubergine Masala Recipe | भरवां बैंगन | Uttara karnataka ...",
+        "thumbnail": "https://i.ytimg.com/vi/KBN5mIJJMMA/mqdefault.jpg",
+        "channelTitle": "Raykar's Rasoi",
+        "publishedAt": "2020-06-28T11:54:43Z",
+        "duration": "PT2M52S",
+        "url": "https://www.youtube.com/watch?v=KBN5mIJJMMA"
+      },
+      {
+        "id": "QQMQlIbMlqY",
+        "title": "Zatpat Vangyache Bharit || चंपाषष्टी स्पेशल झटपट वांग्याचे भरीत || instant vangyache bharit",
+        "description": "1.how to make zatpat vangyache bharit 2.how to make instant vangyache bharit 3.how to make instant brinjal vegetable recipe ...",
+        "thumbnail": "https://i.ytimg.com/vi/QQMQlIbMlqY/mqdefault.jpg",
+        "channelTitle": "Shital Wagh",
+        "publishedAt": "2017-11-24T18:29:27Z",
+        "duration": "PT3M25S",
+        "url": "https://www.youtube.com/watch?v=QQMQlIbMlqY"
+      },
+      {
+        "id": "1-YgvL1aPJk",
+        "title": "PavakaiPitla-7",
+        "description": "Pavakai Pitla.",
+        "thumbnail": "https://i.ytimg.com/vi/1-YgvL1aPJk/mqdefault.jpg",
+        "channelTitle": "shruthiaravind",
+        "publishedAt": "2008-06-26T18:10:38Z",
+        "duration": "PT7S",
+        "url": "https://www.youtube.com/watch?v=1-YgvL1aPJk"
+      }
+    ]
 
-    console.log('Making YT Search Request : ', url);
+    // Uncomment this to use the mock data
+    // return NextResponse.json({
+    //   items: videosResponse,
+    // });
+    
+
+    const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
 
     const response = await fetch(url);
     
@@ -70,6 +176,8 @@ export async function GET(request: NextRequest) {
     let videoDetails: { [key: string]: string } = {};
     if (detailsResponse.ok) {
       const detailsData = await detailsResponse.json();
+
+      console.log('Details Data : ', JSON.stringify(detailsData, null, 2));
       videoDetails = detailsData.items.reduce((acc: { [key: string]: string }, item: any) => {
         acc[item.id] = item.contentDetails.duration;
         return acc;
