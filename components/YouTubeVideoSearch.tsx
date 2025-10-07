@@ -218,14 +218,16 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
                           {video.description}
                         </p>
                         <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs">
                             {video.duration && (
                               <>
-                                <span className="font-medium">{formatDuration(video.duration)}</span>
-                                <span>•</span>
+                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium text-[10px]">
+                                  {formatDuration(video.duration)}
+                                </span>
+                                <span className="text-gray-400">•</span>
                               </>
                             )}
-                            <span className="truncate">{video.channelTitle}</span>
+                            <span className="text-gray-600 truncate font-medium">{video.channelTitle}</span>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             {isExpanded && (
@@ -242,10 +244,9 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
                                 handleVideoSelect(video);
                               }}
                               className="w-full sm:w-auto px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center justify-center gap-1 sm:order-2"
-                              title="Select this video"
+                              title="Save this video"
                             >
-                              <Play className="w-3 h-3" />
-                              Select
+                              Save
                             </button>
                           </div>
                         </div>
