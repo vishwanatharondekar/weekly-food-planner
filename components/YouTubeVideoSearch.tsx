@@ -91,7 +91,7 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
   return (
     <div className="space-y-4">
       {/* Search Form */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -105,7 +105,7 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
         <button
           type="submit"
           disabled={loading || !searchQuery.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:w-auto w-full"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -132,11 +132,8 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
             </div>
           ) : (
             <>
-              <div className="text-sm text-gray-600 mb-3">
-                Found {videos.length} video{videos.length !== 1 ? 's' : ''} for "{searchQuery}"
-              </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {videos.map((video) => {
                   const videoId = extractVideoId(video.url);
                   const isExpanded = expandedVideoId === videoId;
@@ -217,22 +214,6 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
                   );
                 })}
               </div>
-
-              {/* Load More Button */}
-              {nextPageToken && (
-                <div className="text-center pt-4">
-                  <button
-                    onClick={loadMoreVideos}
-                    disabled={loadingMore}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
-                  >
-                    {loadingMore ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : null}
-                    Load More Videos
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>

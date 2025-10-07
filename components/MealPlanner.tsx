@@ -1928,8 +1928,8 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
   const videoId = extractVideoId(videoUrl);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-0">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full max-h-[calc(100vh-16px)] sm:max-h-[90vh] overflow-hidden mt-2 sm:mt-0">
         <h2 className="text-xl font-bold mb-4">
           {mealName}
         </h2>
@@ -1959,7 +1959,7 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
         </div>
 
         {/* Tab Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(90vh-240px)]">
           {activeTab === 'search' ? (
             <YouTubeVideoSearch
               onVideoSelect={handleVideoSelect}
@@ -2001,18 +2001,18 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-4 sm:mt-6 pt-4 border-t border-gray-200">
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 order-2 sm:order-1"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !videoUrl.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 order-1 sm:order-2"
           >
             {saving ? 'Saving...' : 'Save Video'}
           </button>
