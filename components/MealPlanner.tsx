@@ -1931,10 +1931,6 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-0">
       <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full max-h-[calc(100vh-16px)] sm:max-h-[90vh] overflow-hidden mt-2 sm:mt-0">
-        <h2 className="text-xl font-bold mb-4">
-          {mealName}
-        </h2>
-        
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 mb-6">
           <button
@@ -1970,7 +1966,7 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  YouTube Video URL:
+                  YouTube Video URL for {mealName}:
                 </label>
                 <input
                   type="url"
