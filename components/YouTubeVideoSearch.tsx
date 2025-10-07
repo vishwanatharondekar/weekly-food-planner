@@ -16,6 +16,7 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   const [loadingMore, setLoadingMore] = useState(false);
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -53,7 +54,19 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
     e.preventDefault();
     if (searchQuery.trim()) {
       debouncedSearch(searchQuery);
+      setIsEditing(false);
     }
+  };
+
+  const handleNewSearch = () => {
+    if (searchQuery.trim()) {
+      debouncedSearch(searchQuery);
+      setIsEditing(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
   };
 
   const loadMoreVideos = async () => {
@@ -90,31 +103,46 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
 
   return (
     <div className="space-y-4">
-      {/* Search Form */}
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for cooking videos..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+      {/* Search Display/Form */}
+      {!isEditing && hasSearched ? (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <span className="text-sm text-gray-800">
+            Searched for "<span className="font-bold text-blue-900">{searchQuery}</span>"
+            <button
+              onClick={handleEditClick}
+              className="ml-2 text-blue-600 hover:text-blue-700 text-sm font-medium underline"
+            >
+              Edit
+            </button>
+          </span>
         </div>
-        <button
-          type="submit"
-          disabled={loading || !searchQuery.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:w-auto w-full"
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Search className="w-4 h-4" />
-          )}
-          Search
-        </button>
-      </form>
+      ) : (
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for cooking videos..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoFocus={isEditing}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || !searchQuery.trim()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:w-auto w-full"
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
+            Search
+          </button>
+        </form>
+      )}
 
       {/* Search Results */}
       {hasSearched && (
