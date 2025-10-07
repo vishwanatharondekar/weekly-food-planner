@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       part: 'snippet',
       q: enhancedQuery,
       type: 'video',
+      videoDuration: 'short',
       maxResults: maxResults,
       key: apiKey,
       order: 'relevance', // Most relevant videos first
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
     }
 
     const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+    // console.log(url);
+
+    console.log('Making YT Search Request : ', url);
 
     const response = await fetch(url);
     
@@ -55,14 +59,32 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
+    // Get video IDs for duration lookup
+    const videoIds = data.items.map((item: any) => item.id.videoId).join(',');
+    
+    // Fetch video details including duration
+    const detailsResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`
+    );
+    
+    let videoDetails: { [key: string]: string } = {};
+    if (detailsResponse.ok) {
+      const detailsData = await detailsResponse.json();
+      videoDetails = detailsData.items.reduce((acc: { [key: string]: string }, item: any) => {
+        acc[item.id] = item.contentDetails.duration;
+        return acc;
+      }, {});
+    }
+    
     // Transform the response
     const videos = data.items.map((item: any) => ({
       id: item.id.videoId,
-      title: item.snippet.title,
-      description: item.snippet.description,
+      title: item.snippet.title.replace(/#\w+/g, '').trim(),
+      description: item.snippet.description.replace(/#\w+/g, '').trim(),
       thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
       channelTitle: item.snippet.channelTitle,
       publishedAt: item.snippet.publishedAt,
+      duration: videoDetails[item.id.videoId] || null,
       url: `https://www.youtube.com/watch?v=${item.id.videoId}`
     }));
 

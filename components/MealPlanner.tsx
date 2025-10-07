@@ -1915,9 +1915,10 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
     }
   };
 
-  const handleVideoSelect = (video: any) => {
+  const handleVideoSelect = async (video: any) => {
     setVideoUrl(video.url);
-    setActiveTab('manual'); // Switch to manual tab to show preview
+    // Automatically save and close the modal
+    await onSave(video.url);
   };
 
   const extractVideoId = (url: string) => {
@@ -2005,17 +2006,19 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 order-2 sm:order-1"
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !videoUrl.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 order-1 sm:order-2"
-          >
-            {saving ? 'Saving...' : 'Save Video'}
-          </button>
+          {activeTab === 'manual' && (
+            <button
+              onClick={handleSave}
+              disabled={saving || !videoUrl.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Video'}
+            </button>
+          )}
         </div>
       </div>
     </div>

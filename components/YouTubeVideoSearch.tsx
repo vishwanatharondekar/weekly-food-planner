@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Play, ExternalLink, Loader2 } from 'lucide-react';
-import { searchYouTubeVideos, YouTubeVideo, formatPublishedDate } from '@/lib/youtube-search';
+import { searchYouTubeVideos, YouTubeVideo, formatPublishedDate, formatDuration } from '@/lib/youtube-search';
 import toast from 'react-hot-toast';
 
 interface YouTubeVideoSearchProps {
@@ -166,6 +166,11 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
                               className="w-full h-40 object-cover rounded-t-lg cursor-pointer"
                               onClick={() => handleCardClick(video)}
                             />
+                            {video.duration && (
+                              <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-1.5 py-0.5 rounded">
+                                {formatDuration(video.duration)}
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center cursor-pointer"
                                  onClick={() => handleCardClick(video)}>
                               <div className="opacity-0 hover:opacity-100 transition-opacity duration-200">
@@ -178,20 +183,27 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
 
                       {/* Video Info */}
                       <div className="p-3">
-                        <h4 className="font-medium text-gray-900 line-clamp-2 mb-3 text-sm">
+                        <h4 className="font-medium text-gray-900 line-clamp-2 mb-2 text-sm">
                           {video.title}
                         </h4>
-                        <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                          {video.description}
+                        </p>
+                        <div className="space-y-3">
                           <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {video.duration && (
+                              <>
+                                <span className="font-medium">{formatDuration(video.duration)}</span>
+                                <span>•</span>
+                              </>
+                            )}
                             <span className="truncate">{video.channelTitle}</span>
-                            <span>•</span>
-                            <span>{formatPublishedDate(video.publishedAt)}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             {isExpanded && (
                               <button
                                 onClick={() => setExpandedVideoId(null)}
-                                className="px-2 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                                className="px-2 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50 sm:order-1"
                               >
                                 Collapse
                               </button>
@@ -201,7 +213,7 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
                                 e.stopPropagation();
                                 handleVideoSelect(video);
                               }}
-                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center gap-1"
+                              className="w-full sm:w-auto px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center justify-center gap-1 sm:order-2"
                               title="Select this video"
                             >
                               <Play className="w-3 h-3" />
