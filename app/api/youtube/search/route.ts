@@ -1,5 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// In-memory cache for YouTube search results
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+  ttl: number; // Time to live in milliseconds
+}
+
+const searchCache = new Map<string, CacheEntry>();
+
+// Cache TTL: 30 minutes
+const CACHE_TTL = 30 * 60 * 1000;
+
+// Helper function to generate cache key
+function generateCacheKey(query: string, maxResults: string, pageToken?: string): string {
+  return `${query.toLowerCase().trim()}_${maxResults}_${pageToken || 'first'}`;
+}
+
+// Helper function to check if cache entry is valid
+function isCacheValid(entry: CacheEntry): boolean {
+  return Date.now() - entry.timestamp < entry.ttl;
+}
+
+// Helper function to get cached data
+function getCachedData(key: string): any | null {
+  const entry = searchCache.get(key);
+  if (entry && isCacheValid(entry)) {
+    return entry.data;
+  }
+  // Remove expired entry
+  if (entry) {
+    searchCache.delete(key);
+  }
+  return null;
+}
+
+// Helper function to set cached data
+function setCachedData(key: string, data: any): void {
+  searchCache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl: CACHE_TTL
+  });
+}
+
+// Helper function to clean up expired cache entries
+function cleanupExpiredCache(): void {
+  const now = Date.now();
+  const keysToDelete: string[] = [];
+  
+  searchCache.forEach((entry, key) => {
+    if (now - entry.timestamp >= entry.ttl) {
+      keysToDelete.push(key);
+    }
+  });
+  
+  keysToDelete.forEach(key => searchCache.delete(key));
+}
+
+// Clean up expired cache entries periodically (every 10 minutes)
+setInterval(cleanupExpiredCache, 10 * 60 * 1000);
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -13,6 +74,18 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Generate cache key
+    const cacheKey = generateCacheKey(query, maxResults, pageToken || undefined);
+    
+    // Check cache first
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      console.log(`Cache hit for query: ${query} (Cache size: ${searchCache.size})`);
+      return NextResponse.json(cachedData);
+    }
+
+    console.log(`Cache miss for query: ${query}, fetching from YouTube API (Cache size: ${searchCache.size})`);
 
     const apiKey = process.env.YOUTUBE_API_KEY;
     
@@ -196,11 +269,17 @@ export async function GET(request: NextRequest) {
       url: `https://www.youtube.com/watch?v=${item.id.videoId}`
     }));
 
-    return NextResponse.json({
+    const responseData = {
       items: videos,
       nextPageToken: data.nextPageToken,
       totalResults: data.pageInfo?.totalResults || 0
-    });
+    };
+
+    // Cache the response
+    setCachedData(cacheKey, responseData);
+    console.log(`Cached response for query: ${query}`);
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error('YouTube search error:', error);
