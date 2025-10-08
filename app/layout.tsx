@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import Analytics from '@/components/Analytics'
+import Footer from '@/components/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -96,7 +97,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           gaMeasurementId={process.env.GA_MEASUREMENT_ID || ''} 
           mixpanelToken={process.env.MIXPANEL_TOKEN || ''} 
         />
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </div>
         <Toaster position="top-right" />
       </body>
     </html>
