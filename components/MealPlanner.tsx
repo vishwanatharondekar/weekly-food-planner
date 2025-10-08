@@ -1932,19 +1932,29 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-0">
-      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full max-h-[calc(100vh-16px)] sm:max-h-[90vh] overflow-hidden mt-2 sm:mt-0">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-6xl w-full max-h-[calc(100vh-16px)] sm:max-h-[85vh] overflow-hidden mt-2 sm:mt-0">
+        {/* Modal Title */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 text-center h-8 flex items-center justify-center overflow-hidden">
+            <span className="truncate">
+              Video for {mealName}
+            </span>
+          </h2>
+          <div className="border-b border-gray-200"></div>
+        </div>
+
         {/* Instruction Text */}
         {!showPreview && (
           <div className="text-center mb-6">
             <p className="text-sm text-gray-600">
-              Select or manually add video URL to save against meal <span className="font-medium text-gray-800">{mealName}</span>
+              Select or manually add video URL to save against this meal
             </p>
           </div>
         )}
 
         {/* Tab Navigation */}
         {!showPreview && (
-          <div className="flex border-b border-gray-200 mb-6">
+          <div className="flex border-b border-gray-200 mb-4">
             <button
               onClick={() => setActiveTab('search')}
               className={`px-4 py-2 font-medium text-sm ${
@@ -1969,7 +1979,7 @@ function VideoModal({ isOpen, onClose, onSave, currentVideoUrl, mealName }: Vide
         )}
 
         {/* Tab Content */}
-        <div className="overflow-y-auto max-h-[calc(100vh-320px)] sm:max-h-[calc(90vh-240px)]">
+        <div className="overflow-y-auto max-h-[calc(100vh-360px)] sm:max-h-[calc(85vh-280px)]">
           {showPreview && videoId ? (
             <div className="space-y-6">
               <div className="text-center">
