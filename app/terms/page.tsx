@@ -11,10 +11,28 @@ export default function TermsAndConditions() {
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
-            <p>
+            <p className="mb-3">
               By accessing and using Khana Kya Banau ("the Service"), you accept and agree to be bound by the terms 
               and provision of this agreement. If you do not agree to these terms, please do not use the Service.
             </p>
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+              <p className="mb-3 font-medium">
+                <strong>YouTube Terms of Service Agreement:</strong>
+              </p>
+              <p className="mb-3">
+                By using our Service, you also agree to be bound by the YouTube Terms of Service, which can be found at:
+              </p>
+              <p className="mb-3">
+                <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer" 
+                   className="text-blue-600 hover:text-blue-800 underline">
+                  https://www.youtube.com/t/terms
+                </a>
+              </p>
+              <p>
+                Our Service integrates with YouTube API Services to provide cooking videos and recipe content. 
+                Your use of these features is subject to YouTube's terms and policies.
+              </p>
+            </div>
           </section>
 
           <section>
@@ -147,12 +165,27 @@ export default function TermsAndConditions() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Third-Party Services</h2>
-            <p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Third-Party Services and YouTube Integration</h2>
+            <p className="mb-3">
               The Service may contain links to third-party websites or services that are not owned or controlled by 
               Khana Kya Banau. We assume no responsibility for the content, privacy policies, or practices of any 
               third-party websites or services.
             </p>
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">YouTube API Services</h3>
+              <p className="mb-3">
+                Our Service integrates with YouTube API Services to provide cooking videos and recipe content. 
+                When using these features:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>You agree to comply with YouTube's Terms of Service and Community Guidelines</li>
+                <li>YouTube content is provided "as is" and we do not control its availability or accuracy</li>
+                <li>We may access YouTube data solely to enhance your meal planning experience</li>
+                <li>YouTube's privacy policy applies to data collected through their services</li>
+                <li>We do not store or cache YouTube video content beyond what is necessary for service functionality</li>
+                <li>You may not use our Service to access YouTube content in violation of YouTube's policies</li>
+              </ul>
+            </div>
           </section>
 
           <section>
@@ -174,10 +207,17 @@ export default function TermsAndConditions() {
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">15. Contact Information</h2>
-            <p>
-              If you have any questions about these Terms and Conditions, please contact us through the contact 
-              information provided on our website.
-            </p>
+            <div className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded">
+              <p className="mb-3 font-medium">If you have any questions about these Terms and Conditions, please contact us:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li><strong>Email:</strong> legal@khanakyabanau.in</li>
+                <li><strong>Support:</strong> support@khanakyabanau.in</li>
+                <li><strong>General Inquiries:</strong> hello@khanakyabanau.in</li>
+              </ul>
+              <p className="mt-3">
+                We will respond to your inquiries within a reasonable timeframe, typically within 48 hours.
+              </p>
+            </div>
           </section>
 
           <div className="mt-12 pt-8 border-t border-gray-200">
@@ -188,12 +228,18 @@ export default function TermsAndConditions() {
           </div>
         </div>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center space-x-4">
           <a
             href="/"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Back to Home
+          </a>
+          <a
+            href="/privacy"
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          >
+            View Privacy Policy
           </a>
         </div>
       </div>
