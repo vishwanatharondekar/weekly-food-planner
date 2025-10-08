@@ -210,9 +210,7 @@ export default function TermsAndConditions() {
             <div className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded">
               <p className="mb-3 font-medium">If you have any questions about these Terms and Conditions, please contact us:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
-                <li><strong>Email:</strong> legal@khanakyabanau.in</li>
-                <li><strong>Support:</strong> support@khanakyabanau.in</li>
-                <li><strong>General Inquiries:</strong> hello@khanakyabanau.in</li>
+                <li><strong>Email:</strong> hello@khanakyabanau.in</li>
               </ul>
               <p className="mt-3">
                 We will respond to your inquiries within a reasonable timeframe, typically within 48 hours.
