@@ -9,8 +9,8 @@ interface CacheEntry {
 
 const searchCache = new Map<string, CacheEntry>();
 
-// Cache TTL: 30 minutes
-const CACHE_TTL = 30 * 60 * 1000;
+// Cache TTL: 24 hours
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Helper function to generate cache key
 function generateCacheKey(query: string, maxResults: string, pageToken?: string): string {

@@ -9,6 +9,7 @@ interface YouTubeVideoSearchProps {
 }
 
 export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }: YouTubeVideoSearchProps) {
+  const [inputValue, setInputValue] = useState(initialQuery);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,20 +53,16 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      debouncedSearch(searchQuery);
+    if (inputValue.trim()) {
+      setSearchQuery(inputValue);
+      debouncedSearch(inputValue);
       setIsEditing(false);
     }
   };
 
-  const handleNewSearch = () => {
-    if (searchQuery.trim()) {
-      debouncedSearch(searchQuery);
-      setIsEditing(false);
-    }
-  };
 
   const handleEditClick = () => {
+    setInputValue(searchQuery);
     setIsEditing(true);
   };
 
@@ -122,8 +119,8 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               placeholder="Search for cooking videos..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               autoFocus={isEditing}
@@ -131,7 +128,7 @@ export default function YouTubeVideoSearch({ onVideoSelect, initialQuery = '' }:
           </div>
           <button
             type="submit"
-            disabled={loading || !searchQuery.trim()}
+            disabled={loading || !inputValue.trim()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:w-auto w-full"
           >
             {loading ? (
