@@ -49,7 +49,7 @@ const INTERNAL_CUISINE_DATA: { name: string; dishes: InternalCuisineDishes }[] =
   {
     name: "Gujarati",
     dishes: {
-      breakfast: ["Dhokla", "Thepla", "Fafda", "Khandvi", "Handvo", "Idli Sambaar", "Poha"],
+      breakfast: ["Dhokla", "Thepla", "Fafda", "Khakhra ghee", "Handvo", "Vaghareli roti", "Locho", "Khamani sev" ],
       lunch_dinner_veg: ["Dal Dhokli", "Undhiyu", "Kadhi", "Sabzi", "Gujarati Thali", "Sev Tameta", "Vagharela Bhaat", "Pulaav"],
       lunch_dinner_non_veg: [],
       snacks: ["Fafda", "Gathiya", "Chakri", "Mathiya", "Gujarati Samosa", "Ragda Petis"]
