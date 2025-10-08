@@ -49,8 +49,8 @@ const INTERNAL_CUISINE_DATA: { name: string; dishes: InternalCuisineDishes }[] =
   {
     name: "Gujarati",
     dishes: {
-      breakfast: ["Dhokla", "Thepla", "Fafda", "Khandvi", "Handvo", "Idli Sambaar", "Poha"],
-      lunch_dinner_veg: ["Dal Dhokli", "Undhiyu", "Kadhi", "Sabzi", "Gujarati Thali", "Sev Tameta", "Vagharela Bhaat", "Pulaav"],
+      breakfast: ["Dhokla", "Thepla", "Fafda", "Appam", "Khakhra ghee", "Handvo", "Vaghareli roti", "Locho", "Khamani sev", "Moong Dal Chilla" ],
+      lunch_dinner_veg: ["Dal Dhokli", "Undhiyu", "Kadhi", "Sev Tameta", "Vagharela Bhaat", "Pulaav"],
       lunch_dinner_non_veg: [],
       snacks: ["Fafda", "Gathiya", "Chakri", "Mathiya", "Gujarati Samosa", "Ragda Petis"]
     }
@@ -96,7 +96,7 @@ export const INDIAN_CUISINES: Cuisine[] = INTERNAL_CUISINE_DATA.map(cuisine => (
 
 // Internal universal dishes with veg/non-veg separation
 const INTERNAL_UNIVERSAL_DISHES: InternalCuisineDishes = {
-  breakfast: ["Idli", "Dosa", "Poha", "Upma", "Bread Toast", "Cornflakes", "Sandwich", "Fruit Salad"],
+  breakfast: ["Idli", "Dosa", "Poha", "Upma", "Bread Toast", "Cornflakes", "Sandwich", "Fruit Salad", "Masala Oats"],
   lunch_dinner_veg: ["Veg Biryani", "Rajma", "Chole", "Chana Masala", "Dal Makhani", "Paneer Masala", "Vegetable Curry", "Mixed Vegetable", "Aloo Gobi", "Aloo Matar", "Palak Paneer", "Pasta", "Maggi", "Veg Fried Rice", "Veg Pulao", "Jeera Rice", "Dal Khichdi", "Vegetable Khichdi", "Thai Curry"],
   lunch_dinner_non_veg: ["Chicken Curry", "Butter Chicken", "Fish Curry", "Egg Curry", "Mutton Curry", "Chicken Biryani", "Mutton Biryani", "Chicken Fried Rice", "Egg Fried Rice"],
   snacks: ["Samosa", "Pakora", "Kachori", "Vada", "Bonda", "Bajji", "Jalebi", "Rasgulla", "Ladoo", "Besan Ladoo", "Coconut Ladoo", "Gajar Halwa", "Sooji Halwa", "Kheer", "Rice Kheer", "Dry Fruits", "Nuts", "Almonds", "Cashews", "Pistachios", "Walnuts", "Raisins", "Banana Chips", "Potato Chips", "Popcorn", "Biscuits", "Cookies", "Namkeen", "Mixture", "Dhokla", "Dahi Vada", "Dahi Puri", "Sev Puri", "Bhel Puri", "Pani Puri", "Chaat", "Aloo Chaat", "Fruit Chaat", "Boiled Corn", "Potato", "Boiled Potato", "French Fries", "Boiled Egg", "Fried Egg", "Scrambled Egg", "Omelette", "Egg Sandwich", "Veg Sandwich", "Paneer Sandwich", "Veg Burger", "Veg Pizza", "Pasta", "Spaghetti", "Macaroni", "Noodles"]
