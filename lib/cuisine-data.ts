@@ -31,8 +31,8 @@ const INTERNAL_CUISINE_DATA: { name: string; dishes: InternalCuisineDishes }[] =
   {
     name: "North Indian",
     dishes: {
-      breakfast: ["Chole Bhature", "Aloo Puri", "Aloo Paratha", "Makki Roti", "Dal Baati", "Churma", "Litti Chokha", "Sattu Paratha", "Sabudana Khichdi"],
-      lunch_dinner_veg: ["Dal Makhani", "Palak Paneer", "Chana Masala", "Rajma", "Chole", "Dal Baati Churma", "Ker Sangri", "Dum Aloo", "Vegetable Curry", "Litti", ],
+      breakfast: [ "Aloo Puri", "Aloo Paratha", "Sattu Paratha", "Sabudana Khichdi", "Dahi Chura", "Suji Halwa", "Besan Chilla", "Moong Dal Chilla"],
+      lunch_dinner_veg: ["Chole Bhature",  "Dal Baati, Churma",  "Litti Chokha", "Dal Makhani", "Palak Paneer", "Chana Masala", "Rajma", "Chhole", "Ker Sangri", "Dum Aloo", "Vegetable Curry", "Paneer Bhurji"],
       lunch_dinner_non_veg: ["Butter Chicken", "Tandoori Chicken", "Rogan Josh", "Laal Maas", "Chicken Curry", "Fish Curry"],
       snacks: ["Samosa", "Pakora", "Kachori", "Jalebi", "Gulab Jamun", "Rasgulla", "Ghewar", "Mawa Kachori", "Kashmiri Samosa", "Nadru Monje", "Kashmiri Tea", "Sheer Chai", "Singodi", "Bal Mithai", "Arsa", "Jhangora Ki Kheer", "Patande", "Aktori", "Chaat"]
     }
@@ -97,7 +97,7 @@ export const INDIAN_CUISINES: Cuisine[] = INTERNAL_CUISINE_DATA.map(cuisine => (
 // Internal universal dishes with veg/non-veg separation
 const INTERNAL_UNIVERSAL_DISHES: InternalCuisineDishes = {
   breakfast: ["Idli", "Dosa", "Poha", "Upma", "Bread Toast", "Cornflakes", "Sandwich", "Fruit Salad"],
-  lunch_dinner_veg: ["Veg Biryani", "Rajma", "Chole", "Chana Masala", "Dal Makhani", "Paneer Masala", "Vegetable Curry", "Mixed Vegetable", "Aloo Gobi", "Aloo Matar", "Palak Paneer", "Pasta", "Maggi", "Veg Fried Rice", "Veg Pulao", "Jeera Rice", "Dal Khichdi", "Vegetable Khichdi"],
+  lunch_dinner_veg: ["Veg Biryani", "Rajma", "Chole", "Chana Masala", "Dal Makhani", "Paneer Masala", "Vegetable Curry", "Mixed Vegetable", "Aloo Gobi", "Aloo Matar", "Palak Paneer", "Pasta", "Maggi", "Veg Fried Rice", "Veg Pulao", "Jeera Rice", "Dal Khichdi", "Vegetable Khichdi", "Thai Curry"],
   lunch_dinner_non_veg: ["Chicken Curry", "Butter Chicken", "Fish Curry", "Egg Curry", "Mutton Curry", "Chicken Biryani", "Mutton Biryani", "Chicken Fried Rice", "Egg Fried Rice"],
   snacks: ["Samosa", "Pakora", "Kachori", "Vada", "Bonda", "Bajji", "Jalebi", "Rasgulla", "Ladoo", "Besan Ladoo", "Coconut Ladoo", "Gajar Halwa", "Sooji Halwa", "Kheer", "Rice Kheer", "Dry Fruits", "Nuts", "Almonds", "Cashews", "Pistachios", "Walnuts", "Raisins", "Banana Chips", "Potato Chips", "Popcorn", "Biscuits", "Cookies", "Namkeen", "Mixture", "Dhokla", "Dahi Vada", "Dahi Puri", "Sev Puri", "Bhel Puri", "Pani Puri", "Chaat", "Aloo Chaat", "Fruit Chaat", "Boiled Corn", "Potato", "Boiled Potato", "French Fries", "Boiled Egg", "Fried Egg", "Scrambled Egg", "Omelette", "Egg Sandwich", "Veg Sandwich", "Paneer Sandwich", "Veg Burger", "Veg Pizza", "Pasta", "Spaghetti", "Macaroni", "Noodles"]
 };
