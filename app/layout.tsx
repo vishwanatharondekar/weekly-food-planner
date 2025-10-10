@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
@@ -9,6 +9,7 @@ import Footer from '@/components/Footer'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in'),
   title: 'खाना क्या बनाऊं - Weekly Meal Planning',
   description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
   manifest: '/manifest.json',
@@ -47,12 +48,13 @@ export const metadata: Metadata = {
     description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
     images: ['/images/logos/logo-pack-fe229c/icon-transparent.png'],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({
