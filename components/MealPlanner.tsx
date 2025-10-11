@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
-import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES } from '@/lib/utils';
+import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES, getPlanUrl } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
@@ -35,10 +36,13 @@ interface MealPlannerProps {
   user: any;
   continueFromOnboarding?: boolean;
   onUserUpdate?: (updatedUser: any) => void;
+  initialWeek?: Date;
 }
 
-export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate }: MealPlannerProps) {
-  const [currentWeek, setCurrentWeek] = useState(getWeekStartDate(new Date()));
+export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate, initialWeek }: MealPlannerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [currentWeek, setCurrentWeek] = useState(initialWeek || getWeekStartDate(new Date()));
   const [meals, setMeals] = useState<MealDataWithVideos>({});
   const [loading, setLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState({ hasHistory: false, canGenerate: false });
@@ -95,6 +99,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     loadMeals();
     checkAIStatus();
   }, [currentWeek]);
+
+  // Handle URL changes for /plan/[weekStartDate] routes
+  useEffect(() => {
+    if (pathname?.startsWith('/plan/') && initialWeek) {
+      // Update currentWeek when the URL changes
+      setCurrentWeek(initialWeek);
+    }
+  }, [pathname, initialWeek]);
 
   // Auto-generate meals for new users with cuisine preferences
   useEffect(() => {
@@ -735,6 +747,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
+    const newWeek = direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1);
+    
     // Track navigation event
     analytics.trackEvent({
       action: AnalyticsEvents.NAVIGATION.WEEK_CHANGE,
@@ -742,15 +756,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       custom_parameters: {
         direction,
         from_week: formatDate(currentWeek),
-        to_week: formatDate(direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1)),
+        to_week: formatDate(newWeek),
         user_id: user?.id,
       },
     });
     
-    if (direction === 'prev') {
-      setCurrentWeek(subWeeks(currentWeek, 1));
+    // Check if we're on a /plan/[weekStartDate] route
+    if (pathname?.startsWith('/plan/')) {
+      // Navigate to the new week URL
+      router.push(getPlanUrl(newWeek));
     } else {
-      setCurrentWeek(addWeeks(currentWeek, 1));
+      // For /app route, just update the state
+      setCurrentWeek(newWeek);
     }
   };
 
