@@ -37,9 +37,10 @@ interface MealPlannerProps {
   continueFromOnboarding?: boolean;
   onUserUpdate?: (updatedUser: any) => void;
   initialWeek?: Date;
+  todaysMealsAvailable?: boolean;
 }
 
-export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate, initialWeek }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate, initialWeek, todaysMealsAvailable = false }: MealPlannerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentWeek, setCurrentWeek] = useState(initialWeek || getWeekStartDate(new Date()));
@@ -55,9 +56,12 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   
   // Mode switching state
   const [currentMode, setCurrentMode] = useState<'plan' | 'cook'>('plan');
-  const [hasTodaysMeals, setHasTodaysMeals] = useState(false);
   const [todaysMeals, setTodaysMeals] = useState({});
   const [initialModeSet, setInitialModeSet] = useState(false);
+  
+  // Cook mode independent data
+  const [cookModeData, setCookModeData] = useState<MealDataWithVideos>({});
+  const [cookModeLoading, setCookModeLoading] = useState(false);
   
   // Full screen loader states
   const [showLoader, setShowLoader] = useState(false);
@@ -69,7 +73,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
   const [showShoppingTooltip, setShowShoppingTooltip] = useState(false);
   const [showAiTooltip, setShowAiTooltip] = useState(false);
-  const [showOnboardingTooltip, setShowOnboardingTooltip] = useState(true);
   const pdfTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shoppingTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const aiTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -127,51 +130,29 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     }
   }, [continueFromOnboarding]);
   
-  // Check if there are meals planned for today
-  useEffect(() => {
-    if (meals && Object.keys(meals).length > 0 && mealSettings.enabledMealTypes.length > 0) {
-      checkTodaysMeals(meals);
-    }
-  }, [meals, currentWeek, mealSettings.enabledMealTypes]);
 
-  // Set default mode to Cook if there are meals planned for today
+  // Handle todaysMealsAvailable prop from URL query parameter
   useEffect(() => {
-    if (hasTodaysMeals) {
+    if (todaysMealsAvailable && !initialModeSet) {
       setCurrentMode('cook');
       setInitialModeSet(true);
-    } else if (!initialModeSet && !hasTodaysMeals) {
-      setInitialModeSet(true);
     }
-  }, [hasTodaysMeals, initialModeSet]);
+  }, [todaysMealsAvailable, initialModeSet]);
 
-  const checkTodaysMeals = (meals: MealDataWithVideos) => {
-    const today = new Date();
-    const weekStart = getWeekStartDate(today);
-    const isCurrentWeek = isSameDay(weekStart, currentWeek);
-    
-    if (!isCurrentWeek) {
-      // setHasTodaysMeals(false);
-      return;
+  // Load cook mode data when switching to cook mode
+  useEffect(() => {
+    if (currentMode === 'cook') {
+      loadCookModeData();
     }
+  }, [currentMode]);
 
-    const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // Convert Sunday=0 to Sunday=6
-    const todayDay = DAYS_OF_WEEK[todayIndex];
-    const todaysMeals = meals[todayDay];
-    
-    if (!todaysMeals) {
-      setHasTodaysMeals(false);
-      return;
+  // Refresh cook mode data when user switches to cook mode (in case data changed)
+  const refreshCookModeData = () => {
+    if (currentMode === 'cook') {
+      loadCookModeData();
     }
-    
-    const hasAnyMeal = mealSettings.enabledMealTypes.some(mealType => {
-      const meal = todaysMeals[mealType];
-      const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
-      return mealName.trim().length > 0;
-    });
-    
-    setTodaysMeals(todaysMeals);
-    setHasTodaysMeals(hasAnyMeal);
   };
+
 
   // Cleanup tooltip timeouts on unmount
   useEffect(() => {
@@ -319,6 +300,70 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       toast.error('Failed to load meals');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCookModeData = async () => {
+    try {
+      setCookModeLoading(true);
+      
+      // Get today's date and current week
+      const today = new Date();
+      const weekStart = getWeekStartDate(today);
+      const weekStartString = formatDate(weekStart);
+      
+      // Fetch the current week's meal plan
+      const response = await mealsAPI.getWeekMeals(weekStartString);
+      
+      // Load user's video URLs
+      let userVideoURLs: { [recipeName: string]: string } = {};
+      try {
+        userVideoURLs = await authAPI.getVideoURLs();
+      } catch (error) {
+        console.warn('Failed to load user video URLs for cook mode:', error);
+      }
+      
+      // Convert to new format with video URLs
+      const convertedMeals: MealDataWithVideos = {};
+      DAYS_OF_WEEK.forEach(day => {
+        convertedMeals[day] = {};
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = response.meals[day]?.[mealType];
+          if (meal) {
+            // Handle different meal data formats
+            let mealName = '';
+            let calories: number | undefined = undefined;
+            
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object') {
+              if (meal.name) {
+                mealName = meal.name;
+                calories = meal.calories;
+              } else {
+                mealName = String(meal);
+              }
+            }
+            
+            // Look up video URL for this recipe
+            const normalizedRecipeName = mealName.toLowerCase().trim();
+            const videoUrl = userVideoURLs[normalizedRecipeName];
+            
+            convertedMeals[day][mealType] = {
+              name: mealName,
+              ...(videoUrl && { videoUrl }),
+              ...(calories && { calories })
+            };
+          }
+        });
+      });
+      
+      setCookModeData(convertedMeals);
+    } catch (error) {
+      console.error('Error loading cook mode data:', error);
+      toast.error('Failed to load today\'s meals');
+    } finally {
+      setCookModeLoading(false);
     }
   };
 
@@ -1042,10 +1087,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // Convert Sunday=0 to Sunday=6
     const todayDay = DAYS_OF_WEEK[todayIndex];
     
+    // Use cook mode data if available, otherwise fall back to plan data
+    const todaysMealsData = cookModeData[todayDay] || todaysMeals;
+    
     return {
       day: todayDay,
       date: today,
-      meals: todaysMeals
+      meals: todaysMealsData
     };
   };
 
@@ -1061,13 +1109,11 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             {/* Cook Mode Tab - Left Side */}
             <button
               onClick={switchToCookMode}
-              disabled={!hasTodaysMeals}
               className={`relative flex-1 flex items-center justify-center px-2 py-4 text-sm font-medium transition-all duration-200 ${
                 currentMode === 'cook'
                   ? 'bg-white text-gray-900 border-b-2 border-orange-500'
-                  : hasTodaysMeals
-                  ? 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                  
               }`}
             >
               {/* Angled cut for active tab */}
@@ -1077,9 +1123,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               
               <ChefHat className="w-4 h-4 mr-2" />
               Today's Menu
-              {!hasTodaysMeals && (
-                <span className="ml-2 text-xs font-normal opacity-75">(No meals)</span>
-              )}
             </button>
             
             {/* Plan Mode Tab - Right Side */}
@@ -1104,12 +1147,22 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         }
 
         {/* Cook Mode View */}
-        {(!continueFromOnboarding && currentMode === 'cook') && hasTodaysMeals && (
+        {(!continueFromOnboarding && currentMode === 'cook') && !cookModeLoading && (
           <CookModeView 
             todaysData={getTodaysMeals()}
             mealSettings={mealSettings}
             onVideoClick={openVideoModal}
           />
+        )}
+        
+        {/* Cook Mode Loading */}
+        {(!continueFromOnboarding && currentMode === 'cook') && cookModeLoading && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading today's menu...</p>
+            </div>
+          </div>
         )}
 
         {/* Plan Mode View */}
@@ -1276,9 +1329,10 @@ interface CookModeViewProps {
   };
   mealSettings: MealSettings;
   onVideoClick: (day: string, mealType: string) => void;
+  onRefresh?: () => void;
 }
 
-function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewProps) {
+function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: CookModeViewProps) {
   const { day, date, meals } = todaysData;
   const enabledMealTypes = mealSettings.enabledMealTypes;
 
@@ -1321,6 +1375,18 @@ function CookModeView({ todaysData, mealSettings, onVideoClick }: CookModeViewPr
               {day.charAt(0).toUpperCase() + day.slice(1)} • {format(date, 'MMMM d, yyyy')}
             </p>
           </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              title="Refresh today's menu"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-sm">Refresh</span>
+            </button>
+          )}
         </div>
       </div>
 

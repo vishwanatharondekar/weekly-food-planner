@@ -30,8 +30,8 @@ export default function LandingPage() {
     // Check if user is already logged in
     const token = localStorage.getItem('token');
     if (token) {
-      // Redirect to current week's plan if already authenticated
-      router.replace(getPlanUrl(new Date()));
+      // Redirect to home page to check meal availability and redirect appropriately
+      router.replace('/home');
     } else {
       // Check for mode parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -45,8 +45,8 @@ export default function LandingPage() {
   }, [router]);
 
   const handleAuthSuccess = (token: string, user: any) => {
-    // Redirect to current week's plan after successful authentication
-    router.replace(getPlanUrl(new Date()));
+    // Redirect to home page to check meal availability and redirect appropriately
+    router.replace('/home');
   };
 
   const toggleAuthMode = () => {

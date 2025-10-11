@@ -47,10 +47,10 @@ export default function Home() {
     }
   }, [router]);
 
-  // Redirect to plan route when user is authenticated and onboarding is complete
+  // Redirect to home route when user is authenticated and onboarding is complete
   useEffect(() => {
     if (user && user.onboardingCompleted && !continueFromOnboarding) {
-      router.replace(getPlanUrl(new Date()));
+      router.replace('/home');
     }
   }, [user, continueFromOnboarding, router]);
 
