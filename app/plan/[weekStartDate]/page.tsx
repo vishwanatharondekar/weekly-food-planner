@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { getWeekStartDate, formatDate, getPlanUrl } from '@/lib/utils';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { parseISO, format, isValid } from 'date-fns';
 import AuthForm from '@/components/AuthForm';
 import MealPlanner from '@/components/MealPlanner';
 import StorageInitializer from '@/components/StorageInitializer';
@@ -18,14 +18,18 @@ import { ChevronDown, Settings, Leaf, Video, Globe, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { getGuestDeviceId, isGuestUser, clearGuestData } from '@/lib/guest-utils';
+import { getWeekStartDate } from '@/lib/utils';
 
-export default function Home() {
+export default function PlanPage() {
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const weekStartDateParam = params.weekStartDate as string;
+  
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(true);
-  const [showFirebaseSetup, setShowFirebaseSetup] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
   const [showMealSettings, setShowMealSettings] = useState(false);
@@ -34,6 +38,48 @@ export default function Home() {
   const [showCuisineOnboarding, setShowCuisineOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
+  const [initialWeek, setInitialWeek] = useState<Date | null>(null);
+  const [todaysMealsAvailable, setTodaysMealsAvailable] = useState(false);
+
+  // Parse and validate the week start date from URL
+  useEffect(() => {
+    if (weekStartDateParam) {
+      try {
+        const parsedDate = parseISO(weekStartDateParam);
+        if (isValid(parsedDate)) {
+          // Ensure it's a Monday (week start)
+          const weekStart = getWeekStartDate(parsedDate);
+          setInitialWeek(weekStart);
+        } else {
+          console.error('Invalid date format in URL:', weekStartDateParam);
+          // Redirect to current week if invalid date
+          const currentWeek = getWeekStartDate(new Date());
+          router.replace(`/plan/${format(currentWeek, 'yyyy-MM-dd')}`);
+        }
+      } catch (error) {
+        console.error('Error parsing date from URL:', error);
+        // Redirect to current week if parsing fails
+        const currentWeek = getWeekStartDate(new Date());
+        router.replace(`/plan/${format(currentWeek, 'yyyy-MM-dd')}`);
+      }
+    } else {
+      // If no date provided, redirect to current week
+      const currentWeek = getWeekStartDate(new Date());
+      router.replace(`/plan/${format(currentWeek, 'yyyy-MM-dd')}`);
+    }
+  }, [weekStartDateParam, router]);
+
+  // Check for todaysMealsAvailable query parameter and clear it
+  useEffect(() => {
+    const todaysMealsParam = searchParams.get('todaysMealsAvailable');
+    if (todaysMealsParam === 'true') {
+      setTodaysMealsAvailable(true);
+      // Clear the query parameter from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('todaysMealsAvailable');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -46,13 +92,6 @@ export default function Home() {
       setShowCuisineOnboarding(true);
     }
   }, [router]);
-
-  // Redirect to home route when user is authenticated and onboarding is complete
-  useEffect(() => {
-    if (user && user.onboardingCompleted && !continueFromOnboarding) {
-      router.replace('/home');
-    }
-  }, [user, continueFromOnboarding, router]);
 
   const createGuestUser = async () => {
     try {
@@ -237,7 +276,6 @@ export default function Home() {
     }
   };
 
-
   const toggleAuthMode = () => {
     setAuthMode(prev => prev === 'login' ? 'register' : 'login');
   };
@@ -272,8 +310,6 @@ export default function Home() {
       </div>
     );
   }
-
-  // Remove the old auth form logic since we automatically create guest users
 
   return (
     <StorageInitializer>
@@ -430,11 +466,13 @@ export default function Home() {
           </div>
         )}
         
-        {user && user.onboardingCompleted ? (
+        {user && user.onboardingCompleted && initialWeek ? (
           <MealPlanner 
             user={user} 
             continueFromOnboarding={continueFromOnboarding}
             onUserUpdate={setUser}
+            initialWeek={initialWeek}
+            todaysMealsAvailable={todaysMealsAvailable}
           />
         ) : user && !user.onboardingCompleted ? (
           <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -444,6 +482,7 @@ export default function Home() {
             </div>
           </div>
         ) : null}
+        
         {/* Settings Modals */}
         {showMealSettings && user && (
           <MealSettingsComponent
@@ -498,4 +537,4 @@ export default function Home() {
       </div>
     </StorageInitializer>
   );
-} 
+}

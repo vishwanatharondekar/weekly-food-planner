@@ -14,6 +14,11 @@ export function getWeekStartDate(date: Date): Date {
   return startOfWeek(date, { weekStartsOn: 1 }); // Monday as start of week
 }
 
+export function getPlanUrl(date: Date): string {
+  const weekStart = getWeekStartDate(date);
+  return `/plan/${formatDate(weekStart)}`;
+}
+
 export function getNextWeekStartDate(date: Date): Date {
   // If the given date is Saturday (6) or Sunday (0), return next week's Monday
   const day = date.getDay();

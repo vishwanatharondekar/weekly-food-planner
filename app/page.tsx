@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeekStartDate, formatDate, getPlanUrl } from '@/lib/utils';
 import AuthForm from '@/components/AuthForm';
 import StorageInitializer from '@/components/StorageInitializer';
 import { 
@@ -29,8 +30,8 @@ export default function LandingPage() {
     // Check if user is already logged in
     const token = localStorage.getItem('token');
     if (token) {
-      // Redirect to app if already authenticated
-      router.replace('/app');
+      // Redirect to home page to check meal availability and redirect appropriately
+      router.replace('/home');
     } else {
       // Check for mode parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -44,8 +45,8 @@ export default function LandingPage() {
   }, [router]);
 
   const handleAuthSuccess = (token: string, user: any) => {
-    // Redirect to app after successful authentication
-    router.replace('/app');
+    // Redirect to home page to check meal availability and redirect appropriately
+    router.replace('/home');
   };
 
   const toggleAuthMode = () => {
@@ -119,7 +120,7 @@ export default function LandingPage() {
             </p>
             <div className="flex justify-center space-x-4">
               <Link 
-                href="/app"
+                href={getPlanUrl(new Date())}
                 className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
               >
                 <span>Try Free</span>
@@ -319,7 +320,7 @@ export default function LandingPage() {
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="/app"
+                href={getPlanUrl(new Date())}
                 className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
               >
                 <span>Get Started Free</span>
