@@ -5,7 +5,7 @@ import { X, Loader2 } from 'lucide-react';
 
 interface FullScreenLoaderProps {
   isVisible: boolean;
-  onCancel: () => void;
+  onCancel?: () => void;
   message: string;
   subMessage?: string;
 }
