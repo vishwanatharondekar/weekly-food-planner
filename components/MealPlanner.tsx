@@ -56,7 +56,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   
   // Mode switching state
   const [currentMode, setCurrentMode] = useState<'plan' | 'cook'>('plan');
-  const [todaysMeals, setTodaysMeals] = useState({});
   const [initialModeSet, setInitialModeSet] = useState(false);
   
   // Cook mode independent data
@@ -67,7 +66,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showLoader, setShowLoader] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState('');
   const [loaderSubMessage, setLoaderSubMessage] = useState('');
-  const [currentOperation, setCurrentOperation] = useState<'ai' | 'pdf' | 'shopping' | null>(null);
   
   // Tooltip delay states
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
@@ -171,7 +169,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Helper functions for loader management
   const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string) => {
-    setCurrentOperation(operation);
     setLoaderMessage(message);
     setLoaderSubMessage(subMessage || '');
     setShowLoader(true);
@@ -179,7 +176,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   const hideFullScreenLoader = () => {
     setShowLoader(false);
-    setCurrentOperation(null);
     setLoaderMessage('');
     setLoaderSubMessage('');
   };
@@ -1088,7 +1084,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     const todayDay = DAYS_OF_WEEK[todayIndex];
     
     // Use cook mode data if available, otherwise fall back to plan data
-    const todaysMealsData = cookModeData[todayDay] || todaysMeals;
+    const todaysMealsData = cookModeData[todayDay] || {};
     
     return {
       day: todayDay,
