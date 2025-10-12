@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
-import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES, getPlanUrl } from '@/lib/utils';
+import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES, getPlanUrl, getFormFactor } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
 import { saveVideoURLForRecipe } from '@/lib/video-url-utils';
@@ -38,9 +38,10 @@ interface MealPlannerProps {
   onUserUpdate?: (updatedUser: any) => void;
   initialWeek?: Date;
   todaysMealsAvailable?: boolean;
+  focusCoordinates?: { day: string; mealType: string };
 }
 
-export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate, initialWeek, todaysMealsAvailable = false }: MealPlannerProps) {
+export default function MealPlanner({ user, continueFromOnboarding = false, onUserUpdate, initialWeek, todaysMealsAvailable = false, focusCoordinates }: MealPlannerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentWeek, setCurrentWeek] = useState(initialWeek || getWeekStartDate(new Date()));
@@ -100,6 +101,18 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     loadMeals();
     checkAIStatus();
   }, [currentWeek]);
+
+  // Handle focus coordinates from email links
+  useEffect(() => {
+    if (focusCoordinates && !loading && meals && Object.keys(meals).length > 0) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        handleFocusCoordinates(focusCoordinates);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [focusCoordinates, loading, meals]);
 
   // Handle URL changes for /plan/[weekStartDate] routes
   useEffect(() => {
@@ -229,6 +242,34 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setMealSettings(newSettings);
     // Reload meals to reflect new structure
     loadMeals();
+  };
+
+  const handleFocusCoordinates = (coordinates: { day: string; mealType: string }) => {
+    const { day, mealType } = coordinates;
+
+    // Create a unique ID for the meal input
+    
+    // If input not found, try to find the meal container and scroll to it
+    const mealContainer = document.querySelector(`[data-day="${day}"][data-meal-type="${mealType}"]`);
+    if (mealContainer) {
+      mealContainer.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      setEditingMeal({ day, mealType });
+      // Try to trigger edit mode
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+            const formFactor = getFormFactor();
+            console.log('Form factor', formFactor);
+            const mealInputId = formFactor === 'mobile' ? `meal-input-${day}-${mealType}` : `meal-input-desktop -${day}-${mealType}`;
+            const inputElement: any = document.getElementById(mealInputId);
+            inputElement?.focus();
+            inputElement.selectionStart = inputElement.selectionEnd = inputElement.value.length;
+          });
+        }, 300);
+      }
   };
 
   const loadMeals = async () => {
@@ -1869,7 +1910,7 @@ function PlanModeView({
                   const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                   
                   return (
-                    <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}>
+                    <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`} data-day={day} data-meal-type={mealType}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
 
@@ -1886,7 +1927,9 @@ function PlanModeView({
                             {isEditing ? (
                               // Show textarea when editing
                               <textarea
-                                id={`meal-input-mobile-${day}-${mealType}`}
+                                id={`meal-input-${day}-${mealType}`}
+                                data-day={day}
+                                data-meal-type={mealType}
                                 value={mealName}
                                 onChange={(e) => onUpdateMeal(day, mealType, e.target.value)}
                                 onBlur={(e) => {

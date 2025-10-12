@@ -40,6 +40,7 @@ export default function PlanPage() {
   const [continueFromOnboarding, setContinueFromOnboarding] = useState(false);
   const [initialWeek, setInitialWeek] = useState<Date | null>(null);
   const [todaysMealsAvailable, setTodaysMealsAvailable] = useState(false);
+  const [focusCoordinates, setFocusCoordinates] = useState<{ day: string; mealType: string } | undefined>(undefined);
 
   // Parse and validate the week start date from URL
   useEffect(() => {
@@ -78,6 +79,16 @@ export default function PlanPage() {
       const url = new URL(window.location.href);
       url.searchParams.delete('todaysMealsAvailable');
       window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
+
+  // Extract focus coordinates from URL search parameters
+  useEffect(() => {
+    const day = searchParams.get('day');
+    const mealType = searchParams.get('mealType');
+    
+    if (day && mealType) {
+      setFocusCoordinates({ day, mealType });
     }
   }, [searchParams]);
 
@@ -473,6 +484,7 @@ export default function PlanPage() {
             onUserUpdate={setUser}
             initialWeek={initialWeek}
             todaysMealsAvailable={todaysMealsAvailable}
+            focusCoordinates={focusCoordinates}
           />
         ) : user && !user.onboardingCompleted ? (
           <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
