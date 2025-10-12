@@ -118,7 +118,7 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                                     
                                     <!-- Edit button -->
                                     <div style="margin-left: 8px; flex-shrink: 0;">
-                                        <a href="${planUrl}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; transition: all 0.2s; hover:background-color: #e5e7eb; hover:color: #374151;" title="Edit meal">
+                                        <a href="${planUrl}?day=${day}&mealType=${mealType}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; transition: all 0.2s; hover:background-color: #e5e7eb; hover:color: #374151;" title="Edit meal">
                                             <span style="font-size: 16px;">✏️</span>
                                         </a>
                                     </div>

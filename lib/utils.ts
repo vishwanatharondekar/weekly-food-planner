@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function getFormFactor(): 'mobile' | 'desktop' {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return 'desktop'; // Default to desktop for SSR
+  }
+  
+  // Use Tailwind's md breakpoint (768px) as the threshold
+  return window.innerWidth < 768 ? 'mobile' : 'desktop';
+}
+
 export function formatDate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
