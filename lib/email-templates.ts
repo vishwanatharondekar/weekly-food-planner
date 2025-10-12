@@ -32,12 +32,28 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
     dinner: 'Dinner'
   };
 
+  // Helper function to get meal type pill colors (matching mobile layout)
+  const getMealTypePillClasses = (mealType: string) => {
+    const colorMap: { [key: string]: string } = {
+      'breakfast': 'background-color: #fef3c7; color: #92400e;', // amber-100 text-amber-700
+      'lunch': 'background-color: #dcfce7; color: #166534;', // green-100 text-green-700
+      'dinner': 'background-color: #dbeafe; color: #1e40af;', // blue-100 text-blue-700
+      'snack': 'background-color: #f3e8ff; color: #7c2d12;', // purple-100 text-purple-700
+      'morningSnack': 'background-color: #f3e8ff; color: #7c2d12;', // purple-100 text-purple-700
+      'eveningSnack': 'background-color: #fce7f3; color: #be185d;', // pink-100 text-pink-700
+    };
+    return colorMap[mealType] || 'background-color: #f3f4f6; color: #374151;'; // gray-100 text-gray-700
+  };
+
   const weekRange = `${format(weekStart, 'MMM d')} - ${format(addDays(weekStart, 6), 'MMM d, yyyy')}`;
   const unsubscribeUrl = generateUnsubscribeUrl(userEmail, userId);
   
   // Generate tracking URLs
   const trackingData = createEmailTrackingData(userId, userEmail, weekStartDate);
   const trackingUrls = generateEmailTrackingUrls(trackingData);
+  
+  // Generate plan URL for the specific week
+  const planUrl = `https://www.khanakyabanau.in/plan/${weekStartDate}`;
 
   return `
 <!DOCTYPE html>
@@ -62,22 +78,50 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
             <p style="margin: 0; color: #6c757d; font-size: 14px;">Plan your grocery shopping and meal prep with confidence!</p>
         </div>
         
+        <!-- Mobile-style card layout -->
         <div style="margin-bottom: 20px;">
             ${days.map((day, index) => {
               const dayMeals = meals[day] || {};
+              const dayDate = new Date(weekStart);
+              dayDate.setDate(dayDate.getDate() + index);
+              const isToday = new Date().toDateString() === dayDate.toDateString();
               const isLastDay = index === days.length - 1;
+              
               return `
-                <div style="margin-bottom: ${isLastDay ? '0' : ''}; ${!isLastDay ? 'border-bottom: 2px solid #e9ecef; padding-bottom: 20px;' : ''}">
-                    <div style="background-color: #495057; color: white; padding: 10px 16px; font-weight: 600; font-size: 16px; margin-bottom: 12px;">${dayNames[index]}</div>
-                    <div style="padding: 0 12px;">
+                <div style="margin-bottom: ${isLastDay ? '0' : '16px'}; background-color: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                    <!-- Day header -->
+                    <div style="background-color: ${isToday ? '#3b82f6' : '#f9fafb'}; color: ${isToday ? 'white' : '#374151'}; padding: 12px 16px; font-weight: 600; font-size: 16px; border-bottom: 1px solid #e5e7eb;">
+                        ${dayNames[index]}${isToday ? ' (Today)' : ''}
+                    </div>
+                    
+                    <!-- Meals list -->
+                    <div>
                         ${enabledMeals.map((mealType, mealIndex) => {
                           const mealName = dayMeals[mealType] instanceof Object ? dayMeals[mealType].name : dayMeals[mealType];
                           const isLastMeal = mealIndex === enabledMeals.length - 1;
+                          const hasText = mealName && mealName.trim().length > 0;
+                          
                           return `
-                            <div style="padding: 8px 0; ${!isLastMeal ? 'border-bottom: 1px solid #e9ecef;' : 'padding-bottom: 16px;'}">
-                                <div style="font-weight: 600; color: #495057; margin-bottom: 3px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">${mealTypeLabels[mealType] || mealType}</div>
-                                <div style="color: #212529; font-size: 16px; ${!mealName ? 'color: #6c757d; font-style: italic;' : ''}">
-                                    ${mealName || 'Not planned yet'}
+                            <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                                    <div style="flex: 1; min-width: 0;">
+                                        <!-- Meal type pill -->
+                                        <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
+                                            ${mealTypeLabels[mealType] || mealType}
+                                        </div>
+                                        
+                                        <!-- Meal name -->
+                                        <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
+                                            ${mealName || 'Not planned yet'}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Edit button -->
+                                    <div style="margin-left: 8px; flex-shrink: 0;">
+                                        <a href="${planUrl}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; transition: all 0.2s; hover:background-color: #e5e7eb; hover:color: #374151;" title="Edit meal">
+                                            <span style="font-size: 16px;">✏️</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                           `;
