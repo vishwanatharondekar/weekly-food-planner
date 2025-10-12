@@ -262,8 +262,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       setTimeout(() => {
         requestAnimationFrame(() => {
             const formFactor = getFormFactor();
-            console.log('Form factor', formFactor);
-            const mealInputId = formFactor === 'mobile' ? `meal-input-${day}-${mealType}` : `meal-input-desktop -${day}-${mealType}`;
+            const mealInputId = formFactor === 'mobile' ? `meal-input-${day}-${mealType}` : `meal-input-desktop-${day}-${mealType}`;
             const inputElement: any = document.getElementById(mealInputId);
             inputElement?.focus();
             inputElement.selectionStart = inputElement.selectionEnd = inputElement.value.length;
