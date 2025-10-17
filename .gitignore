@@ -170,3 +170,5 @@ IndexedDB/
 
 # User export CSV files
 users-export-*.csv
+
+.DS_Store

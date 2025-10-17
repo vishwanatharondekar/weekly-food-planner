@@ -19,6 +19,44 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
+// Function to fetch meal images from lambda endpoint
+async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: string }> {
+  try {
+    if (mealNames.length === 0) {
+      return {};
+    }
+
+    // Call the internal image mapping API which proxies to lambda
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/image-mapping`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mealNames: mealNames
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('Image mapping API request failed:', response.status, response.statusText);
+      return {};
+    }
+
+    const data = await response.json();
+    
+    // The API should return an object with meal names as keys and image URLs as values
+    if (typeof data === 'object' && data !== null) {
+      return data;
+    }
+
+    console.warn('Invalid response format from image mapping API');
+    return {};
+  } catch (error) {
+    console.warn('Error fetching meal images from image mapping API:', error);
+    return {};
+  }
+}
+
 // Helper function to get user ID from token
 function getUserIdFromToken(request: NextRequest): string | null {
   try {
@@ -54,11 +92,72 @@ export async function GET(
 
     if (mealPlanDoc.exists()) {
       const data = mealPlanDoc.data();
+      
+      // Extract meal names for image search
+      const mealNames: string[] = [];
+      const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const ALL_MEAL_TYPES = ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+      
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = data.meals[day]?.[mealType];
+          if (meal) {
+            let mealName = '';
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object' && meal.name) {
+              mealName = meal.name;
+            }
+            
+            if (mealName.trim()) {
+              mealNames.push(mealName.trim());
+            }
+          }
+        });
+      });
+      
+      // Fetch meal images from Firestore
+      const mealImages = await fetchMealImages(mealNames);
+
+
+      
+      // Enhance meals with image URLs
+      const enhancedMeals = { ...data.meals };
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = enhancedMeals[day]?.[mealType];
+          if (meal) {
+            let mealName = '';
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object' && meal.name) {
+              mealName = meal.name;
+            }
+            
+            if (mealName.trim() && mealImages[mealName.trim()]) {
+              if (typeof meal === 'string') {
+                // Convert string meal to object with image
+                enhancedMeals[day][mealType] = {
+                  name: meal,
+                  imageUrl: mealImages[mealName.trim()]
+                };
+              } else if (typeof meal === 'object') {
+                // Add image to existing object
+                enhancedMeals[day][mealType] = {
+                  ...meal,
+                  imageUrl: mealImages[mealName.trim()]
+                };
+              }
+            }
+          }
+        });
+      });
+      
       return NextResponse.json({
         id: mealPlanDoc.id,
         userId: data.userId,
         weekStartDate: data.weekStartDate,
-        meals: data.meals,
+        meals: enhancedMeals,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
       });
