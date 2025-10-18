@@ -76,10 +76,7 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
             <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
             <h2 style="margin: 0 0 5px 0; color: #495057; font-size: 20px;">Week of ${weekRange}</h2>
              <p style="margin: 0; color: #6c757d; font-size: 14px;">Don't like the suggestions?</p>
-             <p style="margin: 0; color: #6c757d; font-size: 14px;">Edit manually or <strong style="color: #ea580c; font-weight: 600;">generate again with AI</strong> by editing your liked dishes</p>
-            <p style="margin: 0 0 8px 0; font-size: 14px;">
-              <a href="${trackingUrls.weekStartDateLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open Meal Plan</a>
-            </p>
+             <p style="margin: 0; color: #6c757d; font-size: 14px;"><a href="${trackingUrls.weekStartDateLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open Meal Plan</a> to edit manually or <a href="${trackingUrls.weekStartDateLink}" style="color: #007bff; text-decoration: none; font-weight: 500;"><strong style="color: #ea580c; font-weight: 600;">Generate again with AI</strong></a> by editing your liked dishes</p>
         </div>
         
         <!-- Mobile-style card layout -->
