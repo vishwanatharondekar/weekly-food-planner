@@ -113,7 +113,11 @@ export async function POST(request: NextRequest) {
     const userQuery = query(usersRef, where('__name__', '==', userId));
     const userSnapshot = await getDocs(userQuery);
     const userData = userSnapshot.docs[0]?.data();
-    const dietaryPreferences = userData?.dietaryPreferences;
+    const dietaryPreferences = {
+      ...userData?.dietaryPreferences,
+      showCalories: userData?.showCalories === undefined ? true : userData?.showCalories,
+    }
+
     const cuisinePreferences = userData?.cuisinePreferences || [];
     const dishPreferences = userData?.dishPreferences || { breakfast: [], lunch_dinner: [] };
     const mealSettings = userData?.mealSettings;
