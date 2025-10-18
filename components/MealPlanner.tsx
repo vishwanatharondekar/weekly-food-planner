@@ -99,7 +99,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   useEffect(() => {
     loadMeals();
-    checkAIStatus();
   }, [currentWeek]);
 
   // Handle focus coordinates from email links
@@ -156,13 +155,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       loadCookModeData();
     }
   }, [currentMode]);
-
-  // Refresh cook mode data when user switches to cook mode (in case data changed)
-  const refreshCookModeData = () => {
-    if (currentMode === 'cook') {
-      loadCookModeData();
-    }
-  };
 
 
   // Cleanup tooltip timeouts on unmount
@@ -403,14 +395,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     }
   };
 
-  const checkAIStatus = async () => {
-    try {
-      const status = await aiAPI.getAIStatus();
-      setAiStatus(status);
-    } catch (error) {
-      console.error('Error checking AI status:', error);
-    }
-  };
 
   // Debounced meal update function
   const debouncedUpdateMeal = useCallback(
@@ -763,7 +747,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('AI meal suggestions applied to empty slots!');
-      await checkAIStatus();
       
       // Refresh user data to get updated usage counts for guest users
       if (isGuestUser(user?.id) && onUserUpdate) {
@@ -817,7 +800,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       hideFullScreenLoader();
       toast.success('All meals cleared for this week!');
-      await checkAIStatus(); // Re-check AI status after clearing
     } catch (error) {
       console.error('Error clearing meals:', error);
       hideFullScreenLoader();
