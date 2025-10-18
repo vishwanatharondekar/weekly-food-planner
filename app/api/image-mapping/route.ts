@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     // Get the Lambda URL from environment variables
-    const lambdaUrl = process.env.IMAGE_MAPPING_LAMBDA_URL;
+    const lambdaUrl = process.env.IMAGE_MAPPING_API_URL;
     
     if (!lambdaUrl) {
       console.error('IMAGE_MAPPING_LAMBDA_URL environment variable not configured');
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
 
     // Make the request to the Lambda URL
     const startTime = Date.now();
-    
-    const response = await fetch(lambdaUrl, {
+
+    const response = await fetch(lambdaUrl + '/image-mapping', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
