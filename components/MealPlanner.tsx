@@ -84,13 +84,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
 
-  useEffect(() => {
-    loadMealSettings();
-    loadUserLanguagePreferences();
-  }, []);
+  // useEffect(() => {
+  //   console.log('Blank useEffect');
+  //   loadMealSettings();
+  //   loadUserLanguagePreferences();
+  // }, []);
 
   // React to user prop changes - reload settings when user is updated
   useEffect(() => {
+    console.log('User useEffect', user);
+    console.log('user : ', user);
     if (user) {
       loadMealSettings();
       loadUserLanguagePreferences();
@@ -98,11 +101,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   }, [user]);
 
   useEffect(() => {
+    console.log('Current week useEffect', currentWeek);
     loadMeals();
   }, [currentWeek]);
 
   // Handle focus coordinates from email links
   useEffect(() => {
+    console.log('Focus coordinates useEffect', focusCoordinates);
     if (focusCoordinates && !loading && meals && Object.keys(meals).length > 0) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
@@ -115,6 +120,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Handle URL changes for /plan/[weekStartDate] routes
   useEffect(() => {
+    console.log('Pathname useEffect', pathname);
     if (pathname?.startsWith('/plan/') && initialWeek) {
       // Update currentWeek when the URL changes
       setCurrentWeek(initialWeek);
@@ -123,6 +129,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Auto-generate meals for new users with cuisine preferences
   useEffect(() => {
+    console.log('Continue from onboarding useEffect', continueFromOnboarding);
     if (continueFromOnboarding) {
       // Small delay to ensure everything is loaded
       const timer = setTimeout(() => {
@@ -143,6 +150,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Handle todaysMealsAvailable prop from URL query parameter
   useEffect(() => {
+    console.log('Todays meals available useEffect', todaysMealsAvailable);
     if (todaysMealsAvailable && !initialModeSet) {
       setCurrentMode('cook');
       setInitialModeSet(true);
@@ -151,6 +159,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Load cook mode data when switching to cook mode
   useEffect(() => {
+    console.log('Current mode useEffect', currentMode);
     if (currentMode === 'cook') {
       loadCookModeData();
     }
@@ -159,6 +168,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
   // Cleanup tooltip timeouts on unmount
   useEffect(() => {
+    console.log('Tooltip timeouts useEffect');
     return () => {
       if (pdfTooltipTimeoutRef.current) {
         clearTimeout(pdfTooltipTimeoutRef.current);
@@ -218,6 +228,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const loadUserLanguagePreferences = async () => {
+    console.log('Load user language preferences');
+    console.trace()
     try {
       const preferences = await authAPI.getLanguagePreferences();
       

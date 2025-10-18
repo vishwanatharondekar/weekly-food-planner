@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { parseISO, format, isValid } from 'date-fns';
-import AuthForm from '@/components/AuthForm';
 import MealPlanner from '@/components/MealPlanner';
 import StorageInitializer from '@/components/StorageInitializer';
-import FirebaseSetup from '@/components/FirebaseSetup';
 import DietaryPreferences from '@/components/DietaryPreferences';
 import MealSettingsComponent from '@/components/MealSettings';
 import VideoURLManager from '@/components/VideoURLManager';
@@ -27,8 +25,6 @@ export default function PlanPage() {
   const weekStartDateParam = params.weekStartDate as string;
   
   const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(true);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showDietaryPreferences, setShowDietaryPreferences] = useState(false);
@@ -68,7 +64,7 @@ export default function PlanPage() {
       const currentWeek = getWeekStartDate(new Date());
       router.replace(`/plan/${format(currentWeek, 'yyyy-MM-dd')}`);
     }
-  }, [weekStartDateParam, router]);
+  }, [weekStartDateParam]);
 
   // Check for todaysMealsAvailable query parameter and clear it
   useEffect(() => {
@@ -95,21 +91,19 @@ export default function PlanPage() {
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
-      setToken(savedToken);
       loadUserProfile();
     } else {
       // No token found, show welcome screen (onboarding will handle guest user creation)
       setLoading(false);
       setShowCuisineOnboarding(true);
     }
-  }, [router]);
+  }, []);
 
   const createGuestUser = async () => {
     try {
       const deviceId = getGuestDeviceId();
       const response = await authAPI.createGuestUser(deviceId);
       
-      setToken(response.token);
       setUser(response.user);
       localStorage.setItem('token', response.token);
       
@@ -157,27 +151,11 @@ export default function PlanPage() {
     } catch (error) {
       console.error('Error loading user profile:', error);
       localStorage.removeItem('token');
-      setToken(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAuthSuccess = (newToken: string, userData: any) => {
-    setToken(newToken);
-    
-    // Initialize analytics for new user
-    analytics.setUserProperties({
-      user_id: userData.id,
-      user_type: 'new',
-      dietary_preference: 'non-vegetarian', // Default, will be updated after onboarding
-      language: 'en',
-      has_ai_history: false,
-    });
-    
-    // Load full user profile to get onboardingCompleted and other fields
-    loadUserProfile();
-  };
 
   const handleLogout = () => {
     // Track logout event
@@ -193,7 +171,6 @@ export default function PlanPage() {
     // Logout for registered users only
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setToken(null);
     setUser(null);
     setShowSettingsDropdown(false);
     
@@ -201,16 +178,9 @@ export default function PlanPage() {
     router.push('/signin');
   };
 
-  const handleSignUp = () => {
-    setShowSettingsDropdown(false);
-    // Redirect to sign-in page (which includes both login and register)
-    router.push('/signin');
-  };
-
   const handleUpgradeSuccess = (token: string, newUser: any) => {
     // Update the user state with the new registered user
     setUser(newUser);
-    setToken(token);
     
     // Close the modal
     setShowUpgradeModal(false);
@@ -287,10 +257,6 @@ export default function PlanPage() {
     }
   };
 
-  const toggleAuthMode = () => {
-    setAuthMode(prev => prev === 'login' ? 'register' : 'login');
-  };
-
   // Close settings dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -321,6 +287,8 @@ export default function PlanPage() {
       </div>
     );
   }
+
+  console.log('PlanPage render', user, user.onboardingCompleted, initialWeek);
 
   return (
     <StorageInitializer>
