@@ -393,7 +393,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       console.log('Image mappings received:', imageMappings);
       
-      if (Object.keys(imageMappings).length === 0) {
+      if (Object.keys(imageMappings.mealImageMappings).length === 0) {
         console.log('No images found from external API');
         return;
       }
@@ -406,10 +406,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         updatedMeals[day] = { ...currentMeals[day] };
         ALL_MEAL_TYPES.forEach(mealType => {
           const meal = currentMeals[day]?.[mealType];
-          if (meal && meal.name && !meal.imageUrl && imageMappings[meal.name]) {
+          if (meal && meal.name && !meal.imageUrl && imageMappings.mealImageMappings[meal.name]) {
             updatedMeals[day][mealType] = {
               ...meal,
-              imageUrl: imageMappings[meal.name]
+              imageUrl: imageMappings.mealImageMappings[meal.name]
             };
             imagesUpdated++;
           } else if (meal) {
@@ -538,10 +538,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         updatedMeals[day] = { ...currentMeals[day] };
         ALL_MEAL_TYPES.forEach(mealType => {
           const meal = currentMeals[day]?.[mealType];
-          if (meal && meal.name && !meal.imageUrl && imageMappings[meal.name]) {
+          if (meal && meal.name && !meal.imageUrl && imageMappings.mealImageMappings[meal.name]) {
             updatedMeals[day][mealType] = {
               ...meal,
-              imageUrl: imageMappings[meal.name]
+              imageUrl: imageMappings.mealImageMappings[meal.name]
             };
             imagesUpdated++;
           } else if (meal) {

@@ -628,10 +628,12 @@ export const aiAPI = {
 
 // Image Mapping API - internal proxy to external service for real-time image fetching
 export const imageMappingAPI = {
-  fetchMealImages: async (mealNames: string[]): Promise<{ [key: string]: string }> => {
+  fetchMealImages: async (mealNames: string[]): Promise<{ mealImageMappings: { [key: string]: string } }> => {
     try {
       if (mealNames.length === 0) {
-        return {};
+        return {
+          mealImageMappings: {},
+        };
       }
 
       const response = await fetch('/api/image-mapping', {
@@ -646,7 +648,9 @@ export const imageMappingAPI = {
 
       if (!response.ok) {
         console.warn('Image mapping API request failed:', response.status, response.statusText);
-        return {};
+        return {
+          mealImageMappings: {},
+        };
       }
 
       const data = await response.json();
@@ -657,10 +661,14 @@ export const imageMappingAPI = {
       }
 
       console.warn('Invalid response format from image mapping API');
-      return {};
+      return {
+        mealImageMappings: {},
+      };
     } catch (error) {
       console.warn('Error fetching meal images from image mapping API:', error);
-      return {};
+      return {
+        mealImageMappings: {},
+      };
     }
   },
 };

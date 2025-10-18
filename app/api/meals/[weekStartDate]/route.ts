@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Initialize Firebase on server side
 const firebaseConfig = {
@@ -19,45 +19,43 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-// Function to fetch meal images from lambda endpoint
+// Function to fetch meal images from Firestore mealImageMappings collection
 async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: string }> {
   try {
     if (mealNames.length === 0) {
       return {};
     }
 
-    // Call the internal image mapping API which proxies to lambda
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/image-mapping`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        mealNames: mealNames
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn('Image mapping API request failed:', response.status, response.statusText);
-      return {};
+    const mealImages: { [key: string]: string } = {};
+    
+    // Query Firestore for each meal name
+    for (const mealName of mealNames) {
+      try {
+        const q = query(
+          collection(db, 'mealImageMappings'),
+          where('mealName', '==', mealName)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          // Get the first matching document
+          const doc = querySnapshot.docs[0];
+          const data = doc.data();
+          
+          if (data.imageUrl) {
+            mealImages[mealName] = data.imageUrl;
+          }
+        }
+      } catch (error) {
+        console.warn(`Error fetching image for meal "${mealName}":`, error);
+        // Continue with other meals even if one fails
+      }
     }
 
-    const data = await response.json();
-
-    // The API should return an object with meal names as keys and image URLs as values
-    if (typeof data === 'object' && data !== null) {
-      return data.results.reduce((acc: { [key: string]: string }, item: { [key: string]: string }) => {
-        acc[item.mealName] = item.imageUrl;
-        return acc;
-      }, {});
-    }
-
-
-
-    console.warn('Invalid response format from image mapping API');
-    return {};
+    return mealImages;
   } catch (error) {
-    console.warn('Error fetching meal images from image mapping API:', error);
+    console.warn('Error fetching meal images from Firestore:', error);
     return {};
   }
 }
@@ -123,7 +121,6 @@ export async function GET(
       
       // Fetch meal images from Firestore
       const mealImages = await fetchMealImages(mealNames);
-
       
       // Enhance meals with image URLs
       const enhancedMeals = { ...data.meals };
