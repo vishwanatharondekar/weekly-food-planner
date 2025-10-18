@@ -104,6 +104,7 @@ export function createEmailTrackingData(
  */
 export function generateEmailTrackingUrls(data: EmailTrackingData) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in';
+  const weekUrl = `${appUrl}/plan/${data.weekStartDate}`;
   
   return {
     // Tracking pixel for email opens
@@ -112,6 +113,9 @@ export function generateEmailTrackingUrls(data: EmailTrackingData) {
     // Main app links with tracking
     mainAppLink: generateCompleteTrackedUrl(appUrl, { ...data, linkType: 'main_app' }),
     footerAppLink: generateCompleteTrackedUrl(appUrl, { ...data, linkType: 'footer_app' }),
+    
+    // Week-specific app link with tracking
+    weekStartDateLink: generateCompleteTrackedUrl(weekUrl, { ...data, linkType: 'week_plan' }),
     
     // Unsubscribe link (no tracking needed as it has its own system)
     // This will be handled by the existing unsubscribe system
