@@ -191,23 +191,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     };
   }, []);
 
-  // Debug: Log when meals state changes
-  useEffect(() => {
-    console.log('Meals state updated:', meals);
-  }, [meals]);
-
-  // Debug: Log when cook mode data changes
-  useEffect(() => {
-    console.log('Cook mode data updated:', cookModeData);
-  }, [cookModeData]);
-
-  // Debug: Expose test function to window for manual testing
-  useEffect(() => {
-    (window as any).testImageMapping = () => {
-      console.log('Testing image mapping with current meals...');
-      fetchMissingImages(meals);
-    };
-  }, [meals]);
 
   // Helper functions for loader management
   const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string) => {
@@ -361,8 +344,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         });
       });
 
-      console.log('convertedMeals in loadMeals', convertedMeals);
-      
       setMeals(convertedMeals);
       hideFullScreenLoader();
       
