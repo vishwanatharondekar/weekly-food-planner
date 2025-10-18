@@ -16,6 +16,13 @@ import YouTubeVideoSearch from './YouTubeVideoSearch';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
+// Shimmer component for loading states
+const ImageShimmer = ({ className = "w-24 h-24" }: { className?: string }) => (
+  <div className={`${className} rounded-xl bg-gray-200 relative overflow-hidden`}>
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
+  </div>
+);
+
 interface MealData {
   [day: string]: {
     [mealType: string]: string;
@@ -68,6 +75,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showLoader, setShowLoader] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState('');
   const [loaderSubMessage, setLoaderSubMessage] = useState('');
+  
+  // Image loading states
+  const [imagesLoading, setImagesLoading] = useState<Set<string>>(new Set());
   
   // Tooltip delay states
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
@@ -372,12 +382,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     try {
       // Collect meal names that don't have images
       const mealsWithoutImages: string[] = [];
+      const loadingKeys: string[] = [];
       
       DAYS_OF_WEEK.forEach(day => {
         ALL_MEAL_TYPES.forEach(mealType => {
           const meal = currentMeals[day]?.[mealType];
           if (meal && meal.name && !meal.imageUrl) {
             mealsWithoutImages.push(meal.name);
+            loadingKeys.push(`${day}-${mealType}`);
           }
         });
       });
@@ -386,15 +398,23 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         return; // No meals need images
       }
 
-      console.log(`Fetching images for ${mealsWithoutImages.length} meals without images:`, mealsWithoutImages);
+      // Set loading state for all meals without images
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.add(key));
+        return newSet;
+      });
       
       // Fetch images from external API
       const imageMappings = await imageMappingAPI.fetchMealImages(mealsWithoutImages);
       
-      console.log('Image mappings received:', imageMappings);
-      
       if (Object.keys(imageMappings.mealImageMappings).length === 0) {
-        console.log('No images found from external API');
+        // Remove loading state
+        setImagesLoading(prev => {
+          const newSet = new Set(prev);
+          loadingKeys.forEach(key => newSet.delete(key));
+          return newSet;
+        });
         return;
       }
 
@@ -423,8 +443,25 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         console.log(`Updated ${imagesUpdated} meals with new images`);
         setMeals(updatedMeals);
       }
+
+      // Remove loading state
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
     } catch (error) {
-      console.warn('Error fetching missing images:', error);
+      // Remove loading state on error - clear all regular loading states
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        // Remove all regular loading states (not cook mode)
+        Array.from(newSet).forEach(key => {
+          if (!key.startsWith('cook-')) {
+            newSet.delete(key);
+          }
+        });
+        return newSet;
+      });
       // Don't show error to user as this is a background operation
     }
   };
@@ -504,12 +541,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     try {
       // Collect meal names that don't have images
       const mealsWithoutImages: string[] = [];
+      const loadingKeys: string[] = [];
       
       DAYS_OF_WEEK.forEach(day => {
         ALL_MEAL_TYPES.forEach(mealType => {
           const meal = currentMeals[day]?.[mealType];
           if (meal && meal.name && !meal.imageUrl) {
             mealsWithoutImages.push(meal.name);
+            loadingKeys.push(`cook-${day}-${mealType}`);
           }
         });
       });
@@ -518,15 +557,26 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         return; // No meals need images
       }
 
+      // Set loading state for all meals without images
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.add(key));
+        return newSet;
+      });
+
       console.log(`Fetching images for ${mealsWithoutImages.length} cook mode meals without images:`, mealsWithoutImages);
       
       // Fetch images from external API
       const imageMappings = await imageMappingAPI.fetchMealImages(mealsWithoutImages);
       
-      console.log('Cook mode image mappings received:', imageMappings);
-      
-      if (Object.keys(imageMappings).length === 0) {
+      if (Object.keys(imageMappings.mealImageMappings).length === 0) {
         console.log('No images found from external API for cook mode');
+        // Remove loading state
+        setImagesLoading(prev => {
+          const newSet = new Set(prev);
+          loadingKeys.forEach(key => newSet.delete(key));
+          return newSet;
+        });
         return;
       }
 
@@ -555,8 +605,26 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         console.log(`Updated ${imagesUpdated} cook mode meals with new images`);
         setCookModeData(updatedMeals);
       }
+
+      // Remove loading state
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
     } catch (error) {
       console.warn('Error fetching missing images for cook mode:', error);
+      // Remove loading state on error - clear all cook mode loading states
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        // Remove all cook mode loading states
+        Array.from(newSet).forEach(key => {
+          if (key.startsWith('cook-')) {
+            newSet.delete(key);
+          }
+        });
+        return newSet;
+      });
       // Don't show error to user as this is a background operation
     }
   };
@@ -1351,6 +1419,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             todaysData={getTodaysMeals()}
             mealSettings={mealSettings}
             onVideoClick={openVideoModal}
+            imagesLoading={imagesLoading}
           />
         )}
         
@@ -1376,6 +1445,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             enabledMealTypes={enabledMealTypes}
             user={user}
             editingMeal={editingMeal}
+            imagesLoading={imagesLoading}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
@@ -1529,9 +1599,10 @@ interface CookModeViewProps {
   mealSettings: MealSettings;
   onVideoClick: (day: string, mealType: string) => void;
   onRefresh?: () => void;
+  imagesLoading: Set<string>;
 }
 
-function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: CookModeViewProps) {
+function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, imagesLoading }: CookModeViewProps) {
   const { day, date, meals } = todaysData;
   const enabledMealTypes = mealSettings.enabledMealTypes;
 
@@ -1639,6 +1710,9 @@ function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: Coo
                               }}
                             />
                           </div>
+                        ) : imagesLoading.has(`cook-${day}-${mealType}`) ? (
+                          /* Shimmer while loading image */
+                          <ImageShimmer className="w-24 h-24" />
                         ) : (
                           /* Placeholder for consistent spacing when no image */
                           <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
@@ -1706,6 +1780,7 @@ interface PlanModeViewProps {
   enabledMealTypes: string[];
   user: any;
   editingMeal: {day: string, mealType: string} | null;
+  imagesLoading: Set<string>;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
@@ -1737,6 +1812,7 @@ function PlanModeView({
   enabledMealTypes,
   user,
   editingMeal,
+  imagesLoading,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
@@ -2030,6 +2106,9 @@ function PlanModeView({
                                     }}
                                   />
                                 </div>
+                              ) : imagesLoading.has(`${day}-${mealType}`) ? (
+                                /* Shimmer while loading image */
+                                <ImageShimmer className="w-24 h-24" />
                               ) : (
                                 /* Placeholder for consistent spacing when no image */
                                 <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
@@ -2140,6 +2219,9 @@ function PlanModeView({
                               }}
                             />
                           </div>
+                        ) : imagesLoading.has(`${day}-${mealType}`) ? (
+                          /* Shimmer while loading image */
+                          <ImageShimmer className="w-24 h-24" />
                         ) : (
                           /* Placeholder for consistent spacing when no image */
                           <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
