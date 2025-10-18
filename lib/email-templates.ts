@@ -68,14 +68,17 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
         <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #e9ecef;">
             <h1 style="color: #2c3e50; margin: 0 0 8px 0; font-size: 28px;">🍽️ Your Weekly Meal Plan</h1>
             <p style="color: #6c757d; margin: 0 0 12px 0; font-size: 16px;">Hello ${userName}! Here's your personalized meal plan for the week.</p>
-            <p style="margin: 0; font-size: 14px;">
-                <a href="${trackingUrls.mainAppLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open https://www.khanakyabanau.in</a>
+            <p style="margin: 0; font-size: 12px; color: #6c757d; font-style: italic;">
+            💡 Click the edit buttons to customize your meals
             </p>
-        </div>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
             <h2 style="margin: 0 0 5px 0; color: #495057; font-size: 20px;">Week of ${weekRange}</h2>
-            <p style="margin: 0; color: #6c757d; font-size: 14px;">Plan your grocery shopping and meal prep with confidence!</p>
+            <p style="margin: 0; color: #6c757d; font-size: 14px;">Don't like the suggestions? Edit to fill manually or generate with AI again by editing your liked dishes</p>
+            <p style="margin: 0 0 8px 0; font-size: 14px;">
+                <a href="${trackingUrls.mainAppLink}&week=${weekStartDate}" style="color: #007bff; text-decoration: none; font-weight: 500;">🔗 Open Meal Plan</a>
+            </p>
         </div>
         
         <!-- Mobile-style card layout -->
