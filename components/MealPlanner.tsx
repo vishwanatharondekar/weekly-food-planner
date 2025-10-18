@@ -1420,6 +1420,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             mealSettings={mealSettings}
             onVideoClick={openVideoModal}
             imagesLoading={imagesLoading}
+            editingMeal={editingMeal}
           />
         )}
         
@@ -1600,9 +1601,10 @@ interface CookModeViewProps {
   onVideoClick: (day: string, mealType: string) => void;
   onRefresh?: () => void;
   imagesLoading: Set<string>;
+  editingMeal: {day: string, mealType: string} | null;
 }
 
-function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, imagesLoading }: CookModeViewProps) {
+function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, imagesLoading, editingMeal }: CookModeViewProps) {
   const { day, date, meals } = todaysData;
   const enabledMealTypes = mealSettings.enabledMealTypes;
 
@@ -1698,7 +1700,7 @@ function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, image
                     <div className="space-y-3">
                       {/* Meal Image and Name */}
                       <div className="flex items-start gap-4">
-                        {imageUrl ? (
+                        {imageUrl && !(editingMeal?.day === day && editingMeal?.mealType === mealType) ? (
                           <div className="flex-shrink-0">
                             <img 
                               src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
@@ -2222,12 +2224,7 @@ function PlanModeView({
                         ) : imagesLoading.has(`${day}-${mealType}`) ? (
                           /* Shimmer while loading image */
                           <ImageShimmer className="w-24 h-24" />
-                        ) : (
-                          /* Placeholder for consistent spacing when no image */
-                          <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-                            <span className="text-gray-400 text-sm">📷</span>
-                          </div>
-                        )}
+                        ) : null}
                         
                         <div className="flex-1 min-w-0">
                           {/* Meal Type and Calorie Info - Right aligned */}
