@@ -250,11 +250,12 @@ async function generateMealPlanForUser(userId: string, userData: any, weekStartD
       mealSettings
     );
 
-    if (suggestions && suggestions.meals) {
+
+    if (suggestions) {
       return {
         userId,
         weekStartDate,
-        meals: suggestions.meals,
+        meals: suggestions,
         generatedAt: new Date(),
         aiGenerated: true
       };
