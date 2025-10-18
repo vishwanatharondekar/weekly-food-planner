@@ -103,14 +103,14 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
-                                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                                <!-- Meal type pill -->
+                                <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; ${getMealTypePillClasses(mealType)}">
+                                    ${mealTypeLabels[mealType] || mealType}
+                                </div>
+                                
+                                <!-- Meal name with edit button -->
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div style="flex: 1; min-width: 0;">
-                                        <!-- Meal type pill -->
-                                        <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
-                                            ${mealTypeLabels[mealType] || mealType}
-                                        </div>
-                                        
-                                        <!-- Meal name -->
                                         <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
                                             ${mealName || 'Not planned yet'}
                                         </div>
