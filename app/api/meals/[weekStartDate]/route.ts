@@ -27,7 +27,7 @@ async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: st
     }
 
     // Call the internal image mapping API which proxies to lambda
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/image-mapping`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/image-mapping`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
