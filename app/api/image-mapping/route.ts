@@ -31,8 +31,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({});
     }
 
-    console.log(`Proxying image mapping request for ${body.mealNames.length} meals:`, body.mealNames);
-
     // Make the request to the Lambda URL
     const startTime = Date.now();
 

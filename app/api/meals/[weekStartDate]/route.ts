@@ -43,11 +43,16 @@ async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: st
     }
 
     const data = await response.json();
-    
+
     // The API should return an object with meal names as keys and image URLs as values
     if (typeof data === 'object' && data !== null) {
-      return data;
+      return data.results.reduce((acc: { [key: string]: string }, item: { [key: string]: string }) => {
+        acc[item.mealName] = item.imageUrl;
+        return acc;
+      }, {});
     }
+
+
 
     console.warn('Invalid response format from image mapping API');
     return {};
@@ -118,7 +123,6 @@ export async function GET(
       
       // Fetch meal images from Firestore
       const mealImages = await fetchMealImages(mealNames);
-
 
       
       // Enhance meals with image URLs

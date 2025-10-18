@@ -350,6 +350,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           }
         });
       });
+
+      console.log('convertedMeals in loadMeals', convertedMeals);
       
       setMeals(convertedMeals);
       hideFullScreenLoader();
@@ -1982,6 +1984,7 @@ function PlanModeView({
                     const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                     const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                     
+                    console.log('imageUrl in meals', imageUrl);
                     return (
                       <td key={mealType} className="px-0 py-0 border-r border-gray-300 last:border-r-0 align-top">
                         <div className="relative group">
@@ -2019,7 +2022,7 @@ function PlanModeView({
                               {imageUrl && !isEditing ? (
                                 <div className="flex-shrink-0">
                                   <img 
-                                    src={imageUrl} 
+                                    src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
                                     alt={mealName}
                                     className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
                                     onError={(e) => {
@@ -2129,7 +2132,7 @@ function PlanModeView({
                         {imageUrl && !isEditing ? (
                           <div className="flex-shrink-0">
                             <img 
-                              src={imageUrl} 
+                              src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
                               alt={mealName}
                               className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
                               onError={(e) => {
