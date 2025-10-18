@@ -9,7 +9,7 @@ export interface MealPlanEmailData {
   userId: string;
   meals: {
     [day: string]: {
-      [mealType: string]: string | { name: string };
+      [mealType: string]: string | { name: string, calories: number };
     };
   };
   mealSettings?: {
@@ -97,32 +97,38 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                     <!-- Meals list -->
                     <div>
                         ${enabledMeals.map((mealType, mealIndex) => {
-                          const mealName = dayMeals[mealType] instanceof Object ? dayMeals[mealType].name : dayMeals[mealType];
+                          const mealData = dayMeals[mealType];
+                          console.log('mealData', mealData);
+                          const mealName = mealData instanceof Object ? mealData.name : mealData;
+                          const mealCalories = mealData instanceof Object ? mealData.calories : null;
                           const isLastMeal = mealIndex === enabledMeals.length - 1;
                           const hasText = mealName && mealName.trim().length > 0;
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
-                                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
-                                    <div style="flex: 1; min-width: 0;">
-                                        <!-- Meal type pill -->
-                                        <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
-                                            ${mealTypeLabels[mealType] || mealType}
-                                        </div>
-                                        
-                                        <!-- Meal name -->
-                                        <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
-                                            ${mealName || 'Not planned yet'}
-                                        </div>
+                                <!-- Meal type and calorie pills -->
+                                <div style="margin-bottom: 8px;">
+                                    <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
+                                        ${mealTypeLabels[mealType] || mealType}
                                     </div>
-                                    
-                                    <!-- Edit button -->
-                                    <div style="margin-left: 8px; flex-shrink: 0;">
-                                        <a href="${planUrl}?day=${day}&mealType=${mealType}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; transition: all 0.2s; hover:background-color: #e5e7eb; hover:color: #374151;" title="Edit meal">
-                                            <span style="font-size: 16px;">✏️</span>
-                                        </a>
-                                    </div>
+                                    ${mealCalories ? `<span style="background-color: #fed7aa; color: #ea580c; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">${mealCalories} kcal</span>` : ''}
                                 </div>
+                                
+                                <!-- Meal name with edit button using table for better email support -->
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td style="vertical-align: top; padding: 0;">
+                                            <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
+                                                ${mealName || 'Not planned yet'}
+                                            </div>
+                                        </td>
+                                        <td style="vertical-align: top; padding: 0; text-align: right; width: 40px;">
+                                            <a href="${planUrl}?day=${day}&mealType=${mealType}" style="display: inline-block; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; text-align: center; line-height: 32px; font-size: 16px;" title="Edit meal">
+                                                ✏️
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                           `;
                         }).join('')}
