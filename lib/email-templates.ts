@@ -99,7 +99,6 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                     <div>
                         ${enabledMeals.map((mealType, mealIndex) => {
                           const mealData = dayMeals[mealType];
-                          console.log('mealData', mealData);
                           const mealName = mealData instanceof Object ? mealData.name : mealData;
                           const mealCalories = mealData instanceof Object ? mealData.calories : null;
                           const isLastMeal = mealIndex === enabledMeals.length - 1;
