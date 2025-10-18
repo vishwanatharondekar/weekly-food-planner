@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { formatDate, getNextWeekStartDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
-import { INDIAN_CUISINES, getDishesForCuisines } from '@/lib/cuisine-data';
+import { generateAISuggestions } from '@/lib/ai-generation-utils';
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -20,7 +19,6 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Batch size for processing users (12 per minute to stay under rate limit)
 const BATCH_SIZE = 12;
@@ -233,7 +231,10 @@ async function generateMealPlanForUser(userId: string, userData: any, weekStartD
       });
     });
 
-    const dietaryPreferences = userData.dietaryPreferences;
+    const dietaryPreferences = {
+      ...userData.dietaryPreferences,
+      showCalories: userData.showCalories === undefined ? true : userData.showCalories,
+    };
     const cuisinePreferences = userData.cuisinePreferences || [];
     const dishPreferences = userData.dishPreferences || { breakfast: [], lunch_dinner: [] };
     const mealSettings = userData.mealSettings;
@@ -266,160 +267,3 @@ async function generateMealPlanForUser(userId: string, userData: any, weekStartD
   }
 }
 
-// Helper functions (copied from the existing generate route)
-function getDietaryInfo(dietaryPreferences: any) {
-  if (!dietaryPreferences) {
-    return 'No specific dietary preferences';
-  }
-
-  let returnString = `Dietary Preferences: `;
-  
-  if (dietaryPreferences.isVegetarian) {
-    returnString += `The user is strictly vegetarian. Never suggest non-vegetarian meals.
-Exclude any dish with meat, fish, or eggs. 
-If uncertain, default to a vegetarian option.`;
-  } else {
-    returnString += `Non-vegetarian,User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ') || 'none'}. Exclude any dish with meat, fish, or eggs on other days.`;
-  }
-
-  return returnString;
-}
-
-function getJsonFormat(mealSettings?: { enabledMealTypes: string[] }) {
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
-  
-  const mealEntries = enabledMeals.map(mealType => `"${mealType}": "meal name"`).join(',\n      ');
-  
-  return `{
-    "monday": {
-      ${mealEntries}
-    },
-    "tuesday": {
-      ${mealEntries}
-    },
-    "wednesday": {
-      ${mealEntries}
-    },
-    "thursday": {
-      ${mealEntries}
-    },
-    "friday": {
-      ${mealEntries}
-    },
-    "saturday": {
-      ${mealEntries}
-    },
-    "sunday": {
-      ${mealEntries}
-    }
-  }`;
-}
-
-function isWeekEmpty(meals: any, enabledMeals: string[]) {
-  if (!meals) return true;
-  
-  return Object.values(meals).every((dayMeals: any) => {
-    if (!dayMeals) return true;
-    return enabledMeals.every(mealType => !dayMeals[mealType] || dayMeals[mealType]?.name?.trim() === '');
-  });
-}
-
-function isDayEmpty(meals: any, enabledMeals: string[]) {
-  if (!meals) return true;
-  return enabledMeals.every(mealType => !meals[mealType] || meals[mealType]?.name?.trim() === '');
-}
-
-async function generateAISuggestions(
-  history: any[],
-  weekStartDate: string,
-  dietaryPreferences?: any,
-  cuisinePreferences: string[] = [],
-  dishPreferences: { breakfast: string[], lunch_dinner: string[] } = { breakfast: [], lunch_dinner: [] },
-  ingredients: string[] = [],
-  mealSettings?: { enabledMealTypes: string[] }
-) {
-  const enabledMeals = mealSettings?.enabledMealTypes || ['breakfast', 'lunch', 'dinner'];
-  const historyText = history.length > 0 ? history
-    .filter((plan: any) => !isWeekEmpty(plan.meals, enabledMeals))
-    .slice(0, 2)
-    .map(plan => {
-      const meals = plan.meals;
-      const weekInfo = `Week of ${plan.weekStartDate}:\n`;
-      const mealsText = Object.entries(meals)
-        .filter(([day, dayMeals]: [string, any]) => !isDayEmpty(dayMeals, enabledMeals))
-        .map(([day, dayMeals]: [string, any]) => {
-          const mealNames = enabledMeals.map(mealType => dayMeals?.[mealType]?.name || 'empty').join(' / ');
-          return `  ${day}: ${mealNames}`;
-        }).join('\n');
-      return weekInfo + mealsText;
-    }).join('\n\n') : 'No previous meal history available.';
-
-  const dietaryInfo = getDietaryInfo(dietaryPreferences);
-  const ingredientsInfo = ingredients.length > 0 ? 
-    `Must use all of the following ingredients in at least one dish: ${ingredients.join(', ')}` :
-    '';
-
-  let cuisineInfo = 'No specific cuisine preferences';
-  let availableDishes = '';
-  
-  const jsonFormat = getJsonFormat(mealSettings);
-  
-  const hasDishPreferences = dishPreferences.breakfast.length > 0 && dishPreferences.lunch_dinner.length > 0;
-  
-  if (hasDishPreferences) {
-    const allDishes = [...dishPreferences.breakfast, ...dishPreferences.lunch_dinner];
-    cuisineInfo = `User has specific dish preferences from onboarding.`;
-    availableDishes = `Available dishes to choose from: ${allDishes.join(', ')}. You must only suggest dishes from this list.`;
-  } else if (cuisinePreferences.length > 0) {
-    cuisineInfo = `User prefers these cuisines: ${cuisinePreferences.join(', ')}.`;
-    const cuisineDishes = getDishesForCuisines(cuisinePreferences);
-    const allDishes = [...cuisineDishes.breakfast, ...cuisineDishes.lunch_dinner, ...cuisineDishes.snacks];
-    availableDishes = `Available dishes for these cuisines: ${allDishes.join(', ')}. You must only suggest dishes from this list.`;
-  }
-
-  const prompt = `You are a helpful meal planning assistant. Generate a weekly meal plan for the week starting ${weekStartDate}.
-
-${dietaryInfo}
-
-${cuisineInfo}
-${availableDishes}
-
-${ingredientsInfo}
-
-Previous meal history:
-${historyText}
-
-Instructions:
-1. Generate a diverse and balanced weekly meal plan
-2. Avoid repeating the same dishes within the week unless specifically requested
-3. Consider variety in cooking methods, flavors, and nutrition
-4. Ensure meals are practical and achievable for home cooking
-5. Respect dietary preferences and restrictions
-6. Use only dishes from the available dishes list if provided
-7. Generate exactly the JSON format specified below
-
-Required JSON format:
-${jsonFormat}
-
-Return only the JSON object, no additional text or formatting.`;
-
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Clean the response to extract JSON
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const jsonStr = jsonMatch[0];
-      const parsed = JSON.parse(jsonStr);
-      return { meals: parsed };
-    } else {
-      throw new Error('No valid JSON found in AI response');
-    }
-  } catch (error) {
-    console.error('AI generation error:', error);
-    throw error;
-  }
-}
