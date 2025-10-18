@@ -566,6 +566,7 @@ export const mealsAPI = {
       throw error;
     }
   },
+
 };
 
 // AI API - using server routes
@@ -625,4 +626,51 @@ export const aiAPI = {
   },
 };
 
-export default { authAPI, mealsAPI, aiAPI }; 
+// Image Mapping API - internal proxy to external service for real-time image fetching
+export const imageMappingAPI = {
+  fetchMealImages: async (mealNames: string[]): Promise<{ mealImageMappings: { [key: string]: string } }> => {
+    try {
+      if (mealNames.length === 0) {
+        return {
+          mealImageMappings: {},
+        };
+      }
+
+      const response = await fetch('/api/image-mapping', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mealNames: mealNames
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn('Image mapping API request failed:', response.status, response.statusText);
+        return {
+          mealImageMappings: {},
+        };
+      }
+
+      const data = await response.json();
+      
+      // The API should return an object with meal names as keys and image URLs as values
+      if (typeof data === 'object' && data !== null) {
+        return data;
+      }
+
+      console.warn('Invalid response format from image mapping API');
+      return {
+        mealImageMappings: {},
+      };
+    } catch (error) {
+      console.warn('Error fetching meal images from image mapping API:', error);
+      return {
+        mealImageMappings: {},
+      };
+    }
+  },
+};
+
+export default { authAPI, mealsAPI, aiAPI, imageMappingAPI }; 

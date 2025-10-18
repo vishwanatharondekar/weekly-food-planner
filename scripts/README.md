@@ -1,46 +1,54 @@
-# User Export Script
+# Scripts Directory
 
-Simple Node.js script to export all users from Firestore to a CSV file.
+This directory contains utility scripts for the weekly food planner application.
 
-## Usage
+## Available Scripts
 
-Run the script from the project root:
+### Core Scripts
 
+#### `test-cuisines-reading.js`
+- **Purpose**: Test reading and parsing cuisines.json
+- **Usage**: `node scripts/test-cuisines-reading.js`
+
+### Utility Scripts
+
+#### `add-email-validation.js`
+- **Purpose**: Add email validation functionality
+- **Usage**: `node scripts/add-email-validation.js`
+
+#### `export-users.js`
+- **Purpose**: Export user data from Firestore
+- **Usage**: `node scripts/export-users.js`
+
+#### `test-proxy-curl.sh`
+- **Purpose**: Test proxy functionality with curl
+- **Usage**: `bash scripts/test-proxy-curl.sh`
+
+## Configuration
+
+### Environment Variables
 ```bash
-node scripts/export-users.js
+# Firebase Configuration
+FIREBASE_API_KEY=your_firebase_api_key_here
+FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+FIREBASE_APP_ID=your_app_id
+
+# Other required environment variables
+# See env.example for complete list
 ```
-
-The script will:
-- Connect to your Firestore database using existing environment variables
-- Export all users to a CSV file with timestamp: `users-export-YYYY-MM-DD_HH-MM-SS.csv`
-- Display the number of users exported and file size
-
-## CSV Format
-
-The exported CSV includes the following columns:
-
-- **User ID**: Firestore document ID
-- **Email**: User's email address
-- **Name**: User's display name
-- **Is Guest**: Whether the user is a guest user (true/false)
-- **Onboarding Completed**: Whether user completed onboarding (true/false)
-- **AI Usage Count**: Number of AI meal plan generations
-- **Shopping List Usage Count**: Number of shopping list generations
-- **Created At**: Account creation timestamp (ISO format)
-- **Updated At**: Last update timestamp (ISO format)
-- **Email Subscribed**: Whether user is subscribed to emails (true/false)
-- **Meals Per Day**: User's meal settings - meals per day
-- **Days Per Week**: User's meal settings - days per week
-- **Cuisine Preferences**: Semicolon-separated list of cuisines
-- **Dietary Preferences**: Semicolon-separated list of dietary restrictions
-- **Breakfast Preferences**: Semicolon-separated list of breakfast dish types
-- **Lunch/Dinner Preferences**: Semicolon-separated list of lunch/dinner dish types
-- **Preferred Language**: User's preferred language code
 
 ## Notes
 
-- Array fields (cuisines, preferences, etc.) are joined with semicolons (`;`) for easier CSV parsing
-- CSV fields containing commas, quotes, or newlines are properly escaped
-- Timestamps from Firestore are converted to ISO 8601 format
-- The script uses the same Firebase configuration as your Next.js app
+- **Image Mapping**: Image mapping functionality has been moved to a separate service and is accessed via the lambda endpoint
+- **Dependencies**: Most scripts are self-contained and don't require external dependencies
+- **Firebase**: Some scripts require Firebase configuration for database operations
 
+## Support
+
+For issues or questions:
+1. Check the script logs for error details
+2. Verify environment variables and file paths
+3. Ensure Firebase is properly configured for database operations

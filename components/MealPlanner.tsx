@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
-import { mealsAPI, aiAPI, authAPI } from '@/lib/api';
+import { mealsAPI, aiAPI, authAPI, imageMappingAPI } from '@/lib/api';
 import { DAYS_OF_WEEK, getWeekStartDate, formatDate, debounce, getMealDisplayName, getMealPlaceholder, DEFAULT_MEAL_SETTINGS, type MealSettings, ALL_MEAL_TYPES, getPlanUrl, getFormFactor } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { generateMealPlanPDF, generateShoppingListPDF } from '@/lib/pdf-generator';
@@ -15,6 +15,13 @@ import GuestUpgradeModal from './GuestUpgradeModal';
 import YouTubeVideoSearch from './YouTubeVideoSearch';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
+
+// Shimmer component for loading states
+const ImageShimmer = ({ className = "w-24 h-24" }: { className?: string }) => (
+  <div className={`${className} rounded-xl bg-gray-200 relative overflow-hidden`}>
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
+  </div>
+);
 
 interface MealData {
   [day: string]: {
@@ -28,6 +35,7 @@ interface MealDataWithVideos {
       name: string;
       videoUrl?: string;
       calories?: number;
+      imageUrl?: string;
     };
   };
 }
@@ -67,6 +75,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showLoader, setShowLoader] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState('');
   const [loaderSubMessage, setLoaderSubMessage] = useState('');
+  
+  // Image loading states
+  const [imagesLoading, setImagesLoading] = useState<Set<string>>(new Set());
   
   // Tooltip delay states
   const [showPdfTooltip, setShowPdfTooltip] = useState(false);
@@ -180,6 +191,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     };
   }, []);
 
+
   // Helper functions for loader management
   const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string) => {
     setLoaderMessage(message);
@@ -291,8 +303,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         console.warn('Failed to load user video URLs:', error);
       }
       
-      // Convert to new format with video URLs
+      // Convert to new format with video URLs and images
       const convertedMeals: MealDataWithVideos = {};
+      
       DAYS_OF_WEEK.forEach(day => {
         convertedMeals[day] = {};
         // Load ALL meal types from the response, not just enabled ones
@@ -302,6 +315,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             // Handle different meal data formats
             let mealName = '';
             let calories: number | undefined = undefined;
+            let imageUrl: string | undefined = undefined;
             
             if (typeof meal === 'string') {
               mealName = meal;
@@ -309,6 +323,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               if (meal.name) {
                 mealName = meal.name;
                 calories = meal.calories;
+                imageUrl = meal.imageUrl;
               } else {
                 // Fallback: convert to string if it's an object
                 mealName = String(meal);
@@ -322,20 +337,113 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             convertedMeals[day][mealType] = {
               name: mealName,
               videoUrl: videoUrl || undefined,
-              calories: calories
+              calories: calories,
+              imageUrl: imageUrl
             };
           }
         });
       });
-      
+
       setMeals(convertedMeals);
       hideFullScreenLoader();
+      
+      // Fetch missing images in the background after initial load
+      fetchMissingImages(convertedMeals);
     } catch (error) {
       console.error('Error loading meals:', error);
       hideFullScreenLoader();
       toast.error('Failed to load meals');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to fetch missing images for meals that don't have them
+  const fetchMissingImages = async (currentMeals: MealDataWithVideos) => {
+    try {
+      // Collect meal names that don't have images
+      const mealsWithoutImages: string[] = [];
+      const loadingKeys: string[] = [];
+      
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = currentMeals[day]?.[mealType];
+          if (meal && meal.name && !meal.imageUrl) {
+            mealsWithoutImages.push(meal.name);
+            loadingKeys.push(`${day}-${mealType}`);
+          }
+        });
+      });
+
+      if (mealsWithoutImages.length === 0) {
+        return; // No meals need images
+      }
+
+      // Set loading state for all meals without images
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.add(key));
+        return newSet;
+      });
+      
+      // Fetch images from external API
+      const imageMappings = await imageMappingAPI.fetchMealImages(mealsWithoutImages);
+      
+      if (Object.keys(imageMappings.mealImageMappings).length === 0) {
+        // Remove loading state
+        setImagesLoading(prev => {
+          const newSet = new Set(prev);
+          loadingKeys.forEach(key => newSet.delete(key));
+          return newSet;
+        });
+        return;
+      }
+
+      // Update meals with new images - create deep copy to avoid mutation
+      const updatedMeals: MealDataWithVideos = {};
+      let imagesUpdated = 0;
+
+      DAYS_OF_WEEK.forEach(day => {
+        updatedMeals[day] = { ...currentMeals[day] };
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = currentMeals[day]?.[mealType];
+          if (meal && meal.name && !meal.imageUrl && imageMappings.mealImageMappings[meal.name]) {
+            updatedMeals[day][mealType] = {
+              ...meal,
+              imageUrl: imageMappings.mealImageMappings[meal.name]
+            };
+            imagesUpdated++;
+          } else if (meal) {
+            // Keep existing meal data
+            updatedMeals[day][mealType] = { ...meal };
+          }
+        });
+      });
+
+      if (imagesUpdated > 0) {
+        console.log(`Updated ${imagesUpdated} meals with new images`);
+        setMeals(updatedMeals);
+      }
+
+      // Remove loading state
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } catch (error) {
+      // Remove loading state on error - clear all regular loading states
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        // Remove all regular loading states (not cook mode)
+        Array.from(newSet).forEach(key => {
+          if (!key.startsWith('cook-')) {
+            newSet.delete(key);
+          }
+        });
+        return newSet;
+      });
+      // Don't show error to user as this is a background operation
     }
   };
 
@@ -369,6 +477,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             // Handle different meal data formats
             let mealName = '';
             let calories: number | undefined = undefined;
+            let imageUrl: string | undefined = undefined;
             
             if (typeof meal === 'string') {
               mealName = meal;
@@ -376,6 +485,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               if (meal.name) {
                 mealName = meal.name;
                 calories = meal.calories;
+                imageUrl = meal.imageUrl;
               } else {
                 mealName = String(meal);
               }
@@ -387,19 +497,116 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             
             convertedMeals[day][mealType] = {
               name: mealName,
-              ...(videoUrl && { videoUrl }),
-              ...(calories && { calories })
+              videoUrl: videoUrl || undefined,
+              calories: calories,
+              imageUrl: imageUrl
             };
           }
         });
       });
       
       setCookModeData(convertedMeals);
+      
+      // Fetch missing images in the background for cook mode
+      fetchMissingImagesForCookMode(convertedMeals);
     } catch (error) {
       console.error('Error loading cook mode data:', error);
       toast.error('Failed to load today\'s meals');
     } finally {
       setCookModeLoading(false);
+    }
+  };
+
+  // Function to fetch missing images for cook mode meals
+  const fetchMissingImagesForCookMode = async (currentMeals: MealDataWithVideos) => {
+    try {
+      // Collect meal names that don't have images
+      const mealsWithoutImages: string[] = [];
+      const loadingKeys: string[] = [];
+      
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = currentMeals[day]?.[mealType];
+          if (meal && meal.name && !meal.imageUrl) {
+            mealsWithoutImages.push(meal.name);
+            loadingKeys.push(`cook-${day}-${mealType}`);
+          }
+        });
+      });
+
+      if (mealsWithoutImages.length === 0) {
+        return; // No meals need images
+      }
+
+      // Set loading state for all meals without images
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.add(key));
+        return newSet;
+      });
+
+      console.log(`Fetching images for ${mealsWithoutImages.length} cook mode meals without images:`, mealsWithoutImages);
+      
+      // Fetch images from external API
+      const imageMappings = await imageMappingAPI.fetchMealImages(mealsWithoutImages);
+      
+      if (Object.keys(imageMappings.mealImageMappings).length === 0) {
+        console.log('No images found from external API for cook mode');
+        // Remove loading state
+        setImagesLoading(prev => {
+          const newSet = new Set(prev);
+          loadingKeys.forEach(key => newSet.delete(key));
+          return newSet;
+        });
+        return;
+      }
+
+      // Update cook mode meals with new images - create deep copy to avoid mutation
+      const updatedMeals: MealDataWithVideos = {};
+      let imagesUpdated = 0;
+
+      DAYS_OF_WEEK.forEach(day => {
+        updatedMeals[day] = { ...currentMeals[day] };
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = currentMeals[day]?.[mealType];
+          if (meal && meal.name && !meal.imageUrl && imageMappings.mealImageMappings[meal.name]) {
+            updatedMeals[day][mealType] = {
+              ...meal,
+              imageUrl: imageMappings.mealImageMappings[meal.name]
+            };
+            imagesUpdated++;
+          } else if (meal) {
+            // Keep existing meal data
+            updatedMeals[day][mealType] = { ...meal };
+          }
+        });
+      });
+
+      if (imagesUpdated > 0) {
+        console.log(`Updated ${imagesUpdated} cook mode meals with new images`);
+        setCookModeData(updatedMeals);
+      }
+
+      // Remove loading state
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        loadingKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } catch (error) {
+      console.warn('Error fetching missing images for cook mode:', error);
+      // Remove loading state on error - clear all cook mode loading states
+      setImagesLoading(prev => {
+        const newSet = new Set(prev);
+        // Remove all cook mode loading states
+        Array.from(newSet).forEach(key => {
+          if (key.startsWith('cook-')) {
+            newSet.delete(key);
+          }
+        });
+        return newSet;
+      });
+      // Don't show error to user as this is a background operation
     }
   };
 
@@ -463,6 +670,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     []
   );
 
+
   const updateMeal = async (day: string, mealType: string, value: string) => {
     // Track meal update event
     const isNewMeal = !meals[day]?.[mealType]?.name?.trim();
@@ -488,7 +696,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         [mealType]: {
           ...prev[day]?.[mealType],
           name: value,
-          calories: undefined // Clear calories on user edit
+          calories: undefined, // Clear calories on user edit
+          imageUrl: undefined // Clear image URL on user edit
         }
       }
     }));
@@ -759,6 +968,9 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       if (hasUpdates) {
         await mealsAPI.createOrUpdateMealPlan(weekStart, updatedMeals);
         setMeals(updatedMeals);
+        
+        // Fetch missing images for newly generated meals
+        fetchMissingImages(updatedMeals);
       }
       
       hideFullScreenLoader();
@@ -1188,6 +1400,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             todaysData={getTodaysMeals()}
             mealSettings={mealSettings}
             onVideoClick={openVideoModal}
+            imagesLoading={imagesLoading}
+            editingMeal={editingMeal}
           />
         )}
         
@@ -1213,6 +1427,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             enabledMealTypes={enabledMealTypes}
             user={user}
             editingMeal={editingMeal}
+            imagesLoading={imagesLoading}
             onNavigateWeek={navigateWeek}
             onGenerateAIMeals={generateAIMeals}
             onGeneratePDF={handleGeneratePDF}
@@ -1366,9 +1581,11 @@ interface CookModeViewProps {
   mealSettings: MealSettings;
   onVideoClick: (day: string, mealType: string) => void;
   onRefresh?: () => void;
+  imagesLoading: Set<string>;
+  editingMeal: {day: string, mealType: string} | null;
 }
 
-function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: CookModeViewProps) {
+function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, imagesLoading, editingMeal }: CookModeViewProps) {
   const { day, date, meals } = todaysData;
   const enabledMealTypes = mealSettings.enabledMealTypes;
 
@@ -1441,6 +1658,7 @@ function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: Coo
               const meal = meals[mealType];
               const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
               const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
+              const imageUrl = meal && typeof meal === 'object' ? meal.imageUrl : undefined;
               const hasMeal = mealName.trim().length > 0;
               
               return (
@@ -1460,20 +1678,50 @@ function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh }: Coo
                   </div>
                   
                   {hasMeal ? (
-                    <div className="space-y-2">
-                      <p className="text-gray-800 font-medium text-lg">{mealName}</p>
-                      {calories && (
-                        <div className="flex items-center text-sm text-orange-600">
-                          <span className="mr-1">📊</span>
-                          <span className="font-semibold">{calories} kcal</span>
+                    <div className="space-y-3">
+                      {/* Meal Image and Name */}
+                      <div className="flex items-start gap-4">
+                        {imageUrl && !(editingMeal?.day === day && editingMeal?.mealType === mealType) ? (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
+                              alt={mealName}
+                              className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
+                              onError={(e) => {
+                                // Hide image if it fails to load
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : imagesLoading.has(`cook-${day}-${mealType}`) ? (
+                          /* Shimmer while loading image */
+                          <ImageShimmer className="w-24 h-24" />
+                        ) : (
+                          /* Placeholder for consistent spacing when no image */
+                          <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                            <span className="text-gray-400 text-base">📷</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-800 font-semibold text-lg leading-tight">{mealName}</p>
                         </div>
-                      )}
-                      {meal?.videoUrl && (
-                        <div className="flex items-center text-sm text-green-600">
-                          <span className="mr-1">🎥</span>
-                          <span>Video tutorial available</span>
-                        </div>
-                      )}
+                      </div>
+                      
+                      {/* Additional Info */}
+                      <div className="space-y-1">
+                        {calories && (
+                          <div className="flex items-center text-sm text-orange-600">
+                            <span className="mr-1">📊</span>
+                            <span className="font-semibold">{calories} kcal</span>
+                          </div>
+                        )}
+                        {meal?.videoUrl && (
+                          <div className="flex items-center text-sm text-green-600">
+                            <span className="mr-1">🎥</span>
+                            <span>Video tutorial available</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="text-gray-400 italic">
@@ -1515,6 +1763,7 @@ interface PlanModeViewProps {
   enabledMealTypes: string[];
   user: any;
   editingMeal: {day: string, mealType: string} | null;
+  imagesLoading: Set<string>;
   onNavigateWeek: (direction: 'prev' | 'next') => void;
   onGenerateAIMeals: () => void;
   onGeneratePDF: () => void;
@@ -1546,6 +1795,7 @@ function PlanModeView({
   enabledMealTypes,
   user,
   editingMeal,
+  imagesLoading,
   onNavigateWeek,
   onGenerateAIMeals,
   onGeneratePDF,
@@ -1788,6 +2038,7 @@ function PlanModeView({
                     const meal = meals[day]?.[mealType];
                     const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
                     const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
+                    const imageUrl = meal && typeof meal === 'object' ? meal.imageUrl : undefined;
                     const hasText = mealName.trim().length > 0;
                     const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                     const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
@@ -1823,9 +2074,35 @@ function PlanModeView({
                           ) : (
                             // Show display div when has content and not editing
                             <div 
-                              className="text-black w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-center"
+                              className="text-black w-full px-6 py-3 pr-16 transition-all duration-200 min-h-[60px] flex items-start gap-4"
                             >
-                              <span className="line-clamp-2 leading-relaxed break-words">{mealName}</span>
+                              {/* Meal Image - hidden in edit mode */}
+                              {imageUrl && !isEditing ? (
+                                <div className="flex-shrink-0">
+                                  <img 
+                                    src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
+                                    alt={mealName}
+                                    className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
+                                    onError={(e) => {
+                                      // Hide image if it fails to load
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              ) : imagesLoading.has(`${day}-${mealType}`) ? (
+                                /* Shimmer while loading image */
+                                <ImageShimmer className="w-24 h-24" />
+                              ) : (
+                                /* Placeholder for consistent spacing when no image */
+                                <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                                  <span className="text-gray-400 text-sm">📷</span>
+                                </div>
+                              )}
+                              
+                              {/* Meal Name */}
+                              <div className="flex-1 min-w-0">
+                                <span className="line-clamp-2 leading-relaxed break-words block text-gray-800 font-medium">{mealName}</span>
+                              </div>
                             </div>
                           )}
                           
@@ -1903,25 +2180,47 @@ function PlanModeView({
                   const meal = meals[day]?.[mealType];
                   const mealName = meal ? (typeof meal === 'string' ? meal : (meal.name || '')) : '';
                   const calories = meal && typeof meal === 'object' ? meal.calories : undefined;
+                  const imageUrl = meal && typeof meal === 'object' ? meal.imageUrl : undefined;
                   const hasText = mealName.trim().length > 0;
                   const showCalorieInfo = user?.dietaryPreferences?.showCalories && calories;
                   const isLastMeal = mealIndex === enabledMealTypes.length - 1;
                   const isEditing = editingMeal?.day === day && editingMeal?.mealType === mealType;
                   
                   return (
-                    <div key={mealType} className={`px-4 py-3 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`} data-day={day} data-meal-type={mealType}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-
-                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-2 mr-2 ${getMealTypePillClasses(mealType)}`}>
-                            {getMealDisplayName(mealType)}
+                    <div key={mealType} className={`px-4 py-4 hover:bg-gray-50/50 ${isLastMeal ? '' : 'border-b border-gray-100'}`}  data-day={day} data-meal-type={mealType}>
+                      <div className="flex items-start gap-3">
+                        {/* Meal Image - Full height on mobile */}
+                        {imageUrl && !isEditing ? (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
+                              alt={mealName}
+                              className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
+                              onError={(e) => {
+                                // Hide image if it fails to load
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
                           </div>
-                          {/* Calorie badge - next to meal name for mobile */}
-                          {showCalorieInfo && hasText && (
+                        ) : imagesLoading.has(`${day}-${mealType}`) ? (
+                          /* Shimmer while loading image */
+                          <ImageShimmer className="w-24 h-24" />
+                        ) : null}
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Meal Type and Calorie Info - Right aligned */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getMealTypePillClasses(mealType)}`}>
+                              {getMealDisplayName(mealType)}
+                            </div>
+                            {/* Calorie badge - right side for mobile */}
+                            {showCalorieInfo && hasText && (
                               <span className="bg-orange-50 text-orange-600 text-xs font-medium px-2 py-0.5 rounded border border-orange-200">
                                 {calories} kcal
                               </span>
                             )}
+                          </div>
+                          
                           <div className="relative group">
                             {isEditing ? (
                               // Show textarea when editing
@@ -1955,7 +2254,10 @@ function PlanModeView({
                               <div 
                                 className="text-black w-full px-0 py-1 pr-16 transition-all duration-200 rounded min-h-[32px]"
                               >
-                                <span className="line-clamp-2 leading-relaxed break-words block">{mealName}</span>
+                                {/* Meal Name */}
+                                <div className="flex-1 min-w-0">
+                                  <span className="line-clamp-2 leading-relaxed break-words block text-gray-800 font-medium">{mealName}</span>
+                                </div>
                               </div>
                             )}
                             

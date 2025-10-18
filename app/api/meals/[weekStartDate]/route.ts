@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Initialize Firebase on server side
 const firebaseConfig = {
@@ -18,6 +18,47 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+
+// Function to fetch meal images from Firestore mealImageMappings collection
+async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: string }> {
+  try {
+    if (mealNames.length === 0) {
+      return {};
+    }
+
+    const mealImages: { [key: string]: string } = {};
+    
+    // Query Firestore for each meal name
+    for (const mealName of mealNames) {
+      try {
+        const q = query(
+          collection(db, 'mealImageMappings'),
+          where('mealName', '==', mealName)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          // Get the first matching document
+          const doc = querySnapshot.docs[0];
+          const data = doc.data();
+          
+          if (data.imageUrl) {
+            mealImages[mealName] = data.imageUrl;
+          }
+        }
+      } catch (error) {
+        console.warn(`Error fetching image for meal "${mealName}":`, error);
+        // Continue with other meals even if one fails
+      }
+    }
+
+    return mealImages;
+  } catch (error) {
+    console.warn('Error fetching meal images from Firestore:', error);
+    return {};
+  }
+}
 
 // Helper function to get user ID from token
 function getUserIdFromToken(request: NextRequest): string | null {
@@ -54,11 +95,70 @@ export async function GET(
 
     if (mealPlanDoc.exists()) {
       const data = mealPlanDoc.data();
+      
+      // Extract meal names for image search
+      const mealNames: string[] = [];
+      const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const ALL_MEAL_TYPES = ['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'];
+      
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = data.meals[day]?.[mealType];
+          if (meal) {
+            let mealName = '';
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object' && meal.name) {
+              mealName = meal.name;
+            }
+            
+            if (mealName.trim()) {
+              mealNames.push(mealName.trim());
+            }
+          }
+        });
+      });
+      
+      // Fetch meal images from Firestore
+      const mealImages = await fetchMealImages(mealNames);
+      
+      // Enhance meals with image URLs
+      const enhancedMeals = { ...data.meals };
+      DAYS_OF_WEEK.forEach(day => {
+        ALL_MEAL_TYPES.forEach(mealType => {
+          const meal = enhancedMeals[day]?.[mealType];
+          if (meal) {
+            let mealName = '';
+            if (typeof meal === 'string') {
+              mealName = meal;
+            } else if (typeof meal === 'object' && meal.name) {
+              mealName = meal.name;
+            }
+            
+            if (mealName.trim() && mealImages[mealName.trim()]) {
+              if (typeof meal === 'string') {
+                // Convert string meal to object with image
+                enhancedMeals[day][mealType] = {
+                  name: meal,
+                  imageUrl: mealImages[mealName.trim()]
+                };
+              } else if (typeof meal === 'object') {
+                // Add image to existing object
+                enhancedMeals[day][mealType] = {
+                  ...meal,
+                  imageUrl: mealImages[mealName.trim()]
+                };
+              }
+            }
+          }
+        });
+      });
+      
       return NextResponse.json({
         id: mealPlanDoc.id,
         userId: data.userId,
         weekStartDate: data.weekStartDate,
-        meals: data.meals,
+        meals: enhancedMeals,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
       });
