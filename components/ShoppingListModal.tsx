@@ -230,7 +230,9 @@ export default function ShoppingListModal({
                     <span className={`font-medium text-sm sm:text-base ${
                       selectedIngredients.has(index) ? 'text-blue-900' : 'text-gray-800'
                     }`}>
-                      {ingredient}
+                      {ingredient.split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                      ).join(' ')}
                     </span>
                   </div>
                 ))}
