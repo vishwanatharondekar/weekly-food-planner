@@ -100,6 +100,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showShoppingListModal, setShowShoppingListModal] = useState(false);
   const [shoppingListIngredients, setShoppingListIngredients] = useState<string[]>([]);
   const [shoppingListWeights, setShoppingListWeights] = useState<{ [ingredient: string]: { amount: number, unit: string } }>({});
+  const [shoppingListCategorized, setShoppingListCategorized] = useState<{ [category: string]: { name: string, amount: number, unit: string }[] }>({});
   const [shoppingListMealPlan, setShoppingListMealPlan] = useState<any>(null);
 
   useEffect(() => {
@@ -1197,6 +1198,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
       let ingredients: string[] = [];
       let weights: { [ingredient: string]: { amount: number, unit: string } } = {};
+      let categorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
       if (mealNames.length > 0) {
         try {
           const token = localStorage.getItem('token');
@@ -1222,8 +1224,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             const result = await response.json();
             ingredients = result.consolidated || [];
             weights = result.weights || {};
+            categorized = result.categorized || {};
             console.log('Extracted ingredients:', ingredients);
             console.log('Extracted weights:', weights);
+            console.log('Extracted categorized:', categorized);
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();
@@ -1249,6 +1253,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       // Show the shopping list modal
       setShoppingListIngredients(ingredients);
       setShoppingListWeights(weights);
+      setShoppingListCategorized(categorized);
       setShoppingListMealPlan(mealPlanData);
       setShowShoppingListModal(true);
       
@@ -1626,6 +1631,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         onClose={() => setShowShoppingListModal(false)}
         ingredients={shoppingListIngredients}
         weights={shoppingListWeights}
+        categorized={shoppingListCategorized}
         mealPlan={shoppingListMealPlan}
       />
       </div>

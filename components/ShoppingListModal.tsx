@@ -11,6 +11,7 @@ interface ShoppingListModalProps {
   onClose: () => void;
   ingredients: string[];
   weights: { [ingredient: string]: { amount: number, unit: string } };
+  categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
   mealPlan: {
     weekStartDate: string;
     meals: { [day: string]: { [mealType: string]: string } };
@@ -26,6 +27,7 @@ export default function ShoppingListModal({
   onClose, 
   ingredients, 
   weights,
+  categorized,
   mealPlan 
 }: ShoppingListModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -271,41 +273,92 @@ export default function ShoppingListModal({
             </div>
             
             {ingredients.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                {ingredients.map((ingredient, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center p-3 sm:p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                      selectedIngredients.has(index)
-                        ? 'bg-blue-50 border-blue-200 shadow-sm'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                    onClick={() => handleIngredientToggle(index)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedIngredients.has(index)}
-                      onChange={() => handleIngredientToggle(index)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
-                    />
-                    <div className="flex-1">
-                      <span className={`font-medium text-sm sm:text-base ${
-                        selectedIngredients.has(index) ? 'text-blue-900' : 'text-gray-800'
-                      }`}>
-                        {ingredient.split(' ').map(word => 
-                          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                        ).join(' ')}
-                      </span>
-                      {weights[ingredient] && (
-                        <div className={`text-xs mt-1 ${
-                          selectedIngredients.has(index) ? 'text-blue-700' : 'text-gray-500'
-                        }`}>
-                          {weights[ingredient].amount} {weights[ingredient].unit}
-                        </div>
-                      )}
+              <div className="space-y-4">
+                {Object.entries(categorized).length > 0 ? (
+                  // Render categorized ingredients
+                  Object.entries(categorized).map(([category, items]) => (
+                    <div key={category} className="space-y-2">
+                      <h4 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-1">
+                        {category}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                        {items.map((item, itemIndex) => {
+                          const ingredientIndex = ingredients.indexOf(item.name);
+                          return (
+                            <div
+                              key={`${category}-${itemIndex}`}
+                              className={`flex items-center p-2 sm:p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                selectedIngredients.has(ingredientIndex)
+                                  ? 'bg-blue-50 border-blue-200 shadow-sm'
+                                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                              }`}
+                              onClick={() => handleIngredientToggle(ingredientIndex)}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedIngredients.has(ingredientIndex)}
+                                onChange={() => handleIngredientToggle(ingredientIndex)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                              />
+                              <div className="flex-1">
+                                <span className={`font-medium text-sm sm:text-base ${
+                                  selectedIngredients.has(ingredientIndex) ? 'text-blue-900' : 'text-gray-800'
+                                }`}>
+                                  {item.name.split(' ').map(word => 
+                                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                  ).join(' ')}
+                                  <span className={`text-xs font-normal ml-1 ${
+                                    selectedIngredients.has(ingredientIndex) ? 'text-blue-600' : 'text-gray-500'
+                                  }`}>
+                                    ({item.amount} {item.unit})
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  // Fallback to simple list if no categorized data
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                    {ingredients.map((ingredient, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center p-2 sm:p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
+                          selectedIngredients.has(index)
+                            ? 'bg-blue-50 border-blue-200 shadow-sm'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        }`}
+                        onClick={() => handleIngredientToggle(index)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIngredients.has(index)}
+                          onChange={() => handleIngredientToggle(index)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          <span className={`font-medium text-sm sm:text-base ${
+                            selectedIngredients.has(index) ? 'text-blue-900' : 'text-gray-800'
+                          }`}>
+                            {ingredient.split(' ').map(word => 
+                              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                            ).join(' ')}
+                            {weights[ingredient] && (
+                              <span className={`text-xs font-normal ml-1 ${
+                                selectedIngredients.has(index) ? 'text-blue-600' : 'text-gray-500'
+                              }`}>
+                                ({weights[ingredient].amount} {weights[ingredient].unit})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">

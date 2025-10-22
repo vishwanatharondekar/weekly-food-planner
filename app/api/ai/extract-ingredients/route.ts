@@ -98,21 +98,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function extractIngredientsWithAI(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } } }> {
+async function extractIngredientsWithAI(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } }> {
   const prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
 Meal names: ${meals.join(', ')}
 Number of portions: ${portions}
 
-Please return a JSON object with three properties:
+Please return a JSON object with four properties:
 1. "grouped": An array of objects where each object has the meal name as key and an array of ingredients with quantities as value
 2. "consolidated": An array of all unique ingredients needed for all meals
 3. "weights": An object where each ingredient is mapped to its total quantity needed (amount and unit)
+4. "categorized": An object where ingredients are grouped by type with their quantities
 
 For each ingredient, provide realistic quantities based on the number of portions. Use appropriate units (grams, kilograms, pieces, cups, etc.).
 
 Focus on the main ingredients that would be needed for shopping. Avoid secondary ingredients. Add packed spices as separate ingredients.
+
+Categorize ingredients into these types: "Vegetables", "Fruits", "Dairy & Eggs", "Meat & Seafood", "Grains & Pulses", "Spices & Herbs", "Pantry Items", "Other"
 
 Example response format:
 {
@@ -128,6 +131,17 @@ Example response format:
     "eggs": {"amount": 6, "unit": "pieces"},
     "onions": {"amount": 600, "unit": "g"},
     "tomatoes": {"amount": 900, "unit": "g"}
+  },
+  "categorized": {
+    "Vegetables": [
+      {"name": "brinjal", "amount": 500, "unit": "g"},
+      {"name": "onions", "amount": 600, "unit": "g"},
+      {"name": "tomatoes", "amount": 900, "unit": "g"}
+    ],
+    "Dairy & Eggs": [
+      {"name": "paneer", "amount": 250, "unit": "g"},
+      {"name": "eggs", "amount": 6, "unit": "pieces"}
+    ]
   }
 }
 
@@ -150,7 +164,8 @@ Return only the JSON object, nothing else.
         return {
           grouped: Array.isArray(result.grouped) ? result.grouped : [],
           consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
-          weights: result.weights && typeof result.weights === 'object' ? result.weights : {}
+          weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
+          categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {}
         };
       }
     }
@@ -162,15 +177,16 @@ Return only the JSON object, nothing else.
       return {
         grouped: Array.isArray(result.grouped) ? result.grouped : [],
         consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
-        weights: result.weights && typeof result.weights === 'object' ? result.weights : {}
+        weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
+        categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {}
       };
     }
     
     // Fallback: if structure is not as expected, return empty
-    return { grouped: [], consolidated: [], weights: {} };
+    return { grouped: [], consolidated: [], weights: {}, categorized: {} };
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
     // Fallback: return empty structure, the client will use basic extraction
-    return { grouped: [], consolidated: [], weights: {} };
+    return { grouped: [], consolidated: [], weights: {}, categorized: {} };
   }
 } 
