@@ -74,11 +74,13 @@ export const MEAL_TYPES = ['breakfast', 'morningSnack', 'lunch', 'eveningSnack',
 export interface MealSettings {
   enabledMealTypes: string[];
   dailyCalorieTarget?: number;
+  portions?: number;
 }
 
 export const DEFAULT_MEAL_SETTINGS: MealSettings = {
   enabledMealTypes: ['breakfast', 'lunch', 'dinner'], // Default to basic 3 meals
-  dailyCalorieTarget: 2000 // Default daily calorie target
+  dailyCalorieTarget: 2000, // Default daily calorie target
+  portions: 1 // Default portions
 };
 
 export function getMealDisplayName(mealType: string): string {

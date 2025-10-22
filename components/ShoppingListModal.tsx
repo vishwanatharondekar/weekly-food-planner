@@ -10,6 +10,7 @@ interface ShoppingListModalProps {
   isOpen: boolean;
   onClose: () => void;
   ingredients: string[];
+  weights: { [ingredient: string]: { amount: number, unit: string } };
   mealPlan: {
     weekStartDate: string;
     meals: { [day: string]: { [mealType: string]: string } };
@@ -24,6 +25,7 @@ export default function ShoppingListModal({
   isOpen, 
   onClose, 
   ingredients, 
+  weights,
   mealPlan 
 }: ShoppingListModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +108,7 @@ export default function ShoppingListModal({
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://www.amazon.in/afx/ingredients/landing';
+      form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21';
       form.target = '_blank';
       form.style.display = 'none';
 
@@ -125,15 +127,75 @@ export default function ShoppingListModal({
 
       // Generate ingredients JSON in the format expected by Amazon using only selected ingredients
       const ingredientsData = {
-        ingredients: selectedIngredientsList.map((ingredient, index) => ({
-          name: ingredient.trim(),
-          componentIndex: index,
-          quantityList: [{
-            unit: 'COUNT',
-            amount: 1
-          }],
-          exclusiveOverride: false
-        })),
+        ingredients: selectedIngredientsList.map((ingredient, index) => {
+          const weight = weights[ingredient];
+          let unit = 'COUNT';
+          let amount = 1;
+          
+          if (weight) {
+            // Map common units to Amazon's expected units
+            switch (weight.unit.toLowerCase()) {
+              case 'g':
+              case 'gram':
+              case 'grams':
+                unit = 'G';
+                amount = weight.amount;
+                break;
+              case 'kg':
+              case 'kilogram':
+              case 'kilograms':
+                unit = 'KG';
+                amount = weight.amount;
+                break;
+              case 'ml':
+              case 'milliliter':
+              case 'milliliters':
+                unit = 'ML';
+                amount = weight.amount;
+                break;
+              case 'l':
+              case 'liter':
+              case 'liters':
+                unit = 'L';
+                amount = weight.amount;
+                break;
+              case 'cup':
+              case 'cups':
+                unit = 'CUP';
+                amount = weight.amount;
+                break;
+              case 'tbsp':
+              case 'tablespoon':
+              case 'tablespoons':
+                unit = 'TBSP';
+                amount = weight.amount;
+                break;
+              case 'tsp':
+              case 'teaspoon':
+              case 'teaspoons':
+                unit = 'TSP';
+                amount = weight.amount;
+                break;
+              case 'piece':
+              case 'pieces':
+              case 'pcs':
+              default:
+                unit = 'COUNT';
+                amount = weight.amount;
+                break;
+            }
+          }
+          
+          return {
+            name: ingredient.trim(),
+            componentIndex: index,
+            quantityList: [{
+              unit: unit,
+              amount: amount
+            }],
+            exclusiveOverride: false
+          };
+        }),
         exclusiveOverride: false,
         saved: false,
         recipeComposition: {
@@ -153,7 +215,6 @@ export default function ShoppingListModal({
       document.body.removeChild(form);
 
       toast.success('Opening Amazon shopping list...');
-      onClose();
     } catch (error) {
       console.error('Error submitting to Amazon:', error);
       toast.error('Failed to open Amazon shopping list');
@@ -227,13 +288,22 @@ export default function ShoppingListModal({
                       onChange={() => handleIngredientToggle(index)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
                     />
-                    <span className={`font-medium text-sm sm:text-base ${
-                      selectedIngredients.has(index) ? 'text-blue-900' : 'text-gray-800'
-                    }`}>
-                      {ingredient.split(' ').map(word => 
-                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                      ).join(' ')}
-                    </span>
+                    <div className="flex-1">
+                      <span className={`font-medium text-sm sm:text-base ${
+                        selectedIngredients.has(index) ? 'text-blue-900' : 'text-gray-800'
+                      }`}>
+                        {ingredient.split(' ').map(word => 
+                          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                        ).join(' ')}
+                      </span>
+                      {weights[ingredient] && (
+                        <div className={`text-xs mt-1 ${
+                          selectedIngredients.has(index) ? 'text-blue-700' : 'text-gray-500'
+                        }`}>
+                          {weights[ingredient].amount} {weights[ingredient].unit}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

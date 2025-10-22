@@ -99,6 +99,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   // Shopping list modal state
   const [showShoppingListModal, setShowShoppingListModal] = useState(false);
   const [shoppingListIngredients, setShoppingListIngredients] = useState<string[]>([]);
+  const [shoppingListWeights, setShoppingListWeights] = useState<{ [ingredient: string]: { amount: number, unit: string } }>({});
   const [shoppingListMealPlan, setShoppingListMealPlan] = useState<any>(null);
 
   useEffect(() => {
@@ -1195,6 +1196,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       console.log('Extracted meal names:', mealNames);
 
       let ingredients: string[] = [];
+      let weights: { [ingredient: string]: { amount: number, unit: string } } = {};
       if (mealNames.length > 0) {
         try {
           const token = localStorage.getItem('token');
@@ -1211,14 +1213,17 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             },
             body: JSON.stringify({
               meals: mealNames,
-              language: userLanguage
+              language: userLanguage,
+              portions: mealSettings.portions || 1
             }),
           });
 
           if (response.ok) {
             const result = await response.json();
             ingredients = result.consolidated || [];
+            weights = result.weights || {};
             console.log('Extracted ingredients:', ingredients);
+            console.log('Extracted weights:', weights);
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();
@@ -1243,6 +1248,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       
       // Show the shopping list modal
       setShoppingListIngredients(ingredients);
+      setShoppingListWeights(weights);
       setShoppingListMealPlan(mealPlanData);
       setShowShoppingListModal(true);
       
@@ -1619,6 +1625,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         isOpen={showShoppingListModal}
         onClose={() => setShowShoppingListModal(false)}
         ingredients={shoppingListIngredients}
+        weights={shoppingListWeights}
         mealPlan={shoppingListMealPlan}
       />
       </div>

@@ -507,10 +507,10 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     });
 
     // Extract ingredients from original meal names first
-    let ingredientsResult: { grouped: any[], consolidated: string[] } = { grouped: [], consolidated: [] };
+    let ingredientsResult: { grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } } } = { grouped: [], consolidated: [], weights: {} };
     if (originalMealNames.length > 0) {
       try {
-        ingredientsResult = await extractIngredientsFromMeals(originalMealNames);
+        ingredientsResult = await extractIngredientsFromMeals(originalMealNames, mealPlan.mealSettings?.portions || 1);
       } catch (error) {
         console.error('Error extracting ingredients:', error);
       }
@@ -702,6 +702,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
           // Create a map to count the number of meals each ingredient appears in
           const ingredientMealCount: { [ingredient: string]: number } = {};
+          const weights = result.weights || {};
           if (result.grouped && Array.isArray(result.grouped)) {
             result.grouped.forEach((mealObj: any) => {
               // Each mealObj is like { "Meal Name": [ingredients] }
@@ -742,13 +743,20 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             columns.forEach((column, colIndex) => {
               if (column[i] && listY < currentY + unifiedListHeight - 5) {
                 const cleanIngredient = capitalizeWords(column[i].replace(/[&]/g, 'and').trim());
+                const weight = weights[column[i]];
+                
                 // Add smaller checkbox
                 doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
                 doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
                 doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
-                const translatedIngredient = getTranslatedText(cleanIngredient);
-                doc.text(translatedIngredient, xPos + 6, listY);
-                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(translatedIngredient) + 8, listY);
+                
+                // Display ingredient with weight if available
+                let displayText = getTranslatedText(cleanIngredient);
+                if (weight) {
+                  displayText += ` (${weight.amount} ${weight.unit})`;
+                }
+                doc.text(displayText, xPos + 6, listY);
+                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(displayText) + 8, listY);
               }
               xPos += columnWidth;
             });
@@ -902,7 +910,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   }
 }
 
-async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: any[], consolidated: string[] }> {
+async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } } }> {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -916,7 +924,7 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ meals }),
+      body: JSON.stringify({ meals, portions }),
     });
 
     if (!response.ok) {
@@ -927,7 +935,8 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
 
     return {
       grouped: data.grouped || [],
-      consolidated: data.consolidated || []
+      consolidated: data.consolidated || [],
+      weights: data.weights || {}
     };
   } catch (error) {
     console.error('Error calling AI for ingredients:', error);
@@ -935,7 +944,8 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
     const basicIngredients = extractBasicIngredients(meals);
     return {
       grouped: [],
-      consolidated: basicIngredients
+      consolidated: basicIngredients,
+      weights: {}
     };
   }
 }

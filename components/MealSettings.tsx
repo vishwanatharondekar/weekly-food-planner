@@ -172,6 +172,43 @@ export default function MealSettingsComponent({ user, onSettingsChange, onClose,
               </button>
             </div>
           ))}
+
+          {/* Portions Setting */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Portions per meal
+                </label>
+                <p className="text-xs text-gray-500">
+                  Number of servings for ingredient calculations
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setSettings(prev => ({ 
+                    ...prev, 
+                    portions: Math.max(1, (prev.portions || 1) - 1) 
+                  }))}
+                  className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600"
+                >
+                  -
+                </button>
+                <span className="w-8 text-center font-medium text-gray-900">
+                  {settings.portions || 1}
+                </span>
+                <button
+                  onClick={() => setSettings(prev => ({ 
+                    ...prev, 
+                    portions: Math.min(10, (prev.portions || 1) + 1) 
+                  }))}
+                  className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center space-x-3">
