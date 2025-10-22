@@ -110,7 +110,7 @@ export default function ShoppingListModal({
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21';
+      form.action = 'https://www.amazon.in/afx/ingredients/landing';
       form.target = '_blank';
       form.style.display = 'none';
 
@@ -123,7 +123,7 @@ export default function ShoppingListModal({
 
       const associateTagField = document.createElement('input');
       associateTagField.type = 'hidden';
-      associateTagField.name = 'associateTag';
+      associateTagField.name = 'tag';
       associateTagField.value = 'khanakyabanau-21';
       form.appendChild(associateTagField);
 
@@ -133,16 +133,23 @@ export default function ShoppingListModal({
           const weight = weights[ingredient];
           let unit = 'COUNT';
           let amount = 1;
+          const unitReceived = weight?.unit?.toLowerCase() || 'count';
           
-          if (weight) {
-            // Map common units to Amazon's expected units
-            switch (weight.unit.toLowerCase()) {
-              case 'g':
-              case 'gram':
-              case 'grams':
-                unit = 'G';
-                amount = weight.amount;
-                break;
+            if (weight) {
+              // Map common units to Amazon's expected units
+              switch (unitReceived) {
+                case 'g':
+                case 'gram':
+                case 'grams':
+                  // Convert grams to kilograms if 1000g or more
+                  if (weight.amount >= 1000) {
+                    unit = 'KG';
+                    amount = Math.round((weight.amount / 1000) * 100) / 100; // Round to 2 decimal places
+                  } else {
+                    unit = 'G';
+                    amount = weight.amount;
+                  }
+                  break;
               case 'kg':
               case 'kilogram':
               case 'kilograms':
@@ -276,12 +283,43 @@ export default function ShoppingListModal({
               <div className="space-y-4">
                 {Object.entries(categorized).length > 0 ? (
                   // Render categorized ingredients
-                  Object.entries(categorized).map(([category, items]) => (
-                    <div key={category} className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-1">
-                        {category}
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                  Object.entries(categorized).map(([category, items]) => {
+                    // Define category colors
+                    const getCategoryStyles = (category: string) => {
+                      switch (category) {
+                        case 'Vegetables':
+                          return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800' };
+                        case 'Fruits':
+                          return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800' };
+                        case 'Dairy & Eggs':
+                          return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800' };
+                        case 'Meat & Seafood':
+                          return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800' };
+                        case 'Grains & Pulses':
+                          return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800' };
+                        case 'Spices & Herbs':
+                          return { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800' };
+                        case 'Pantry Items':
+                          return { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800' };
+                        default:
+                          return { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800' };
+                      }
+                    };
+
+                    const categoryStyles = getCategoryStyles(category);
+                    
+                    return (
+                      <div key={category} className="space-y-2">
+                        <div className={`${categoryStyles.bg} ${categoryStyles.border} border rounded-lg p-3`}>
+                          <h4 className={`text-base font-bold ${categoryStyles.text} flex items-center`}>
+                            <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
+                            {category}
+                            <span className="ml-2 text-xs font-normal opacity-75">
+                              ({items.length} item{items.length !== 1 ? 's' : ''})
+                            </span>
+                          </h4>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                         {items.map((item, itemIndex) => {
                           const ingredientIndex = ingredients.indexOf(item.name);
                           return (
@@ -310,16 +348,24 @@ export default function ShoppingListModal({
                                   <span className={`text-xs font-normal ml-1 ${
                                     selectedIngredients.has(ingredientIndex) ? 'text-blue-600' : 'text-gray-500'
                                   }`}>
-                                    ({item.amount} {item.unit})
+                                    {(() => {
+                                      // Convert grams to kilograms for display if 1000g or more
+                                      if (item.unit.toLowerCase() === 'g' && item.amount >= 1000) {
+                                        const kgAmount = Math.round((item.amount / 1000) * 100) / 100;
+                                        return `(${kgAmount} kg)`;
+                                      }
+                                      return `(${item.amount} ${item.unit})`;
+                                    })()}
                                   </span>
                                 </span>
                               </div>
                             </div>
                           );
                         })}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   // Fallback to simple list if no categorized data
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
@@ -350,7 +396,14 @@ export default function ShoppingListModal({
                               <span className={`text-xs font-normal ml-1 ${
                                 selectedIngredients.has(index) ? 'text-blue-600' : 'text-gray-500'
                               }`}>
-                                ({weights[ingredient].amount} {weights[ingredient].unit})
+                                {(() => {
+                                  // Convert grams to kilograms for display if 1000g or more
+                                  if (weights[ingredient].unit.toLowerCase() === 'g' && weights[ingredient].amount >= 1000) {
+                                    const kgAmount = Math.round((weights[ingredient].amount / 1000) * 100) / 100;
+                                    return `(${kgAmount} kg)`;
+                                  }
+                                  return `(${weights[ingredient].amount} ${weights[ingredient].unit})`;
+                                })()}
                               </span>
                             )}
                           </span>
