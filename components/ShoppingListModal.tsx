@@ -107,11 +107,14 @@ export default function ShoppingListModal({
         return;
       }
 
+      // Check if we're on mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://www.amazon.in/afx/ingredients/landing';
-      form.target = '_self';
+      form.action = 'https://www.amazon.in/afx/ingredients/landing?associateTag=khanakyabanau-21';
+      form.target = isMobile ? '_self' : '_blank';
       form.style.display = 'none';
 
       // Add required fields
