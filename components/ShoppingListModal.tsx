@@ -111,7 +111,7 @@ export default function ShoppingListModal({
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = 'https://www.amazon.in/afx/ingredients/landing';
-      form.target = '_blank';
+      form.target = '_self';
       form.style.display = 'none';
 
       // Add required fields
