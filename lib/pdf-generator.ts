@@ -853,14 +853,42 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           let remainingMeals = [...result.grouped];
           let pageIndex = 0;
 
+          // Calculate dynamic height for each meal based on ingredient count and line wrapping
+          const calculateMealHeight = (mealGroup: any) => {
+            const mealName = Object.keys(mealGroup)[0];
+            const ingredients = mealGroup[mealName];
+            const mealNameHeight = 10; // Height for meal name
+            const ingredientLineHeight = 6; // Height per ingredient line
+            const maxLineWidth = pageWidth - 50; // Available width for ingredients
+            
+            let totalIngredientHeight = 0;
+            let currentLineWidth = 0;
+            let lineCount = 0;
+            
+            ingredients.forEach((ingredient: string) => {
+              const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
+              const translatedIngredient = getTranslatedText(cleanIngredient);
+              const ingredientWidth = doc.getTextWidth(translatedIngredient) + 8; // +8 for spacing
+              
+              if (currentLineWidth + ingredientWidth > maxLineWidth) {
+                currentLineWidth = ingredientWidth;
+                lineCount++;
+              } else {
+                currentLineWidth += ingredientWidth;
+              }
+            });
+            
+            // Add one more line if we have any ingredients
+            if (ingredients.length > 0) {
+              lineCount++;
+            }
+            
+            totalIngredientHeight = lineCount * ingredientLineHeight;
+            return mealNameHeight + totalIngredientHeight + 5; // +5 for spacing
+          };
 
-          const perMealHeight = 14;
           const totalMeals = result.grouped.length;
-          const currentPageHeightRemaining  = pageHeight - currentY - 50;
-          const currentPageMeals = Math.floor(currentPageHeightRemaining / perMealHeight);
-          const remainingMealsCount = totalMeals - currentPageMeals;
-          const remainingPages = Math.ceil(remainingMealsCount / perMealHeight);
-          const totalPages = remainingPages + 1;
+          const totalPages = Math.ceil(totalMeals / 10); // Estimate pages, will be adjusted dynamically
 
           
           while (remainingMeals.length > 0) {
@@ -870,14 +898,26 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               currentY = 30; // Reset Y position for new page
             }
             
-            // Calculate meals per page based on current page height
+            // Calculate meals per page based on dynamic heights
             const availableHeight = pageHeight - currentY - 50; // 50px buffer for footer
-            const mealsPerPage = Math.floor(availableHeight / 14);
-            const mealsToShow = Math.min(mealsPerPage, remainingMeals.length);
+            let totalHeight = 15; // Header height
+            let mealsToShow = 0;
+            
+            // Calculate how many meals can fit on this page
+            for (let i = 0; i < remainingMeals.length; i++) {
+              const mealHeight = calculateMealHeight(remainingMeals[i]);
+              if (totalHeight + mealHeight <= availableHeight) {
+                totalHeight += mealHeight;
+                mealsToShow++;
+              } else {
+                break;
+              }
+            }
             
             const pageMeals = remainingMeals.splice(0, mealsToShow);
             
-            const ingredientsByMealHeight = 15 + (pageMeals.length * 14);
+            // Calculate total height for this page's meals
+            const ingredientsByMealHeight = 15 + pageMeals.reduce((sum, meal) => sum + calculateMealHeight(meal), 0);
             doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
             doc.rect(15, currentY, pageWidth - 30, ingredientsByMealHeight, 'F');
             doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
@@ -891,7 +931,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             doc.setFontSize(10);
             doc.text(`Ingredients by Meal (Page ${pageIndex + 1} of ${totalPages})`, 20, currentY + 10);
             
-            // Ingredients by meal content - more compact
+            // Ingredients by meal content - with dynamic positioning
             doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
             let mealY = currentY + 20;
             doc.setFontSize(8);
@@ -906,35 +946,36 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
               doc.text(`${translatedMealName}:`, 20, mealY);
               
-              // Ingredients for this meal - more compact
+              // Ingredients for this meal - with proper line wrapping
               doc.setFontSize(8);
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               
               let ingredientX = 25;
               let ingredientY = mealY + 5;
-              let lineCount = 0;
+              const maxLineWidth = pageWidth - 50; // Available width for ingredients
               
               ingredients.forEach((ingredient: string, ingIndex: number) => {
                 const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
                 const translatedIngredient = getTranslatedText(cleanIngredient);
+                const ingredientWidth = doc.getTextWidth(translatedIngredient) + 8; // +8 for spacing
                 
-                if (ingredientX + doc.getTextWidth(translatedIngredient) > pageWidth - 50) {
+                // Check if ingredient fits on current line
+                if (ingredientX + ingredientWidth > maxLineWidth) {
                   ingredientX = 25;
                   ingredientY += 6;
-                  lineCount++;
                 }
                 
-                if (lineCount < 3) { // Allow 3 lines per meal for more ingredients
-                  // Add smaller checkbox
-                  doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-                  doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-                  doc.roundedRect(ingredientX, ingredientY - 2, 2, 2, 1, 1, 'FD');
-                  doc.text(translatedIngredient, ingredientX + 4, ingredientY);
-                  ingredientX += doc.getTextWidth(translatedIngredient) + 8;
-                }
+                // Add smaller checkbox
+                doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+                doc.roundedRect(ingredientX, ingredientY - 2, 2, 2, 1, 1, 'FD');
+                doc.text(translatedIngredient, ingredientX + 4, ingredientY);
+                ingredientX += ingredientWidth;
               });
               
-              mealY += 12;
+              // Move to next meal position based on actual content height
+              const mealHeight = calculateMealHeight(mealGroup);
+              mealY += mealHeight;
             });
             
             currentY += ingredientsByMealHeight + 5;
