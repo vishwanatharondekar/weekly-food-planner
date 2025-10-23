@@ -1225,9 +1225,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             ingredients = result.consolidated || [];
             weights = result.weights || {};
             categorized = result.categorized || {};
-            console.log('Extracted ingredients:', ingredients);
-            console.log('Extracted weights:', weights);
-            console.log('Extracted categorized:', categorized);
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();
@@ -1249,6 +1246,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       };
 
       hideFullScreenLoader();
+      
+      // Refresh user data to get updated usage counts for guest users
+      if (isGuestUser(user?.id) && onUserUpdate) {
+        try {
+          const response = await authAPI.getProfile();
+          onUserUpdate(response.user);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
       
       // Show the shopping list modal
       setShoppingListIngredients(ingredients);
