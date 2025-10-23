@@ -113,7 +113,7 @@ export default function ShoppingListModal({
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://www.amazon.in/afx/ingredients/landing?associateTag=khanakyabanau-21';
+      form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
       form.target = isMobile ? '_self' : '_blank';
       form.style.display = 'none';
 
