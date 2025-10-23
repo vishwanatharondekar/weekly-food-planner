@@ -13,6 +13,7 @@ import FullScreenLoader from './FullScreenLoader';
 import PreferencesEditModal from './PreferencesEditModal';
 import GuestUpgradeModal from './GuestUpgradeModal';
 import YouTubeVideoSearch from './YouTubeVideoSearch';
+import ShoppingListModal from './ShoppingListModal';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 import { isGuestUser, getRemainingGuestUsage, hasExceededGuestLimit } from '@/lib/guest-utils';
 
@@ -94,6 +95,13 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
   const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
+  
+  // Shopping list modal state
+  const [showShoppingListModal, setShowShoppingListModal] = useState(false);
+  const [shoppingListIngredients, setShoppingListIngredients] = useState<string[]>([]);
+  const [shoppingListWeights, setShoppingListWeights] = useState<{ [ingredient: string]: { amount: number, unit: string } }>({});
+  const [shoppingListCategorized, setShoppingListCategorized] = useState<{ [category: string]: { name: string, amount: number, unit: string }[] }>({});
+  const [shoppingListMealPlan, setShoppingListMealPlan] = useState<any>(null);
 
   useEffect(() => {
     loadMealSettings();
@@ -1138,7 +1146,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         }
       }
 
-      showFullScreenLoader('shopping', 'Generating Shopping List', 'Analyzing your meals and creating a comprehensive shopping list...');
+      showFullScreenLoader('shopping', 'Analyzing Ingredients', 'Extracting ingredients from your planned meals...');
       
       // Track shopping list generation event
       analytics.trackEvent({
@@ -1173,21 +1181,71 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         });
       });
 
-      setLoaderMessage('Creating Shopping List');
-      setLoaderSubMessage('Organizing ingredients and quantities...');
+      setLoaderMessage('Extracting Ingredients');
+      setLoaderSubMessage('Analyzing meal names and extracting ingredients...');
 
-      await generateShoppingListPDF({
+      // Extract ingredients from meal names
+      const mealNames: string[] = [];
+      Object.values(pdfMeals).forEach(dayMeals => {
+        Object.values(dayMeals).forEach(mealName => {
+          if (mealName?.trim()) {
+            mealNames.push(mealName);
+          }
+        });
+      });
+
+      console.log('Extracted meal names:', mealNames);
+
+      let ingredients: string[] = [];
+      let weights: { [ingredient: string]: { amount: number, unit: string } } = {};
+      let categorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
+      if (mealNames.length > 0) {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            console.error('No authentication token found');
+            return;
+          }
+
+          const response = await fetch('/api/ai/extract-ingredients', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              meals: mealNames,
+              language: userLanguage,
+              portions: mealSettings.portions || 1
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            ingredients = result.consolidated || [];
+            weights = result.weights || {};
+            categorized = result.categorized || {};
+          } else {
+            console.error('Failed to extract ingredients:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+          }
+        } catch (error) {
+          console.error('Error extracting ingredients:', error);
+        }
+      }
+
+      // Prepare meal plan data for the modal
+      const mealPlanData = {
         weekStartDate: formatDate(currentWeek),
         meals: pdfMeals,
         userInfo: user,
         mealSettings,
         videoURLs,
         targetLanguage: userLanguage
+      };
 
-      });
-      
       hideFullScreenLoader();
-      toast.success('Shopping list downloaded successfully!');
       
       // Refresh user data to get updated usage counts for guest users
       if (isGuestUser(user?.id) && onUserUpdate) {
@@ -1198,6 +1256,14 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           console.error('Error refreshing user data:', error);
         }
       }
+      
+      // Show the shopping list modal
+      setShoppingListIngredients(ingredients);
+      setShoppingListWeights(weights);
+      setShoppingListCategorized(categorized);
+      setShoppingListMealPlan(mealPlanData);
+      setShowShoppingListModal(true);
+      
     } catch (error: any) {
       console.error('Error generating shopping list:', error);
       hideFullScreenLoader();
@@ -1209,7 +1275,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         toast.error('Failed to generate shopping list');
       }
     }
-
   };
 
   // Tooltip handlers with 2-second delay
@@ -1566,6 +1631,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           </div>
         </div>
       )}
+
+      {/* Shopping List Modal */}
+      <ShoppingListModal
+        isOpen={showShoppingListModal}
+        onClose={() => setShowShoppingListModal(false)}
+        ingredients={shoppingListIngredients}
+        weights={shoppingListWeights}
+        categorized={shoppingListCategorized}
+        mealPlan={shoppingListMealPlan}
+      />
       </div>
     </div>
   );

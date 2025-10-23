@@ -507,10 +507,10 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     });
 
     // Extract ingredients from original meal names first
-    let ingredientsResult: { grouped: any[], consolidated: string[] } = { grouped: [], consolidated: [] };
+    let ingredientsResult: { grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } } = { grouped: [], consolidated: [], weights: {}, categorized: {} };
     if (originalMealNames.length > 0) {
       try {
-        ingredientsResult = await extractIngredientsFromMeals(originalMealNames);
+        ingredientsResult = await extractIngredientsFromMeals(originalMealNames, mealPlan.mealSettings?.portions || 1);
       } catch (error) {
         console.error('Error extracting ingredients:', error);
       }
@@ -678,97 +678,253 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
         // Create organized layout with modern cards
         if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
-          // Main shopping list card - more compact
-          const unifiedListHeight = 60;
-          doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-          doc.rect(15, currentY, pageWidth - 30, unifiedListHeight, 'F');
-          doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-          doc.setLineWidth(1);
-          doc.rect(15, currentY, pageWidth - 30, unifiedListHeight, 'S');
-          
-          // Shopping list header - more compact
-          doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-          doc.rect(15, currentY, pageWidth - 30, 15, 'F');
-          doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-          doc.setFontSize(10);
-          doc.setFont(fontName, 'bold');
-          doc.text('Unified Ingredients List', 20, currentY + 10);
-          
-          // Shopping list content - more compact
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          let listY = currentY + 20;
-          doc.setFontSize(8);
-          doc.setFont(fontName, 'normal');
-
-          // Create a map to count the number of meals each ingredient appears in
-          const ingredientMealCount: { [ingredient: string]: number } = {};
-          if (result.grouped && Array.isArray(result.grouped)) {
-            result.grouped.forEach((mealObj: any) => {
-              // Each mealObj is like { "Meal Name": [ingredients] }
-              const ingredients = Object.values(mealObj)[0];
-              if (Array.isArray(ingredients)) {
-                ingredients.forEach((ingredient: string) => {
-                  const cleanIngredient = ingredient.trim().toLowerCase();
-                  ingredientMealCount[cleanIngredient.trim()] = (ingredientMealCount[cleanIngredient.trim()] || 0) + 1;
-                });
+          // Check if we have categorized data
+          if (result.categorized && Object.keys(result.categorized).length > 0) {
+            // Define category colors (same as modal)
+            const getCategoryColors = (category: string) => {
+              switch (category) {
+                case 'Vegetables':
+                  return { bg: [34, 197, 94], border: [22, 163, 74], text: [255, 255, 255] }; // Green
+                case 'Fruits':
+                  return { bg: [249, 115, 22], border: [234, 88, 12], text: [255, 255, 255] }; // Orange
+                case 'Dairy & Eggs':
+                  return { bg: [59, 130, 246], border: [37, 99, 235], text: [255, 255, 255] }; // Blue
+                case 'Meat & Seafood':
+                  return { bg: [239, 68, 68], border: [220, 38, 38], text: [255, 255, 255] }; // Red
+                case 'Grains & Pulses':
+                  return { bg: [234, 179, 8], border: [202, 138, 4], text: [255, 255, 255] }; // Yellow
+                case 'Spices & Herbs':
+                  return { bg: [147, 51, 234], border: [124, 58, 237], text: [255, 255, 255] }; // Purple
+                case 'Pantry Items':
+                  return { bg: [245, 158, 11], border: [217, 119, 6], text: [255, 255, 255] }; // Amber
+                default:
+                  return { bg: [107, 114, 128], border: [75, 85, 99], text: [255, 255, 255] }; // Gray
               }
-            });
-          }
-          
-          // Sort result.consolidated by descending count in ingredientMealCount, then alphabetically
-          result.consolidated.sort((a, b) => {
-            const countA = ingredientMealCount[a.trim().toLowerCase()] || 0;
-            const countB = ingredientMealCount[b.trim().toLowerCase()] || 0;
-            if (countA !== countB) {
-              return countB - countA; // Descending by count
-            }
-            // If counts are equal, sort alphabetically
-            return a.localeCompare(b);
-          });
+            };
 
-          // Create organized columns - use 4 columns for better space utilization
-          const itemsPerColumn = Math.ceil(result.consolidated.length / 4);
-          const columns = [
-            result.consolidated.slice(0, itemsPerColumn),
-            result.consolidated.slice(itemsPerColumn, itemsPerColumn * 2),
-            result.consolidated.slice(itemsPerColumn * 2, itemsPerColumn * 3),
-            result.consolidated.slice(itemsPerColumn * 3)
-          ];
-          
-          const maxItems = Math.max(...columns.map(col => col.length));
-          for (let i = 0; i < maxItems; i++) {
-            let xPos = 20;
-            const columnWidth = (pageWidth - 50) / 4;
-            columns.forEach((column, colIndex) => {
-              if (column[i] && listY < currentY + unifiedListHeight - 5) {
-                const cleanIngredient = capitalizeWords(column[i].replace(/[&]/g, 'and').trim());
-                // Add smaller checkbox
+            // Display categorized ingredients with pagination
+            const categorizedEntries = Object.entries(result.categorized).filter(([category, items]) => items.length > 0);
+            let remainingCategories = [...categorizedEntries];
+            let categoryPageIndex = 0;
+            
+            // Calculate height for each category
+            const calculateCategoryHeight = (items: any[]) => {
+              const itemsPerRow = 3;
+              const rows = Math.ceil(items.length / itemsPerRow);
+              return 12 + (rows * 8) + 8; // Header + items + padding
+            };
+            
+            while (remainingCategories.length > 0) {
+              // Add new page if not the first page
+              if (categoryPageIndex > 0) {
+                doc.addPage();
+                currentY = 30; // Reset Y position for new page
+              }
+              
+              // Calculate categories per page based on available height
+              const availableHeight = pageHeight - currentY - 50; // 50px buffer for footer
+              let totalHeight = 0;
+              let categoriesToShow = 0;
+              
+              // Calculate how many categories can fit on this page
+              for (let i = 0; i < remainingCategories.length; i++) {
+                const [category, items] = remainingCategories[i];
+                const categoryHeight = calculateCategoryHeight(items);
+                if (totalHeight + categoryHeight <= availableHeight) {
+                  totalHeight += categoryHeight;
+                  categoriesToShow++;
+                } else {
+                  break;
+                }
+              }
+              
+              const pageCategories = remainingCategories.splice(0, categoriesToShow);
+              
+              // Render categories for this page
+              pageCategories.forEach(([category, items]) => {
+                const categoryColors = getCategoryColors(category);
+                const categoryHeight = calculateCategoryHeight(items);
+                
+                // Category container
                 doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-                doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-                doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
-                const translatedIngredient = getTranslatedText(cleanIngredient);
-                doc.text(translatedIngredient, xPos + 6, listY);
-                doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(translatedIngredient) + 8, listY);
+                doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'F');
+                doc.setDrawColor(categoryColors.border[0], categoryColors.border[1], categoryColors.border[2]);
+                doc.setLineWidth(1);
+                doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'S');
+                
+                // Category title with color
+                doc.setFillColor(categoryColors.bg[0], categoryColors.bg[1], categoryColors.bg[2]);
+                doc.rect(15, currentY, pageWidth - 30, 12, 'F');
+                doc.setTextColor(categoryColors.text[0], categoryColors.text[1], categoryColors.text[2]);
+                doc.setFontSize(10);
+                doc.setFont(fontName, 'bold');
+                doc.text(category, 20, currentY + 8);
+                
+                // Category items
+                doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+                let listY = currentY + 16;
+                doc.setFontSize(8);
+                doc.setFont(fontName, 'normal');
+                
+                const itemsPerRow = 3;
+                // Display all items in organized rows
+                for (let i = 0; i < items.length; i += itemsPerRow) {
+                  let xPos = 20;
+                  const rowItems = items.slice(i, i + itemsPerRow);
+                  const columnWidth = (pageWidth - 50) / itemsPerRow;
+                  
+                  rowItems.forEach((item, colIndex) => {
+                    const cleanIngredient = capitalizeWords(item.name.replace(/[&]/g, 'and').trim());
+                    
+                    // Add smaller checkbox
+                    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                    doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+                    doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
+                    
+                    // Display ingredient with weight
+                    let displayText = getTranslatedText(cleanIngredient);
+                    displayText += ` (${item.amount} ${item.unit})`;
+                    doc.text(displayText, xPos + 6, listY);
+                    
+                    xPos += columnWidth;
+                  });
+                  listY += 8;
+                }
+                
+                currentY += categoryHeight + 5;
+              });
+              
+              categoryPageIndex++;
+            }
+          } else {
+            // Fallback to unified list if no categorized data
+            const unifiedListHeight = 60;
+            doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+            doc.rect(15, currentY, pageWidth - 30, unifiedListHeight, 'F');
+            doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+            doc.setLineWidth(1);
+            doc.rect(15, currentY, pageWidth - 30, unifiedListHeight, 'S');
+            
+            // Shopping list header - more compact
+            doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+            doc.rect(15, currentY, pageWidth - 30, 15, 'F');
+            doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+            doc.setFontSize(10);
+            doc.setFont(fontName, 'bold');
+            doc.text('Unified Ingredients List', 20, currentY + 10);
+            
+            // Shopping list content - more compact
+            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+            let listY = currentY + 20;
+            doc.setFontSize(8);
+            doc.setFont(fontName, 'normal');
+
+            // Create a map to count the number of meals each ingredient appears in
+            const ingredientMealCount: { [ingredient: string]: number } = {};
+            const weights = result.weights || {};
+            if (result.grouped && Array.isArray(result.grouped)) {
+              result.grouped.forEach((mealObj: any) => {
+                // Each mealObj is like { "Meal Name": [ingredients] }
+                const ingredients = Object.values(mealObj)[0];
+                if (Array.isArray(ingredients)) {
+                  ingredients.forEach((ingredient: string) => {
+                    const cleanIngredient = ingredient.trim().toLowerCase();
+                    ingredientMealCount[cleanIngredient.trim()] = (ingredientMealCount[cleanIngredient.trim()] || 0) + 1;
+                  });
+                }
+              });
+            }
+            
+            // Sort result.consolidated by descending count in ingredientMealCount, then alphabetically
+            result.consolidated.sort((a, b) => {
+              const countA = ingredientMealCount[a.trim().toLowerCase()] || 0;
+              const countB = ingredientMealCount[b.trim().toLowerCase()] || 0;
+              if (countA !== countB) {
+                return countB - countA; // Descending by count
               }
-              xPos += columnWidth;
+              // If counts are equal, sort alphabetically
+              return a.localeCompare(b);
             });
-            listY += 5;
+
+            // Create organized columns - use 4 columns for better space utilization
+            const itemsPerColumn = Math.ceil(result.consolidated.length / 4);
+            const columns = [
+              result.consolidated.slice(0, itemsPerColumn),
+              result.consolidated.slice(itemsPerColumn, itemsPerColumn * 2),
+              result.consolidated.slice(itemsPerColumn * 2, itemsPerColumn * 3),
+              result.consolidated.slice(itemsPerColumn * 3)
+            ];
+            
+            const maxItems = Math.max(...columns.map(col => col.length));
+            for (let i = 0; i < maxItems; i++) {
+              let xPos = 20;
+              const columnWidth = (pageWidth - 50) / 4;
+              columns.forEach((column, colIndex) => {
+                if (column[i] && listY < currentY + unifiedListHeight - 5) {
+                  const cleanIngredient = capitalizeWords(column[i].replace(/[&]/g, 'and').trim());
+                  const weight = weights[column[i]];
+                  
+                  // Add smaller checkbox
+                  doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                  doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+                  doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
+                  
+                  // Display ingredient with weight if available
+                  let displayText = getTranslatedText(cleanIngredient);
+                  if (weight) {
+                    displayText += ` (${weight.amount} ${weight.unit})`;
+                  }
+                  doc.text(displayText, xPos + 6, listY);
+                  doc.text(`(${ingredientMealCount[cleanIngredient.trim().toLowerCase()]})`, xPos + doc.getTextWidth(displayText) + 8, listY);
+                }
+                xPos += columnWidth;
+              });
+              listY += 5;
+            }
+            
+            currentY += unifiedListHeight + 8;
           }
-          
-          currentY += unifiedListHeight + 8;
 
           // Add new section: Ingredients by Meal - with pagination
           let remainingMeals = [...result.grouped];
           let pageIndex = 0;
 
+          // Calculate dynamic height for each meal based on ingredient count and line wrapping
+          const calculateMealHeight = (mealGroup: any) => {
+            const mealName = Object.keys(mealGroup)[0];
+            const ingredients = mealGroup[mealName];
+            const mealNameHeight = 10; // Height for meal name
+            const ingredientLineHeight = 6; // Height per ingredient line
+            const maxLineWidth = pageWidth - 50; // Available width for ingredients
+            
+            let totalIngredientHeight = 0;
+            let currentLineWidth = 0;
+            let lineCount = 0;
+            
+            ingredients.forEach((ingredient: string) => {
+              const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
+              const translatedIngredient = getTranslatedText(cleanIngredient);
+              const ingredientWidth = doc.getTextWidth(translatedIngredient) + 8; // +8 for spacing
+              
+              if (currentLineWidth + ingredientWidth > maxLineWidth) {
+                currentLineWidth = ingredientWidth;
+                lineCount++;
+              } else {
+                currentLineWidth += ingredientWidth;
+              }
+            });
+            
+            // Add one more line if we have any ingredients
+            if (ingredients.length > 0) {
+              lineCount++;
+            }
+            
+            totalIngredientHeight = lineCount * ingredientLineHeight;
+            return mealNameHeight + totalIngredientHeight + 5; // +5 for spacing
+          };
 
-          const perMealHeight = 14;
           const totalMeals = result.grouped.length;
-          const currentPageHeightRemaining  = pageHeight - currentY - 50;
-          const currentPageMeals = Math.floor(currentPageHeightRemaining / perMealHeight);
-          const remainingMealsCount = totalMeals - currentPageMeals;
-          const remainingPages = Math.ceil(remainingMealsCount / perMealHeight);
-          const totalPages = remainingPages + 1;
+          const totalPages = Math.ceil(totalMeals / 10); // Estimate pages, will be adjusted dynamically
 
           
           while (remainingMeals.length > 0) {
@@ -778,14 +934,26 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               currentY = 30; // Reset Y position for new page
             }
             
-            // Calculate meals per page based on current page height
+            // Calculate meals per page based on dynamic heights
             const availableHeight = pageHeight - currentY - 50; // 50px buffer for footer
-            const mealsPerPage = Math.floor(availableHeight / 14);
-            const mealsToShow = Math.min(mealsPerPage, remainingMeals.length);
+            let totalHeight = 15; // Header height
+            let mealsToShow = 0;
+            
+            // Calculate how many meals can fit on this page
+            for (let i = 0; i < remainingMeals.length; i++) {
+              const mealHeight = calculateMealHeight(remainingMeals[i]);
+              if (totalHeight + mealHeight <= availableHeight) {
+                totalHeight += mealHeight;
+                mealsToShow++;
+              } else {
+                break;
+              }
+            }
             
             const pageMeals = remainingMeals.splice(0, mealsToShow);
             
-            const ingredientsByMealHeight = 15 + (pageMeals.length * 14);
+            // Calculate total height for this page's meals
+            const ingredientsByMealHeight = 15 + pageMeals.reduce((sum, meal) => sum + calculateMealHeight(meal), 0);
             doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
             doc.rect(15, currentY, pageWidth - 30, ingredientsByMealHeight, 'F');
             doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
@@ -799,7 +967,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             doc.setFontSize(10);
             doc.text(`Ingredients by Meal (Page ${pageIndex + 1} of ${totalPages})`, 20, currentY + 10);
             
-            // Ingredients by meal content - more compact
+            // Ingredients by meal content - with dynamic positioning
             doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
             let mealY = currentY + 20;
             doc.setFontSize(8);
@@ -814,35 +982,36 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
               doc.text(`${translatedMealName}:`, 20, mealY);
               
-              // Ingredients for this meal - more compact
+              // Ingredients for this meal - with proper line wrapping
               doc.setFontSize(8);
               doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
               
               let ingredientX = 25;
               let ingredientY = mealY + 5;
-              let lineCount = 0;
+              const maxLineWidth = pageWidth - 50; // Available width for ingredients
               
               ingredients.forEach((ingredient: string, ingIndex: number) => {
                 const cleanIngredient = capitalizeWords(ingredient.replace(/[&]/g, 'and').trim());
                 const translatedIngredient = getTranslatedText(cleanIngredient);
+                const ingredientWidth = doc.getTextWidth(translatedIngredient) + 8; // +8 for spacing
                 
-                if (ingredientX + doc.getTextWidth(translatedIngredient) > pageWidth - 50) {
+                // Check if ingredient fits on current line
+                if (ingredientX + ingredientWidth > maxLineWidth) {
                   ingredientX = 25;
                   ingredientY += 6;
-                  lineCount++;
                 }
                 
-                if (lineCount < 3) { // Allow 3 lines per meal for more ingredients
-                  // Add smaller checkbox
-                  doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-                  doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-                  doc.roundedRect(ingredientX, ingredientY - 2, 2, 2, 1, 1, 'FD');
-                  doc.text(translatedIngredient, ingredientX + 4, ingredientY);
-                  ingredientX += doc.getTextWidth(translatedIngredient) + 8;
-                }
+                // Add smaller checkbox
+                doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+                doc.roundedRect(ingredientX, ingredientY - 2, 2, 2, 1, 1, 'FD');
+                doc.text(translatedIngredient, ingredientX + 4, ingredientY);
+                ingredientX += ingredientWidth;
               });
               
-              mealY += 12;
+              // Move to next meal position based on actual content height
+              const mealHeight = calculateMealHeight(mealGroup);
+              mealY += mealHeight;
             });
             
             currentY += ingredientsByMealHeight + 5;
@@ -902,7 +1071,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   }
 }
 
-async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: any[], consolidated: string[] }> {
+async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } }> {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -916,7 +1085,7 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ meals }),
+      body: JSON.stringify({ meals, portions }),
     });
 
     if (!response.ok) {
@@ -927,7 +1096,9 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
 
     return {
       grouped: data.grouped || [],
-      consolidated: data.consolidated || []
+      consolidated: data.consolidated || [],
+      weights: data.weights || {},
+      categorized: data.categorized || {}
     };
   } catch (error) {
     console.error('Error calling AI for ingredients:', error);
@@ -935,7 +1106,9 @@ async function extractIngredientsFromMeals(meals: string[]): Promise<{ grouped: 
     const basicIngredients = extractBasicIngredients(meals);
     return {
       grouped: [],
-      consolidated: basicIngredients
+      consolidated: basicIngredients,
+      weights: {},
+      categorized: {}
     };
   }
 }
