@@ -702,64 +702,100 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               }
             };
 
-            // Display categorized ingredients
-            Object.entries(result.categorized).forEach(([category, items]) => {
-              if (items.length === 0) return;
-              
-              const categoryColors = getCategoryColors(category);
-              
-              // Calculate dynamic height based on number of items
+            // Display categorized ingredients with pagination
+            const categorizedEntries = Object.entries(result.categorized).filter(([category, items]) => items.length > 0);
+            let remainingCategories = [...categorizedEntries];
+            let categoryPageIndex = 0;
+            
+            // Calculate height for each category
+            const calculateCategoryHeight = (items: any[]) => {
               const itemsPerRow = 3;
               const rows = Math.ceil(items.length / itemsPerRow);
-              const categoryHeight = 12 + (rows * 8) + 8; // Header + items + padding
-              
-              // Category container
-              doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-              doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'F');
-              doc.setDrawColor(categoryColors.border[0], categoryColors.border[1], categoryColors.border[2]);
-              doc.setLineWidth(1);
-              doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'S');
-              
-              // Category title with color
-              doc.setFillColor(categoryColors.bg[0], categoryColors.bg[1], categoryColors.bg[2]);
-              doc.rect(15, currentY, pageWidth - 30, 12, 'F');
-              doc.setTextColor(categoryColors.text[0], categoryColors.text[1], categoryColors.text[2]);
-              doc.setFontSize(10);
-              doc.setFont(fontName, 'bold');
-              doc.text(category, 20, currentY + 8);
-              
-              // Category items
-              doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-              let listY = currentY + 16;
-              doc.setFontSize(8);
-              doc.setFont(fontName, 'normal');
-              
-              // Display all items in organized rows
-              for (let i = 0; i < items.length; i += itemsPerRow) {
-                let xPos = 20;
-                const rowItems = items.slice(i, i + itemsPerRow);
-                const columnWidth = (pageWidth - 50) / itemsPerRow;
-                
-                rowItems.forEach((item, colIndex) => {
-                  const cleanIngredient = capitalizeWords(item.name.replace(/[&]/g, 'and').trim());
-                  
-                  // Add smaller checkbox
-                  doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-                  doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
-                  doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
-                  
-                  // Display ingredient with weight
-                  let displayText = getTranslatedText(cleanIngredient);
-                  displayText += ` (${item.amount} ${item.unit})`;
-                  doc.text(displayText, xPos + 6, listY);
-                  
-                  xPos += columnWidth;
-                });
-                listY += 8;
+              return 12 + (rows * 8) + 8; // Header + items + padding
+            };
+            
+            while (remainingCategories.length > 0) {
+              // Add new page if not the first page
+              if (categoryPageIndex > 0) {
+                doc.addPage();
+                currentY = 30; // Reset Y position for new page
               }
               
-              currentY += categoryHeight + 5;
-            });
+              // Calculate categories per page based on available height
+              const availableHeight = pageHeight - currentY - 50; // 50px buffer for footer
+              let totalHeight = 0;
+              let categoriesToShow = 0;
+              
+              // Calculate how many categories can fit on this page
+              for (let i = 0; i < remainingCategories.length; i++) {
+                const [category, items] = remainingCategories[i];
+                const categoryHeight = calculateCategoryHeight(items);
+                if (totalHeight + categoryHeight <= availableHeight) {
+                  totalHeight += categoryHeight;
+                  categoriesToShow++;
+                } else {
+                  break;
+                }
+              }
+              
+              const pageCategories = remainingCategories.splice(0, categoriesToShow);
+              
+              // Render categories for this page
+              pageCategories.forEach(([category, items]) => {
+                const categoryColors = getCategoryColors(category);
+                const categoryHeight = calculateCategoryHeight(items);
+                
+                // Category container
+                doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'F');
+                doc.setDrawColor(categoryColors.border[0], categoryColors.border[1], categoryColors.border[2]);
+                doc.setLineWidth(1);
+                doc.rect(15, currentY, pageWidth - 30, categoryHeight, 'S');
+                
+                // Category title with color
+                doc.setFillColor(categoryColors.bg[0], categoryColors.bg[1], categoryColors.bg[2]);
+                doc.rect(15, currentY, pageWidth - 30, 12, 'F');
+                doc.setTextColor(categoryColors.text[0], categoryColors.text[1], categoryColors.text[2]);
+                doc.setFontSize(10);
+                doc.setFont(fontName, 'bold');
+                doc.text(category, 20, currentY + 8);
+                
+                // Category items
+                doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+                let listY = currentY + 16;
+                doc.setFontSize(8);
+                doc.setFont(fontName, 'normal');
+                
+                const itemsPerRow = 3;
+                // Display all items in organized rows
+                for (let i = 0; i < items.length; i += itemsPerRow) {
+                  let xPos = 20;
+                  const rowItems = items.slice(i, i + itemsPerRow);
+                  const columnWidth = (pageWidth - 50) / itemsPerRow;
+                  
+                  rowItems.forEach((item, colIndex) => {
+                    const cleanIngredient = capitalizeWords(item.name.replace(/[&]/g, 'and').trim());
+                    
+                    // Add smaller checkbox
+                    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+                    doc.setDrawColor(colors.textLight[0], colors.textLight[1], colors.textLight[2]);
+                    doc.roundedRect(xPos, listY - 2, 2, 2, 1, 1, 'FD');
+                    
+                    // Display ingredient with weight
+                    let displayText = getTranslatedText(cleanIngredient);
+                    displayText += ` (${item.amount} ${item.unit})`;
+                    doc.text(displayText, xPos + 6, listY);
+                    
+                    xPos += columnWidth;
+                  });
+                  listY += 8;
+                }
+                
+                currentY += categoryHeight + 5;
+              });
+              
+              categoryPageIndex++;
+            }
           } else {
             // Fallback to unified list if no categorized data
             const unifiedListHeight = 60;
