@@ -1194,8 +1194,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         });
       });
 
-      console.log('Extracted meal names:', mealNames);
-
       let ingredients: string[] = [];
       let weights: { [ingredient: string]: { amount: number, unit: string } } = {};
       let categorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
