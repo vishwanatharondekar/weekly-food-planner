@@ -191,6 +191,9 @@ export default function ShoppingListModal({
               case 'piece':
               case 'pieces':
               case 'pcs':
+                unit = 'COUNT';
+                amount = weight.amount; 
+                break;
               default:
                 unit = 'COUNT';
                 amount = 1; // Hardcode to 1 for pieces
