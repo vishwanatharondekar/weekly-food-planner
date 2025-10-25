@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, limit } from 'firebase/firestore';
-import { formatDate, getWeekStartDate } from '@/lib/utils';
+import { formatDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { sendBulkEmails, type EmailData } from '@/lib/ses-service';
 import { generateMealPlanEmail, generateMealPlanTextEmail, type MealPlanEmailData } from '@/lib/email-templates';
+import { fetchMealImages, extractMealNames, enhanceMealsWithImages } from '@/lib/meal-image-utils';
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -67,6 +68,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`Test completed. Success: ${emailResult.success}`);
 
+    // Count meal images for reporting
+    const mealNames = extractMealNames(testUser.mealPlanData.meals);
+    const mealImages = await fetchMealImages(db, mealNames);
+    const imageCount = Object.keys(mealImages).length;
+
     return NextResponse.json({
       message: 'Email system test completed',
       results: {
@@ -76,6 +82,9 @@ export async function POST(request: NextRequest) {
         weekStartDate: targetWeekStartStr,
         testMode,
         hasMealPlan: !!testUser.mealPlanData,
+        mealCount: mealNames.length,
+        imageCount: imageCount,
+        imagesFound: Object.keys(mealImages),
         error: emailResult.error
       }
     });
@@ -113,6 +122,12 @@ async function getTestUser(weekStartDate: string, email: string) {
     const userData = userDoc.data();
     const userId = userDoc.id;
 
+    // Check if user has a valid email address
+    if (!isValidEmailForSending(userData.email)) {
+      console.log(`User ${userData.email} has invalid email address, skipping email sending`);
+      return null;
+    }
+
     // Check if user has unsubscribed
     if (userData.emailPreferences?.weeklyMealPlans === false) {
       console.log(`User ${email} has unsubscribed, skipping`);
@@ -128,14 +143,27 @@ async function getTestUser(weekStartDate: string, email: string) {
     );
     const mealPlanSnapshot = await getDocs(mealPlanQuery);
     
-    const mealPlanData = mealPlanSnapshot.empty ? null : mealPlanSnapshot.docs[0].data();
+    if (mealPlanSnapshot.empty) {
+      console.log(`No meal plan found for user ${email} for week ${weekStartDate}`);
+      return null;
+    }
+
+    const mealPlanData = mealPlanSnapshot.docs[0].data();
     
-    console.log(`Found test user: ${email} (meal plan: ${mealPlanData ? 'yes' : 'no'})`);
+    // Extract meal names and fetch images for this user's meal plan
+    const mealNames = extractMealNames(mealPlanData.meals);
+    const mealImages = await fetchMealImages(db, mealNames);
+    const enhancedMeals = enhanceMealsWithImages(mealPlanData.meals, mealImages);
+    
+    console.log(`Found test user: ${email} (meal plan: yes, images: ${Object.keys(mealImages).length})`);
     
     return {
       userId,
       userData,
-      mealPlanData
+      mealPlanData: {
+        ...mealPlanData,
+        meals: enhancedMeals
+      }
     };
   } catch (error) {
     console.error(`Error getting test user ${email}:`, error);
@@ -163,18 +191,22 @@ async function sendTestEmail(user: any, weekStartDate: string, testMode: boolean
     const textBody = generateMealPlanTextEmail(emailData);
 
     const subject = testMode 
-      ? `🧪 TEST - Your Weekly Meal Plan - Week of ${weekStartDate}`
-      : `🍽️ Your Weekly Meal Plan - Week of ${weekStartDate}`;
+      ? `🧪 TEST - Your Weekly Meal Plan from Khana Kya Banau for Week of ${weekStartDate}`
+      : `🍽️ Your Weekly Meal Plan from Khana Kya Banau for Week of ${weekStartDate}`;
 
     console.log(`Preparing email for: ${user.userData.email}`);
 
-    // Send single email
-    const results = await sendBulkEmails([{
+    // Send single email using the same pattern as cron job
+    const emailDataForSending: EmailData = {
       to: user.userData.email,
       subject,
       htmlBody,
-      textBody
-    }]);
+      textBody,
+      userId: user.userId,
+      weekStartDate: weekStartDate
+    };
+
+    const results = await sendBulkEmails([emailDataForSending]);
     
     const success = results.success > 0;
     console.log(`Email sending completed: ${success ? 'success' : 'failed'}`);
