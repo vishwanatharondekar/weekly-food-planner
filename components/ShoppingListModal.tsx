@@ -514,7 +514,7 @@ export default function ShoppingListModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0 rounded-b-2xl">
           <div className="text-sm text-gray-600 text-center sm:text-left">
             {selectedIngredients.size} of {ingredients.length} ingredient{ingredients.length !== 1 ? 's' : ''} selected
           </div>
