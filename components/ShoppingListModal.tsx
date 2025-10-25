@@ -32,12 +32,29 @@ export default function ShoppingListModal({
 }: ShoppingListModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      // Initialize all ingredients as selected when modal opens
-      setSelectedIngredients(new Set(ingredients.map((_, index) => index)));
+      // Initialize with Vegetables category selected by default
+      const vegetablesCategory = 'Vegetables';
+      const vegetablesIndices = new Set<number>();
+      const initialSelectedCategories = new Set<string>();
+      
+      if (categorized[vegetablesCategory]) {
+        // Find indices of vegetables in the main ingredients array
+        categorized[vegetablesCategory].forEach(item => {
+          const index = ingredients.indexOf(item.name);
+          if (index !== -1) {
+            vegetablesIndices.add(index);
+          }
+        });
+        initialSelectedCategories.add(vegetablesCategory);
+      }
+      
+      setSelectedIngredients(vegetablesIndices);
+      setSelectedCategories(initialSelectedCategories);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -45,7 +62,7 @@ export default function ShoppingListModal({
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, ingredients]);
+  }, [isOpen, ingredients, categorized]);
 
   const handleIngredientToggle = (index: number) => {
     setSelectedIngredients(prev => {
@@ -57,15 +74,72 @@ export default function ShoppingListModal({
       }
       return newSet;
     });
+    
+    // Update category selection state based on ingredient selection
+    const ingredient = ingredients[index];
+    Object.entries(categorized).forEach(([category, items]) => {
+      const isIngredientInCategory = items.some(item => item.name === ingredient);
+      if (isIngredientInCategory) {
+        const categoryIndices = items.map(item => ingredients.indexOf(item.name)).filter(i => i !== -1);
+        const allCategoryIngredientsSelected = categoryIndices.every(i => selectedIngredients.has(i));
+        
+        setSelectedCategories(prev => {
+          const newSet = new Set(prev);
+          if (allCategoryIngredientsSelected) {
+            newSet.add(category);
+          } else {
+            newSet.delete(category);
+          }
+          return newSet;
+        });
+      }
+    });
   };
 
-  const handleSelectAll = () => {
-    setSelectedIngredients(new Set(ingredients.map((_, index) => index)));
+
+  const handleCategorySelectAll = (category: string) => {
+    if (!categorized[category]) return;
+    
+    const categoryIndices = new Set<number>();
+    categorized[category].forEach(item => {
+      const index = ingredients.indexOf(item.name);
+      if (index !== -1) {
+        categoryIndices.add(index);
+      }
+    });
+    
+    // Check if all ingredients in this category are already selected
+    const allSelected = Array.from(categoryIndices).every(index => selectedIngredients.has(index));
+    
+    if (allSelected) {
+      // Deselect all ingredients in this category
+      setSelectedIngredients(prev => {
+        const newSet = new Set(prev);
+        categoryIndices.forEach(index => newSet.delete(index));
+        return newSet;
+      });
+      
+      setSelectedCategories(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(category);
+        return newSet;
+      });
+    } else {
+      // Select all ingredients in this category
+      setSelectedIngredients(prev => {
+        const newSet = new Set(prev);
+        categoryIndices.forEach(index => newSet.add(index));
+        return newSet;
+      });
+      
+      setSelectedCategories(prev => {
+        const newSet = new Set(prev);
+        newSet.add(category);
+        return newSet;
+      });
+    }
   };
 
-  const handleSelectNone = () => {
-    setSelectedIngredients(new Set());
-  };
 
   const getSelectedIngredients = () => {
     return ingredients.filter((_, index) => selectedIngredients.has(index));
@@ -267,23 +341,6 @@ export default function ShoppingListModal({
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 Ingredients for {formatDate(new Date(mealPlan.weekStartDate))} week:
               </h3>
-              {ingredients.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleSelectAll}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50"
-                  >
-                    Select All
-                  </button>
-                  <span className="text-gray-300">|</span>
-                  <button
-                    onClick={handleSelectNone}
-                    className="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded hover:bg-gray-50"
-                  >
-                    Select None
-                  </button>
-                </div>
-              )}
             </div>
             
             {ingredients.length > 0 ? (
@@ -318,13 +375,27 @@ export default function ShoppingListModal({
                     return (
                       <div key={category} className="space-y-2">
                         <div className={`${categoryStyles.bg} ${categoryStyles.border} border rounded-lg p-3`}>
-                          <h4 className={`text-base font-bold ${categoryStyles.text} flex items-center`}>
-                            <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
-                            {category}
-                            <span className="ml-2 text-xs font-normal opacity-75">
-                              ({items.length} item{items.length !== 1 ? 's' : ''})
-                            </span>
-                          </h4>
+                          <div className="flex items-center justify-between">
+                            <h4 className={`text-base font-bold ${categoryStyles.text} flex items-center`}>
+                              <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
+                              {category}
+                              <span className="ml-2 text-xs font-normal opacity-75">
+                                ({items.length} item{items.length !== 1 ? 's' : ''})
+                              </span>
+                            </h4>
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => handleCategorySelectAll(category)}
+                                className={`text-xs px-2 py-1 rounded transition-colors ${
+                                  selectedCategories.has(category)
+                                    ? 'bg-white text-red-600 border border-red-200 hover:bg-red-50'
+                                    : 'text-blue-600 hover:bg-blue-50'
+                                }`}
+                              >
+                                {selectedCategories.has(category) ? 'Deselect All' : 'Select All'}
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                         {items.map((item, itemIndex) => {
