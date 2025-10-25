@@ -115,14 +115,6 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
-                                <!-- Meal type and calorie pills -->
-                                <div style="margin-bottom: 8px;">
-                                    <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
-                                        ${mealTypeLabels[mealType] || mealType}
-                                    </div>
-                                    ${mealCalories ? `<span style="background-color: #fed7aa; color: #ea580c; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">${mealCalories} kcal</span>` : ''}
-                                </div>
-                                
                                 <!-- Meal content with image and name -->
                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                     <tr>
@@ -130,12 +122,19 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                                         <td style="vertical-align: top; padding: 0; width: 80px; padding-right: 12px;">
                                             <img src="${mealThumbnailUrl}" 
                                                  alt="${mealName || 'Meal image'}" 
-                                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;" 
+                                                 style="width: 80px; height: 100%; min-height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;" 
                                                  loading="lazy"
                                                  onerror="this.style.display='none';" />
                                         </td>
                                         ` : ''}
                                         <td style="vertical-align: top; padding: 0; ${hasImage ? '' : 'width: 100%;'}">
+                                            <!-- Meal type and calorie pills above meal name -->
+                                            <div style="margin-bottom: 8px;">
+                                                <div style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-right: 8px; ${getMealTypePillClasses(mealType)}">
+                                                    ${mealTypeLabels[mealType] || mealType}
+                                                </div>
+                                                ${mealCalories ? `<span style="background-color: #fed7aa; color: #ea580c; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">${mealCalories} kcal</span>` : ''}
+                                            </div>
                                             <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
                                                 ${mealName || 'Not planned yet'}
                                             </div>
