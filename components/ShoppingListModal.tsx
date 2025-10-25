@@ -322,9 +322,9 @@ export default function ShoppingListModal({
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-2 sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shopping List</h2>
           <button
             onClick={onClose}
@@ -335,7 +335,7 @@ export default function ShoppingListModal({
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0">
           <div className="mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -501,7 +501,7 @@ export default function ShoppingListModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0">
           <div className="text-sm text-gray-600 text-center sm:text-left">
             {selectedIngredients.size} of {ingredients.length} ingredient{ingredients.length !== 1 ? 's' : ''} selected
           </div>
