@@ -100,7 +100,7 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                     <div>
                         ${enabledMeals.map((mealType, mealIndex) => {
                           const mealData = dayMeals[mealType];
-                          console.log('Meal data:', mealData);
+                          
                           const mealName = mealData instanceof Object ? mealData.name : mealData;
                           const mealCalories = mealData instanceof Object ? mealData.calories : null;
                           const mealImageUrl = mealData instanceof Object ? mealData.imageUrl : null;
@@ -111,7 +111,6 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                           const mealImageUrlWithBaseUrl = hasImage ? process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + mealImageUrl : null;
 
                           const mealThumbnailUrl = generateMealThumbnailUrl(mealImageUrlWithBaseUrl || '');
-                          console.log('Meal thumbnail URL:', mealThumbnailUrl);
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
@@ -135,14 +134,21 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                                                 </div>
                                                 ${mealCalories ? `<span style="background-color: #fed7aa; color: #ea580c; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">${mealCalories} kcal</span>` : ''}
                                             </div>
-                                            <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
-                                                ${mealName || 'Not planned yet'}
-                                            </div>
-                                        </td>
-                                        <td style="vertical-align: top; padding: 0; text-align: right; width: 40px;">
-                                            <a href="${planUrl}?day=${day}&mealType=${mealType}" style="display: inline-block; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; text-align: center; line-height: 32px; font-size: 16px;" title="Edit meal">
-                                                ✏️
-                                            </a>
+                                            <!-- Meal name with edit button in same line -->
+                                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                                <tr>
+                                                    <td style="vertical-align: top; padding: 0;">
+                                                        <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
+                                                            ${mealName || 'Not planned yet'}
+                                                        </div>
+                                                    </td>
+                                                    <td style="vertical-align: top; padding: 0; text-align: right; width: 40px;">
+                                                        <a href="${planUrl}?day=${day}&mealType=${mealType}" style="display: inline-block; width: 32px; height: 32px; border-radius: 6px; background-color: #f3f4f6; color: #6b7280; text-decoration: none; text-align: center; line-height: 32px; font-size: 16px;" title="Edit meal">
+                                                            ✏️
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
                                         </td>
                                     </tr>
                                 </table>

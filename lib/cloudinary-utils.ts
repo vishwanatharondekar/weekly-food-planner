@@ -86,8 +86,8 @@ export function generateMealImageUrl(
  */
 export function generateMealThumbnailUrl(imageUrl: string): string {
   return generateMealImageUrl(imageUrl, {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     quality: 'auto:good',
     format: 'auto'
   });
