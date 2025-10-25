@@ -60,7 +60,7 @@ export function generateMealImageUrl(
 ): string {
   const {
     width = 300,
-    height = 200,
+    height = 300,
     quality = 'auto:good',
     format = 'auto'
   } = options;

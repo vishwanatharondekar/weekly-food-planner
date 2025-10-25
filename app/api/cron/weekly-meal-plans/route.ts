@@ -340,10 +340,8 @@ async function getUserBatchForEmails(weekStartDate: string, lastProcessedIndex: 
 
         // Extract meal names and fetch images for this user's meal plan
         const mealNames = extractMealNames(mealPlanData.meals);
-        const mealImages = await fetchMealImages(mealNames);
-        console.log('Meal images:', mealImages);
+        const mealImages = await fetchMealImages(db, mealNames);
         const enhancedMeals = enhanceMealsWithImages(mealPlanData.meals, mealImages);
-        console.log('Enhanced meals:', enhancedMeals);
         eligibleUsers.push({
           userId,
           userData,

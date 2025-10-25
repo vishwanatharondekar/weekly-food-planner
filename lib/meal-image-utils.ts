@@ -1,24 +1,12 @@
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
-
-// Initialize Firebase on server side
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
-};
-
-// Get Firestore instance
-const db = getFirestore();
+import { Firestore, collection, query, where, getDocs } from 'firebase/firestore';
 
 /**
  * Function to fetch meal images from Firestore mealImageMappings collection
+ * @param db - Firestore database instance
  * @param mealNames - Array of meal names to fetch images for
  * @returns Object mapping meal names to image URLs
  */
-export async function fetchMealImages(mealNames: string[]): Promise<{ [key: string]: string }> {
+export async function fetchMealImages(db: Firestore, mealNames: string[]): Promise<{ [key: string]: string }> {
   try {
     if (mealNames.length === 0) {
       return {};

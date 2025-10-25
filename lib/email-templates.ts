@@ -107,6 +107,11 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                           const isLastMeal = mealIndex === enabledMeals.length - 1;
                           const hasText = mealName && mealName.trim().length > 0;
                           const hasImage = mealImageUrl && mealImageUrl.trim().length > 0;
+
+                          const mealImageUrlWithBaseUrl = hasImage ? process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + mealImageUrl : null;
+
+                          const mealThumbnailUrl = generateMealThumbnailUrl(mealImageUrlWithBaseUrl || '');
+                          console.log('Meal thumbnail URL:', mealThumbnailUrl);
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
@@ -123,7 +128,7 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                                     <tr>
                                         ${hasImage ? `
                                         <td style="vertical-align: top; padding: 0; width: 80px; padding-right: 12px;">
-                                            <img src="${generateMealThumbnailUrl(mealImageUrl)}" 
+                                            <img src="${mealThumbnailUrl}" 
                                                  alt="${mealName || 'Meal image'}" 
                                                  style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;" 
                                                  loading="lazy"

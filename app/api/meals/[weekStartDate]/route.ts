@@ -61,7 +61,7 @@ export async function GET(
       const mealNames = extractMealNames(data.meals);
       
       // Fetch meal images from Firestore
-      const mealImages = await fetchMealImages(mealNames);
+      const mealImages = await fetchMealImages(db, mealNames);
       
       // Enhance meals with image URLs
       const enhancedMeals = enhanceMealsWithImages(data.meals, mealImages);
