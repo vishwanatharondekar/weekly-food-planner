@@ -146,10 +146,10 @@ export default function ShoppingListModal({
                 case 'grams':
                   // Convert grams to kilograms if 1000g or more
                   if (weight.amount >= 1000) {
-                    unit = 'KG';
+                    unit = 'KILOGRAMS';
                     amount = Math.round((weight.amount / 1000) * 100) / 100; // Round to 2 decimal places
                   } else {
-                    unit = 'G';
+                    unit = 'GRAMS';
                     amount = weight.amount;
                   }
                   break;
@@ -217,6 +217,7 @@ export default function ShoppingListModal({
           saved: false
         }
       };
+
 
       const ingredientsField = document.createElement('input');
       ingredientsField.type = 'hidden';
