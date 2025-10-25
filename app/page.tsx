@@ -17,7 +17,8 @@ import {
   Heart,
   ArrowRight,
   CheckCircle,
-  Zap
+  Zap,
+  Activity
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -155,7 +156,7 @@ export default function LandingPage() {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
+            {/* Feature 1 - Weekly Meal Planning */}
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6">
                 <Calendar className="w-6 h-6 text-white" />
@@ -167,42 +168,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-6">
-                <ShoppingCart className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Smart Shopping Lists</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Automatically generate organized shopping lists from your meal plans. 
-                Group items by category and never forget an ingredient again.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-                <ChefHat className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Recipe Discovery</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Discover new recipes and cooking inspiration. Save videos of your favorite recipes.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6">
-                <Globe className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Hindi & Regional Language Support</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Plan meals in Hindi, English, or your regional language. Our AI-powered translation 
-                ensures accurate ingredient lists and recipe instructions in your preferred language.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
+            {/* Feature 2 - Dietary Preferences */}
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-6">
                 <Heart className="w-6 h-6 text-white" />
@@ -214,16 +180,65 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 6 */}
+            {/* Feature 3 - Smart Shopping Lists */}
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center mb-6">
-                <Download className="w-6 h-6 text-white" />
+                <ShoppingCart className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Export & Share</h3>
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Smart Shopping Lists</h3>
               <p className="text-slate-600 leading-relaxed">
-                Export your meal plans and shopping lists as beautiful PDFs. 
-                Share with family members or save for future reference.
+                Automatically generate organized shopping lists from your meal plans. 
+                Shopping list added to Cart directly for quick purchase.
               </p>
+            </div>
+
+            {/* Feature 4 - Recipe Discovery */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
+                <ChefHat className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Recipe Discovery</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Discover new recipes and cooking inspiration. Videos can be searched and saved right in the app.
+              </p>
+            </div>
+
+            {/* Feature 5 - Calorie-Based Planning */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mb-6">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Calorie-Based Planning</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Calorie count shown and can be used for planning for the health enthusiasts. 
+                Set your target calorie count and let AI plan meals within your specified calorie goals.
+              </p>
+            </div>
+
+            {/* Feature 6 - Hindi & Regional Language Support */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6">
+                <Globe className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Hindi & Regional Language Support</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Download your meal plans in Hindi, English, or your regional language. Our AI-powered translation 
+                ensures accurate ingredient lists and recipe instructions in your preferred language.
+              </p>
+            </div>
+
+            {/* Feature 7 - Export & Share */}
+            <div className="lg:col-start-2 lg:col-span-1">
+              <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                  <Download className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-4">Export & Share</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Export your meal plans and shopping lists as beautiful PDFs. 
+                  Share with family members or save for future reference.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -270,7 +285,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Shop & Cook</h3>
               <p className="text-slate-600">
-                Generate your shopping list, export to PDF, and start cooking! 
+                Generate your shopping list, shop from online apps, export to PDF, and start cooking! 
               </p>
             </div>
           </div>
