@@ -4,6 +4,7 @@ import { getFirestore, collection, query, where, getDocs, doc, setDoc, getDoc, d
 import { formatDate, getNextWeekStartDate, getWeekStartDate, isValidEmailForSending } from '@/lib/utils';
 import { sendBulkEmails, type EmailData } from '@/lib/ses-service';
 import { generateMealPlanEmail, generateMealPlanTextEmail, type MealPlanEmailData } from '@/lib/email-templates';
+import { fetchMealImages, extractMealNames, enhanceMealsWithImages } from '@/lib/meal-image-utils';
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -337,10 +338,19 @@ async function getUserBatchForEmails(weekStartDate: string, lastProcessedIndex: 
           continue;
         }
 
+        // Extract meal names and fetch images for this user's meal plan
+        const mealNames = extractMealNames(mealPlanData.meals);
+        const mealImages = await fetchMealImages(mealNames);
+        console.log('Meal images:', mealImages);
+        const enhancedMeals = enhanceMealsWithImages(mealPlanData.meals, mealImages);
+        console.log('Enhanced meals:', enhancedMeals);
         eligibleUsers.push({
           userId,
           userData,
-          mealPlanData,
+          mealPlanData: {
+            ...mealPlanData,
+            meals: enhancedMeals
+          },
           originalIndex: currentIndex
         });
 

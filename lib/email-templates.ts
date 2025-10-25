@@ -1,6 +1,7 @@
 import { format, addDays } from 'date-fns';
 import { generateUnsubscribeUrl } from './jwt-utils';
 import { generateEmailTrackingUrls, createEmailTrackingData } from './email-tracking-utils';
+import { generateMealThumbnailUrl } from './cloudinary-utils';
 
 export interface MealPlanEmailData {
   userName: string;
@@ -9,7 +10,7 @@ export interface MealPlanEmailData {
   userId: string;
   meals: {
     [day: string]: {
-      [mealType: string]: string | { name: string, calories: number };
+      [mealType: string]: string | { name: string, calories: number, imageUrl?: string };
     };
   };
   mealSettings?: {
@@ -99,10 +100,13 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                     <div>
                         ${enabledMeals.map((mealType, mealIndex) => {
                           const mealData = dayMeals[mealType];
+                          console.log('Meal data:', mealData);
                           const mealName = mealData instanceof Object ? mealData.name : mealData;
                           const mealCalories = mealData instanceof Object ? mealData.calories : null;
+                          const mealImageUrl = mealData instanceof Object ? mealData.imageUrl : null;
                           const isLastMeal = mealIndex === enabledMeals.length - 1;
                           const hasText = mealName && mealName.trim().length > 0;
+                          const hasImage = mealImageUrl && mealImageUrl.trim().length > 0;
                           
                           return `
                             <div style="padding: 12px 16px; ${!isLastMeal ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
@@ -114,10 +118,19 @@ export function generateMealPlanEmail({ userName, weekStartDate, userEmail, user
                                     ${mealCalories ? `<span style="background-color: #fed7aa; color: #ea580c; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">${mealCalories} kcal</span>` : ''}
                                 </div>
                                 
-                                <!-- Meal name with edit button using table for better email support -->
+                                <!-- Meal content with image and name -->
                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                     <tr>
-                                        <td style="vertical-align: top; padding: 0;">
+                                        ${hasImage ? `
+                                        <td style="vertical-align: top; padding: 0; width: 80px; padding-right: 12px;">
+                                            <img src="${generateMealThumbnailUrl(mealImageUrl)}" 
+                                                 alt="${mealName || 'Meal image'}" 
+                                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;" 
+                                                 loading="lazy"
+                                                 onerror="this.style.display='none';" />
+                                        </td>
+                                        ` : ''}
+                                        <td style="vertical-align: top; padding: 0; ${hasImage ? '' : 'width: 100%;'}">
                                             <div style="color: ${hasText ? '#111827' : '#6b7280'}; font-size: 16px; line-height: 1.5; ${!hasText ? 'font-style: italic;' : ''}">
                                                 ${mealName || 'Not planned yet'}
                                             </div>
