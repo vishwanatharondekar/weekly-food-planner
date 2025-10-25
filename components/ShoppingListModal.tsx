@@ -325,7 +325,20 @@ export default function ShoppingListModal({
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shopping List</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shopping List</h2>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isSubmitting || selectedIngredients.size === 0}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isSubmitting ? 'Generating...' : 'Download as PDF'}
+            >
+              <FileDown className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-600 hidden sm:inline">
+                {isSubmitting ? 'Generating...' : 'Download PDF'}
+              </span>
+            </button>
+          </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -501,7 +514,7 @@ export default function ShoppingListModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0 rounded-b-2xl">
           <div className="text-sm text-gray-600 text-center sm:text-left">
             {selectedIngredients.size} of {ingredients.length} ingredient{ingredients.length !== 1 ? 's' : ''} selected
           </div>
@@ -509,26 +522,15 @@ export default function ShoppingListModal({
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors order-3 sm:order-1"
+              className="hidden sm:block px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors order-2 sm:order-1"
             >
               Cancel
             </button>
             
             <button
-              onClick={handleDownloadPDF}
-              disabled={isSubmitting || selectedIngredients.size === 0}
-              className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              <span className="text-sm sm:text-base">
-                {isSubmitting ? 'Generating...' : 'Download as PDF'}
-              </span>
-            </button>
-            
-            <button
               onClick={handleShopOnAmazon}
               disabled={selectedIngredients.size === 0}
-              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-2 sm:order-3"
+              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
               <span className="text-sm sm:text-base">Shop on Amazon</span>
