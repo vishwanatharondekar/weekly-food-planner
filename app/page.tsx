@@ -285,7 +285,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Shop & Cook</h3>
               <p className="text-slate-600">
-                Generate your shopping list, export to PDF, and start cooking! 
+                Generate your shopping list, shop from online apps, export to PDF, and start cooking! 
               </p>
             </div>
           </div>
