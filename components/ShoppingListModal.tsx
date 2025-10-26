@@ -184,10 +184,20 @@ export default function ShoppingListModal({
       // Check if we're on mobile
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
+      // Get Amazon region from meal settings, default to 'india'
+      const amazonRegion = mealPlan.mealSettings?.amazonRegion || 'india';
+      
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
+      
+      // Set the appropriate Amazon URL based on region
+      if (amazonRegion === 'us') {
+        form.action = 'https://www.amazon.com/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
+      } else {
+        form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
+      }
+      
       form.target = isMobile ? '_self' : '_blank';
       form.style.display = 'none';
 
@@ -195,12 +205,12 @@ export default function ShoppingListModal({
       const brandIdField = document.createElement('input');
       brandIdField.type = 'hidden';
       brandIdField.name = 'almBrandId';
-      brandIdField.value = 'ctnow';
+      brandIdField.value = amazonRegion === 'us' ? 'QW1hem9uIEZyZXNo' : 'ctnow';
       form.appendChild(brandIdField);
 
       const associateTagField = document.createElement('input');
       associateTagField.type = 'hidden';
-      associateTagField.name = 'tag';
+      associateTagField.name = 'associateTag';
       associateTagField.value = 'khanakyabanau-21';
       form.appendChild(associateTagField);
 
