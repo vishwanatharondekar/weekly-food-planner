@@ -75,12 +75,14 @@ export interface MealSettings {
   enabledMealTypes: string[];
   dailyCalorieTarget?: number;
   portions?: number;
+  amazonRegion?: 'india' | 'us';
 }
 
 export const DEFAULT_MEAL_SETTINGS: MealSettings = {
   enabledMealTypes: ['breakfast', 'lunch', 'dinner'], // Default to basic 3 meals
   dailyCalorieTarget: 2000, // Default daily calorie target
-  portions: 1 // Default portions
+  portions: 1, // Default portions
+  amazonRegion: 'india' // Default to Amazon India
 };
 
 export function getMealDisplayName(mealType: string): string {

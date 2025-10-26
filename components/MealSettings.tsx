@@ -209,6 +209,54 @@ export default function MealSettingsComponent({ user, onSettingsChange, onClose,
               </div>
             </div>
           </div>
+
+          {/* Amazon Region Setting */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Amazon Shopping Region
+                </label>
+                <p className="text-xs text-gray-500">
+                  Choose which Amazon store to use for shopping lists
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setSettings(prev => ({ 
+                    ...prev, 
+                    amazonRegion: 'india' 
+                  }))}
+                  className={`p-3 rounded-lg border-2 transition-colors ${
+                    (settings.amazonRegion || 'india') === 'india'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-medium">🇮🇳 Amazon India</div>
+                    <div className="text-xs text-gray-500">amazon.in</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setSettings(prev => ({ 
+                    ...prev, 
+                    amazonRegion: 'us' 
+                  }))}
+                  className={`p-3 rounded-lg border-2 transition-colors ${
+                    settings.amazonRegion === 'us'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-medium">🇺🇸 Amazon US</div>
+                    <div className="text-xs text-gray-500">amazon.com</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center space-x-3">
