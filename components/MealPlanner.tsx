@@ -102,6 +102,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [shoppingListWeights, setShoppingListWeights] = useState<{ [ingredient: string]: { amount: number, unit: string } }>({});
   const [shoppingListCategorized, setShoppingListCategorized] = useState<{ [category: string]: { name: string, amount: number, unit: string }[] }>({});
   const [shoppingListMealPlan, setShoppingListMealPlan] = useState<any>(null);
+  const [shoppingListDayWise, setShoppingListDayWise] = useState<{ [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } | undefined>(undefined);
 
   useEffect(() => {
     loadMealSettings();
@@ -1213,6 +1214,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             },
             body: JSON.stringify({
               meals: mealNames,
+              dayWiseMeals: pdfMeals,
               language: userLanguage,
               portions: mealSettings.portions || 1
             }),
@@ -1223,6 +1225,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             ingredients = result.consolidated || [];
             weights = result.weights || {};
             categorized = result.categorized || {};
+            setShoppingListDayWise(result.dayWise || undefined);
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();
@@ -1638,6 +1641,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         weights={shoppingListWeights}
         categorized={shoppingListCategorized}
         mealPlan={shoppingListMealPlan}
+        dayWise={shoppingListDayWise}
       />
       </div>
     </div>
