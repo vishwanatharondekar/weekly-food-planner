@@ -253,6 +253,74 @@ export default function ShoppingListModal({
     }
   };
 
+  const handleDaySelectAll = (day: string) => {
+    if (!dayWise || !dayWise[day]) return;
+
+    const dayIngredients = new Set<string>();
+    Object.entries(dayWise[day]).forEach(([mealType, mealData]) => {
+      if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+        mealData.ingredients.forEach((ingredient: any) => {
+          if (ingredient?.name) {
+            dayIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+          }
+        });
+      }
+    });
+
+    // Check if all ingredients for this day are already selected
+    const allSelected = Array.from(dayIngredients).every(key => selectedDayIngredients.has(key));
+
+    if (allSelected) {
+      // Deselect all ingredients for this day
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        dayIngredients.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } else {
+      // Select all ingredients for this day
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        dayIngredients.forEach(key => newSet.add(key));
+        return newSet;
+      });
+    }
+  };
+
+  const handleMealSelectAll = (day: string, mealType: string) => {
+    if (!dayWise || !dayWise[day]?.[mealType]) return;
+
+    const mealIngredients = new Set<string>();
+    const mealData = dayWise[day][mealType];
+    
+    if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+      mealData.ingredients.forEach((ingredient: any) => {
+        if (ingredient?.name) {
+          mealIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+        }
+      });
+    }
+
+    // Check if all ingredients for this meal are already selected
+    const allSelected = Array.from(mealIngredients).every(key => selectedDayIngredients.has(key));
+
+    if (allSelected) {
+      // Deselect all ingredients for this meal
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        mealIngredients.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } else {
+      // Select all ingredients for this meal
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        mealIngredients.forEach(key => newSet.add(key));
+        return newSet;
+      });
+    }
+  };
+
 
   const getSelectedIngredients = () => {
     if (activeTab === 'day' && dayWise) {
@@ -675,13 +743,39 @@ export default function ShoppingListModal({
                       const dayOffset = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
                       dayDate.setDate(dayDate.getDate() + dayOffset);
 
+                      // Count selected ingredients for this day
+                      const dayIngredients = new Set<string>();
+                      Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+                        if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+                          mealData.ingredients.forEach((ingredient: any) => {
+                            if (ingredient?.name) {
+                              dayIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+                            }
+                          });
+                        }
+                      });
+                      const allDaySelected = Array.from(dayIngredients).every(key => selectedDayIngredients.has(key));
+                      const hasDaySelection = Array.from(dayIngredients).some(key => selectedDayIngredients.has(key));
+
                       return (
-                        <div key={day} className="space-y-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                            <h4 className="text-base font-bold text-blue-900 flex items-center">
-                              <span className="w-2 h-2 rounded-full bg-blue-600 mr-2"></span>
-                              {dayName} - {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        <div key={day} className="space-y-3">
+                          <div className="border-b border-gray-200 pb-2 flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-600">
+                              {dayName}
+                              <span className="ml-2 text-xs text-gray-500 font-normal">
+                                {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
                             </h4>
+                            <button
+                              onClick={() => handleDaySelectAll(day)}
+                              className={`text-xs px-2 py-1 rounded transition-colors ${
+                                allDaySelected
+                                  ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
+                                  : 'text-blue-600 hover:bg-blue-50'
+                              }`}
+                            >
+                              {allDaySelected ? 'Deselect All' : 'Select All'}
+                            </button>
                           </div>
                           
                           {Object.entries(dayMeals).map(([mealType, mealData]) => {
@@ -696,11 +790,39 @@ export default function ShoppingListModal({
                               return null;
                             }
 
+                            // Count selected ingredients for this meal
+                            const mealIngredients = new Set<string>();
+                            if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+                              mealData.ingredients.forEach((ingredient: any) => {
+                                if (ingredient?.name) {
+                                  mealIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+                                }
+                              });
+                            }
+                            const allMealSelected = Array.from(mealIngredients).every(key => selectedDayIngredients.has(key));
+
                             return (
                             <div key={`${day}-${mealType}`} className="space-y-2">
-                              <h5 className="text-sm font-semibold text-gray-700 px-2">
-                                {mealType.charAt(0).toUpperCase() + mealType.slice(1).replace(/([A-Z])/g, ' $1')}: {mealData.name || 'Meal'}
-                              </h5>
+                              <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 flex items-center justify-between">
+                                <div>
+                                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                                    {mealType.replace(/([A-Z])/g, ' $1').trim()}
+                                  </span>
+                                  <h5 className="text-sm font-semibold text-gray-800 mt-0.5">
+                                    {mealData.name || 'Meal'}
+                                  </h5>
+                                </div>
+                                <button
+                                  onClick={() => handleMealSelectAll(day, mealType)}
+                                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                                    allMealSelected
+                                      ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
+                                      : 'text-blue-600 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {allMealSelected ? 'Deselect' : 'Select All'}
+                                </button>
+                              </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {mealData.ingredients.map((ingredient, idx) => {
                                   // Safety check for ingredient structure
