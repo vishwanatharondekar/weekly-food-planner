@@ -544,6 +544,7 @@ export default function PlanPage() {
           <CuisineOnboarding
             onComplete={handleCuisineOnboardingComplete}
             onCreateGuestUser={createGuestUser}
+            isUserAuthenticated={!!token}
           />
         )}
       </div>

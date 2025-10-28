@@ -12,9 +12,10 @@ import toast from 'react-hot-toast';
 interface CuisineOnboardingProps {
   onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => void;
   onCreateGuestUser: () => Promise<void>;
+  isUserAuthenticated?: boolean;
 }
 
-export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: CuisineOnboardingProps) {
+export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUserAuthenticated = false }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number } | null>(null);
@@ -112,7 +113,10 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: Cui
   const handleWelcomeNext = async () => {
     setIsSubmitting(true);
     try {
-      await onCreateGuestUser();
+      // Only create guest user if user is not already authenticated
+      if (!isUserAuthenticated) {
+        await onCreateGuestUser();
+      }
       setCurrentStep('cuisine');
     } catch (error) {
       console.error('Error creating guest user:', error);
@@ -159,15 +163,17 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser }: Cui
                 )}
               </button>
               
-              <div className="text-center">
-                <span className="text-gray-500">Already a member? </span>
-                <Link 
-                  href="/signin" 
-                  className="text-orange-500 hover:text-orange-600 font-semibold transition-colors"
-                >
-                  Sign In
-                </Link>
-              </div>
+              {!isUserAuthenticated && (
+                <div className="text-center">
+                  <span className="text-gray-500">Already a member? </span>
+                  <Link 
+                    href="/signin" 
+                    className="text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

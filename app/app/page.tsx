@@ -493,6 +493,7 @@ export default function Home() {
           <CuisineOnboarding
             onComplete={handleCuisineOnboardingComplete}
             onCreateGuestUser={createGuestUser}
+            isUserAuthenticated={!!token}
           />
         )}
       </div>
