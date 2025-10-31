@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { meals, portions = 1 } = await request.json();
+    const { meals, dayWiseMeals, portions = 1 } = await request.json();
 
-    if (!meals || !Array.isArray(meals)) {
+    // Accept either simple array or day-wise structure
+    if (!meals || (!Array.isArray(meals) && !dayWiseMeals)) {
       return NextResponse.json({ error: 'Invalid meals data' }, { status: 400 });
     }
 
@@ -83,7 +84,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await extractIngredientsWithAI(meals, portions);
+    // Use day-wise meals if provided, otherwise use simple meals array
+    const result = dayWiseMeals 
+      ? await extractIngredientsWithAI(meals, portions, dayWiseMeals)
+      : await extractIngredientsWithAI(meals, portions);
     
     return NextResponse.json(result);
   } catch (error: any) {
@@ -98,18 +102,52 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function extractIngredientsWithAI(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } }> {
-  const prompt = `
+async function extractIngredientsWithAI(meals: string[], portions: number = 1, dayWiseMeals?: { [day: string]: { [mealType: string]: string } }): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
+  let prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
-Meal names: ${meals.join(', ')}
-Number of portions: ${portions}
+Number of portions: ${portions}`;
 
-Please return a JSON object with four properties:
-1. "grouped": An array of objects where each object has the meal name as key and an array of ingredients with quantities as value
-2. "consolidated": An array of all unique ingredients needed for all meals
-3. "weights": An object where each ingredient is mapped to its total quantity needed (amount and unit)
-4. "categorized": An object where ingredients are grouped by type with their quantities
+  // Add day-wise information if available
+  if (dayWiseMeals) {
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    prompt += `\n\nDay-wise meals:\n`;
+    dayOrder.forEach(day => {
+      if (dayWiseMeals[day]) {
+        const mealsByDay = Object.entries(dayWiseMeals[day]);
+        if (mealsByDay.length > 0) {
+          prompt += `${day.charAt(0).toUpperCase() + day.slice(1)}:\n`;
+          mealsByDay.forEach(([mealType, mealName]) => {
+            prompt += `  - ${mealType}: ${mealName}\n`;
+          });
+        }
+      }
+    });
+  } else {
+    prompt += `\n\nMeal names: ${meals.join(', ')}`;
+  }
+
+  prompt += `\n\nPlease return a JSON object with the following properties:`;
+  
+  if (dayWiseMeals) {
+    prompt += `\n1. "dayWise": An object where each day contains meals with their ingredients
+   For example: {
+     "monday": {
+       "breakfast": {
+         "name": "Dosa",
+         "ingredients": [
+           {"name": "rice", "amount": 500, "unit": "g"},
+           {"name": "urad dal", "amount": 150, "unit": "g"}
+         ]
+       }
+     }
+   }`;
+  }
+  
+  prompt += `\n${dayWiseMeals ? '2' : '1'}. "grouped": An array of objects where each object has the meal name as key and an array of ingredients with quantities as value
+${dayWiseMeals ? '3' : '2'}. "consolidated": An array of all unique ingredients needed for all meals
+${dayWiseMeals ? '4' : '3'}. "weights": An object where each ingredient is mapped to its total quantity needed (amount and unit)
+${dayWiseMeals ? '5' : '4'}. "categorized": An object where ingredients are grouped by type with their quantities
 
 For each ingredient, provide realistic quantities based on the number of portions. Use appropriate units (grams, kilograms, pieces, cups, etc.).
 
@@ -119,7 +157,18 @@ Categorize ingredients into these types: "Vegetables", "Fruits", "Dairy & Eggs",
 
 Example response format:
 {
-  "grouped": [
+  ${dayWiseMeals ? `"dayWise": {
+    "monday": {
+      "breakfast": {
+        "name": "Dosa",
+        "ingredients": [
+          {"name": "rice", "amount": 500, "unit": "g"},
+          {"name": "urad dal", "amount": 150, "unit": "g"}
+        ]
+      }
+    }
+  },
+  ` : ''}"grouped": [
     {"Baigan Fry": ["brinjal 500g", "onions 200g", "tomatoes 300g"]},
     {"Paneer Sabji": ["paneer 250g", "onions 200g", "tomatoes 300g"]},
     {"Egg Curry": ["eggs 6 pieces", "onions 200g", "tomatoes 300g"]}
@@ -161,11 +210,18 @@ Return only the JSON object, nothing else.
       
       // Validate the structure
       if (result.grouped && result.consolidated) {
+        console.log('AI response structure:', {
+          hasDayWise: !!result.dayWise,
+          dayWiseType: typeof result.dayWise,
+          dayWiseKeys: result.dayWise ? Object.keys(result.dayWise) : []
+        });
+        
         return {
           grouped: Array.isArray(result.grouped) ? result.grouped : [],
           consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
           weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
-          categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {}
+          categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
+          dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
         };
       }
     }
@@ -178,15 +234,17 @@ Return only the JSON object, nothing else.
         grouped: Array.isArray(result.grouped) ? result.grouped : [],
         consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
         weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
-        categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {}
+        categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
+        dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
       };
     }
     
     // Fallback: if structure is not as expected, return empty
-    return { grouped: [], consolidated: [], weights: {}, categorized: {} };
+    return { grouped: [], consolidated: [], weights: {}, categorized: {}, dayWise: undefined };
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
+    console.error('Raw AI response:', text);
     // Fallback: return empty structure, the client will use basic extraction
-    return { grouped: [], consolidated: [], weights: {}, categorized: {} };
+    return { grouped: [], consolidated: [], weights: {}, categorized: {}, dayWise: undefined };
   }
 } 

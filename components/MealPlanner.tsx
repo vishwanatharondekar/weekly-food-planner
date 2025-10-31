@@ -102,6 +102,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [shoppingListWeights, setShoppingListWeights] = useState<{ [ingredient: string]: { amount: number, unit: string } }>({});
   const [shoppingListCategorized, setShoppingListCategorized] = useState<{ [category: string]: { name: string, amount: number, unit: string }[] }>({});
   const [shoppingListMealPlan, setShoppingListMealPlan] = useState<any>(null);
+  const [shoppingListDayWise, setShoppingListDayWise] = useState<{ [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } | undefined>(undefined);
 
   useEffect(() => {
     loadMealSettings();
@@ -1166,16 +1167,21 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
       const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      const imageURLs: { [day: string]: { [mealType: string]: string } } = {};
       
       DAYS_OF_WEEK.forEach(day => {
         pdfMeals[day] = {};
         videoURLs[day] = {};
+        imageURLs[day] = {};
         mealSettings.enabledMealTypes.forEach(mealType => {
           const meal = meals[day]?.[mealType];
           if (meal) {
             pdfMeals[day][mealType] = meal.name;
             if (meal.videoUrl) {
               videoURLs[day][mealType] = meal.videoUrl;
+            }
+            if (meal.imageUrl) {
+              imageURLs[day][mealType] = meal.imageUrl;
             }
           }
         });
@@ -1213,6 +1219,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             },
             body: JSON.stringify({
               meals: mealNames,
+              dayWiseMeals: pdfMeals,
               language: userLanguage,
               portions: mealSettings.portions || 1
             }),
@@ -1223,6 +1230,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             ingredients = result.consolidated || [];
             weights = result.weights || {};
             categorized = result.categorized || {};
+            setShoppingListDayWise(result.dayWise || undefined);
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();
@@ -1240,6 +1248,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         userInfo: user,
         mealSettings,
         videoURLs,
+        imageURLs,
         targetLanguage: userLanguage
       };
 
@@ -1638,6 +1647,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         weights={shoppingListWeights}
         categorized={shoppingListCategorized}
         mealPlan={shoppingListMealPlan}
+        dayWise={shoppingListDayWise}
       />
       </div>
     </div>

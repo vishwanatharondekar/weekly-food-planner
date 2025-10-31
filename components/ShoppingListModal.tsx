@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, FileDown, ShoppingCart } from 'lucide-react';
+import { X, FileDown, ShoppingCart, ChevronDown, ChevronRight } from 'lucide-react';
 import { generateShoppingListPDF } from '@/lib/pdf-generator';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -18,8 +18,10 @@ interface ShoppingListModalProps {
     userInfo: any;
     mealSettings: any;
     videoURLs: { [day: string]: { [mealType: string]: string } };
+    imageURLs?: { [day: string]: { [mealType: string]: string } };
     targetLanguage: string;
   };
+  dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
 }
 
 export default function ShoppingListModal({ 
@@ -28,15 +30,34 @@ export default function ShoppingListModal({
   ingredients, 
   weights,
   categorized,
-  mealPlan 
+  mealPlan,
+  dayWise
 }: ShoppingListModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'category' | 'day'>('category');
+  const [selectedDayIngredients, setSelectedDayIngredients] = useState<Set<string>>(new Set());
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      
+      // Log the dayWise structure for debugging
+      if (dayWise) {
+        console.log('DayWise data received:', dayWise);
+        Object.entries(dayWise).forEach(([day, dayMeals]) => {
+          console.log(`Day: ${day}`, dayMeals);
+          Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+            console.log(`  MealType: ${mealType}`, mealData);
+            if (!mealData || !Array.isArray(mealData.ingredients)) {
+              console.warn(`  WARNING: Invalid ingredients structure for ${day}/${mealType}`);
+            }
+          });
+        });
+      }
+      
       // Initialize with Vegetables category selected by default
       const vegetablesCategory = 'Vegetables';
       const vegetablesIndices = new Set<number>();
@@ -62,7 +83,7 @@ export default function ShoppingListModal({
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, ingredients, categorized]);
+  }, [isOpen, ingredients, categorized, dayWise]);
 
   const handleIngredientToggle = (index: number) => {
     setSelectedIngredients(prev => {
@@ -72,28 +93,123 @@ export default function ShoppingListModal({
       } else {
         newSet.add(index);
       }
+      
+      // Update category selection state based on ingredient selection using the NEW state
+      const ingredient = ingredients[index];
+      Object.entries(categorized).forEach(([category, items]) => {
+        const isIngredientInCategory = items.some(item => item.name === ingredient);
+        if (isIngredientInCategory) {
+          const categoryIndices = items.map(item => ingredients.indexOf(item.name)).filter(i => i !== -1);
+          const allCategoryIngredientsSelected = categoryIndices.every(i => newSet.has(i));
+          
+          setSelectedCategories(prevCategories => {
+            const newCategorySet = new Set(prevCategories);
+            if (allCategoryIngredientsSelected) {
+              newCategorySet.add(category);
+            } else {
+              newCategorySet.delete(category);
+            }
+            return newCategorySet;
+          });
+        }
+      });
+      
       return newSet;
     });
-    
-    // Update category selection state based on ingredient selection
-    const ingredient = ingredients[index];
-    Object.entries(categorized).forEach(([category, items]) => {
-      const isIngredientInCategory = items.some(item => item.name === ingredient);
-      if (isIngredientInCategory) {
-        const categoryIndices = items.map(item => ingredients.indexOf(item.name)).filter(i => i !== -1);
-        const allCategoryIngredientsSelected = categoryIndices.every(i => selectedIngredients.has(i));
+  };
+
+  const handleDayIngredientToggle = (ingredientKey: string) => {
+    setSelectedDayIngredients(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(ingredientKey)) {
+        newSet.delete(ingredientKey);
+      } else {
+        newSet.add(ingredientKey);
+      }
+      return newSet;
+    });
+  };
+
+  const getSelectedIngredientsFromDayWise = () => {
+    if (activeTab === 'category') {
+      return ingredients.filter((_, index) => selectedIngredients.has(index));
+    } else if (activeTab === 'day' && dayWise) {
+      const selected: string[] = [];
+      Array.from(selectedDayIngredients).forEach(key => {
+        const parts = key.split('||');
+        if (parts.length === 3) {
+          const day = parts[0];
+          const mealType = parts[1];
+          const ingredientName = parts[2];
+          selected.push(ingredientName);
+        }
+      });
+      return Array.from(new Set(selected));
+    }
+    return [];
+  };
+
+  const getDayWiseWeightsForIngredient = (ingredientName: string): { amount: number, unit: string } | undefined => {
+    if (!dayWise) return undefined;
+
+    // Sum up weights for the same ingredient across all selected meals
+    let totalInGrams = 0;
+    let hasAnyData = false;
+    let detectedUnit = 'g'; // Default to grams
+    let isWeightUnit = true; // Track if we're dealing with weight units
+
+    Array.from(selectedDayIngredients).forEach(key => {
+      const parts = key.split('||');
+      if (parts.length === 3) {
+        const day = parts[0];
+        const mealType = parts[1];
+        const ingredient = parts[2];
         
-        setSelectedCategories(prev => {
-          const newSet = new Set(prev);
-          if (allCategoryIngredientsSelected) {
-            newSet.add(category);
-          } else {
-            newSet.delete(category);
+        if (ingredient === ingredientName && dayWise[day]?.[mealType]?.ingredients) {
+          const ingredientData = dayWise[day][mealType].ingredients.find(
+            ing => ing.name === ingredient
+          );
+          
+          if (ingredientData) {
+            hasAnyData = true;
+            const unit = ingredientData.unit.toLowerCase();
+            
+            // Convert to grams for weight units, sum directly for volume/count units
+            if (unit === 'g' || unit === 'gram' || unit === 'grams') {
+              totalInGrams += ingredientData.amount;
+              detectedUnit = 'g';
+            } else if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') {
+              totalInGrams += ingredientData.amount * 1000;
+              detectedUnit = 'kg';
+            } else {
+              // For non-weight units (ml, l, cups, pieces, etc.), sum as is
+              if (isWeightUnit) {
+                // First time encountering non-weight unit, switch mode
+                isWeightUnit = false;
+                totalInGrams = ingredientData.amount;
+              } else {
+                totalInGrams += ingredientData.amount;
+              }
+              detectedUnit = unit;
+            }
           }
-          return newSet;
-        });
+        }
       }
     });
+
+    if (!hasAnyData) return undefined;
+
+    // If we have weight units, convert to appropriate display unit
+    if (isWeightUnit && (detectedUnit === 'g' || detectedUnit === 'kg')) {
+      if (totalInGrams >= 1000) {
+        const finalAmount = Math.round((totalInGrams / 1000) * 100) / 100;
+        return { amount: finalAmount, unit: 'kg' };
+      }
+      return { amount: totalInGrams, unit: 'g' };
+    }
+
+    // For non-weight units, return as is
+    return { amount: totalInGrams, unit: detectedUnit };
   };
 
 
@@ -140,8 +256,91 @@ export default function ShoppingListModal({
     }
   };
 
+  const handleDaySelectAll = (day: string) => {
+    if (!dayWise || !dayWise[day]) return;
+
+    const dayIngredients = new Set<string>();
+    Object.entries(dayWise[day]).forEach(([mealType, mealData]) => {
+      if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+        mealData.ingredients.forEach((ingredient: any) => {
+          if (ingredient?.name) {
+            dayIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+          }
+        });
+      }
+    });
+
+    // Check if all ingredients for this day are already selected
+    const allSelected = Array.from(dayIngredients).every(key => selectedDayIngredients.has(key));
+
+    if (allSelected) {
+      // Deselect all ingredients for this day
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        dayIngredients.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } else {
+      // Select all ingredients for this day
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        dayIngredients.forEach(key => newSet.add(key));
+        return newSet;
+      });
+    }
+  };
+
+  const handleMealSelectAll = (day: string, mealType: string) => {
+    if (!dayWise || !dayWise[day]?.[mealType]) return;
+
+    const mealIngredients = new Set<string>();
+    const mealData = dayWise[day][mealType];
+    
+    if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+      mealData.ingredients.forEach((ingredient: any) => {
+        if (ingredient?.name) {
+          mealIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+        }
+      });
+    }
+
+    // Check if all ingredients for this meal are already selected
+    const allSelected = Array.from(mealIngredients).every(key => selectedDayIngredients.has(key));
+
+    if (allSelected) {
+      // Deselect all ingredients for this meal
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        mealIngredients.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    } else {
+      // Select all ingredients for this meal
+      setSelectedDayIngredients(prev => {
+        const newSet = new Set(prev);
+        mealIngredients.forEach(key => newSet.add(key));
+        return newSet;
+      });
+    }
+  };
+
+  const handleDayToggle = (day: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(day)) {
+        newSet.delete(day);
+      } else {
+        newSet.add(day);
+      }
+      return newSet;
+    });
+  };
+
 
   const getSelectedIngredients = () => {
+    if (activeTab === 'day' && dayWise) {
+      return getSelectedIngredientsFromDayWise();
+    }
     return ingredients.filter((_, index) => selectedIngredients.has(index));
   };
 
@@ -149,21 +348,69 @@ export default function ShoppingListModal({
     try {
       setIsSubmitting(true);
       const selectedIngredientsList = getSelectedIngredients();
-      
-      if (selectedIngredientsList.length === 0) {
-        toast.error('Please select at least one ingredient');
-        return;
+
+      // Convert dayWise to grouped format for PDF
+      const grouped: any[] = [];
+      if (dayWise) {
+        Object.entries(dayWise).forEach(([day, dayMeals]) => {
+          Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+            if (mealData?.name && mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+              let mealIngredients = mealData.ingredients.map((ing: any) => ing.name);
+              
+              // Filter ingredients based on selection if needed
+              if (selectedIngredientsList.length > 0) {
+                mealIngredients = mealIngredients.filter(ing => selectedIngredientsList.includes(ing));
+              }
+              
+              // Only add meal if it has ingredients
+              if (mealIngredients.length > 0) {
+                grouped.push({ [mealData.name]: mealIngredients });
+              }
+            }
+          });
+        });
       }
 
-      // Create a modified meal plan with only selected ingredients
+      // Filter ingredients based on selection if needed
+      let filteredIngredients = selectedIngredientsList.length > 0 ? selectedIngredientsList : ingredients;
+      let filteredWeights: { [ingredient: string]: { amount: number, unit: string } } = {};
+      let filteredCategorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
+      
+      if (selectedIngredientsList.length > 0) {
+        // Filter weights and categorized based on selected ingredients
+        selectedIngredientsList.forEach(ingredient => {
+          if (weights[ingredient]) {
+            filteredWeights[ingredient] = weights[ingredient];
+          }
+        });
+        
+        Object.entries(categorized).forEach(([category, items]) => {
+          const filteredItems = items.filter(item => selectedIngredientsList.includes(item.name));
+          if (filteredItems.length > 0) {
+            filteredCategorized[category] = filteredItems;
+          }
+        });
+      } else {
+        // Use all ingredients if nothing is selected
+        filteredIngredients = ingredients;
+        filteredWeights = weights;
+        filteredCategorized = categorized;
+      }
+
+      // Create a modified meal plan with extracted ingredients data
       const modifiedMealPlan = {
         ...mealPlan,
-        selectedIngredients: selectedIngredientsList
+        selectedIngredients: filteredIngredients,
+        extractedIngredients: {
+          consolidated: filteredIngredients,
+          weights: filteredWeights,
+          categorized: filteredCategorized,
+          grouped: grouped
+        }
       };
 
       await generateShoppingListPDF(modifiedMealPlan);
       toast.success('Shopping list downloaded successfully!');
-      onClose();
     } catch (error) {
       console.error('Error generating shopping list PDF:', error);
       toast.error('Failed to generate shopping list PDF');
@@ -217,7 +464,11 @@ export default function ShoppingListModal({
       // Generate ingredients JSON in the format expected by Amazon using only selected ingredients
       const ingredientsData = {
         ingredients: selectedIngredientsList.map((ingredient, index) => {
-          const weight = weights[ingredient];
+          // Get weight from day-wise data if on day tab, otherwise from consolidated weights
+          const weight = activeTab === 'day' && dayWise 
+            ? getDayWiseWeightsForIngredient(ingredient)
+            : weights[ingredient];
+          
           let unit = 'COUNT';
           let amount = 1;
           const unitReceived = weight?.unit?.toLowerCase() || 'count';
@@ -339,7 +590,7 @@ export default function ShoppingListModal({
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shopping List</h2>
             <button
               onClick={handleDownloadPDF}
-              disabled={isSubmitting || selectedIngredients.size === 0}
+              disabled={isSubmitting}
               className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={isSubmitting ? 'Generating...' : 'Download as PDF'}
             >
@@ -365,10 +616,38 @@ export default function ShoppingListModal({
                 Ingredients for {formatDate(new Date(mealPlan.weekStartDate))} week:
               </h3>
             </div>
+
+            {/* Tabs */}
+            {dayWise && (
+              <div className="flex border-b border-gray-200 mb-4">
+                <button
+                  onClick={() => setActiveTab('category')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'category'
+                      ? 'text-blue-600 border-blue-600'
+                      : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  By Category
+                </button>
+                <button
+                  onClick={() => setActiveTab('day')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'day'
+                      ? 'text-blue-600 border-blue-600'
+                      : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  By Day
+                </button>
+              </div>
+            )}
             
             {ingredients.length > 0 ? (
               <div className="space-y-4">
-                {Object.entries(categorized).length > 0 ? (
+                {/* Category View */}
+                {activeTab === 'category' && (
+                  Object.entries(categorized).length > 0 ? (
                   // Render categorized ingredients
                   Object.entries(categorized).map(([category, items]) => {
                     // Define category colors
@@ -431,13 +710,22 @@ export default function ShoppingListModal({
                                   ? 'bg-blue-50 border-blue-200 shadow-sm'
                                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                               }`}
-                              onClick={() => handleIngredientToggle(ingredientIndex)}
+                              onClick={(e) => {
+                                // Don't trigger if clicking directly on the checkbox
+                                if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                                  handleIngredientToggle(ingredientIndex);
+                                }
+                              }}
                             >
                               <input
                                 type="checkbox"
                                 checked={selectedIngredients.has(ingredientIndex)}
-                                onChange={() => handleIngredientToggle(ingredientIndex)}
-                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleIngredientToggle(ingredientIndex);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
                               />
                               <div className="flex-1">
                                 <span className={`font-medium text-sm sm:text-base ${
@@ -467,7 +755,7 @@ export default function ShoppingListModal({
                       </div>
                     );
                   })
-                ) : (
+                  ) : (
                   // Fallback to simple list if no categorized data
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     {ingredients.map((ingredient, index) => (
@@ -478,13 +766,22 @@ export default function ShoppingListModal({
                             ? 'bg-blue-50 border-blue-200 shadow-sm'
                             : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                         }`}
-                        onClick={() => handleIngredientToggle(index)}
+                        onClick={(e) => {
+                          // Don't trigger if clicking directly on the checkbox
+                          if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                            handleIngredientToggle(index);
+                          }
+                        }}
                       >
                         <input
                           type="checkbox"
                           checked={selectedIngredients.has(index)}
-                          onChange={() => handleIngredientToggle(index)}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleIngredientToggle(index);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
                         />
                         <div className="flex-1">
                           <span className={`font-medium text-sm sm:text-base ${
@@ -512,6 +809,203 @@ export default function ShoppingListModal({
                       </div>
                     ))}
                   </div>
+                  )
+                )}
+
+                {/* Day View */}
+                {activeTab === 'day' && dayWise && Object.entries(dayWise).length > 0 && (
+                  <div className="space-y-2">
+                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                      const dayMeals = dayWise[day];
+                      if (!dayMeals || Object.keys(dayMeals).length === 0) return null;
+
+                      const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+                      const dayDate = new Date(mealPlan.weekStartDate);
+                      const dayOffset = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+                      dayDate.setDate(dayDate.getDate() + dayOffset);
+
+                      // Count selected ingredients for this day
+                      const dayIngredients = new Set<string>();
+                      Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+                        if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+                          mealData.ingredients.forEach((ingredient: any) => {
+                            if (ingredient?.name) {
+                              dayIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+                            }
+                          });
+                        }
+                      });
+                      const allDaySelected = Array.from(dayIngredients).every(key => selectedDayIngredients.has(key));
+                      const hasDaySelection = Array.from(dayIngredients).some(key => selectedDayIngredients.has(key));
+
+                      const isExpanded = expandedDays.has(day);
+
+                      return (
+                        <div key={day} className={`space-y-3 ${isExpanded ? 'mb-4' : ''}`}>
+                          <div className="bg-gray-50 border-l-4 border-blue-500 rounded px-3 py-2.5 flex items-center justify-between">
+                            <button
+                              onClick={() => handleDayToggle(day)}
+                              className="flex items-center gap-2.5 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-600" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-600" />
+                              )}
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-semibold text-gray-900">
+                                  {dayName}
+                                </h4>
+                                <span className="text-xs text-gray-500 font-normal">
+                                  {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDaySelectAll(day);
+                              }}
+                              className={`text-xs px-2 py-1 rounded transition-colors ${
+                                allDaySelected
+                                  ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
+                                  : 'text-blue-600 hover:bg-blue-50'
+                              }`}
+                            >
+                              {allDaySelected ? 'Deselect All' : 'Select All'}
+                            </button>
+                          </div>
+                          
+                          {isExpanded && Object.entries(dayMeals).map(([mealType, mealData]) => {
+                            // Safety check for mealData structure
+                            if (!mealData || typeof mealData !== 'object') {
+                              console.warn(`Invalid mealData for ${day}/${mealType}:`, mealData);
+                              return null;
+                            }
+
+                            if (!Array.isArray(mealData.ingredients) || mealData.ingredients.length === 0) {
+                              console.warn(`No ingredients for ${day}/${mealType}:`, mealData);
+                              return null;
+                            }
+
+                            // Count selected ingredients for this meal
+                            const mealIngredients = new Set<string>();
+                            if (mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+                              mealData.ingredients.forEach((ingredient: any) => {
+                                if (ingredient?.name) {
+                                  mealIngredients.add(`${day}||${mealType}||${ingredient.name}`);
+                                }
+                              });
+                            }
+                            const allMealSelected = Array.from(mealIngredients).every(key => selectedDayIngredients.has(key));
+
+                            const imageUrl = mealPlan.imageURLs?.[day]?.[mealType];
+                            const baseUrl = process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL || '';
+                            const fullImageUrl = imageUrl ? baseUrl + imageUrl : null;
+
+                            return (
+                            <div key={`${day}-${mealType}`} className="space-y-2">
+                              <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  {fullImageUrl && (
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={fullImageUrl}
+                                        alt={mealData.name || 'Meal'}
+                                        className="w-12 h-12 rounded-lg object-cover border border-gray-300"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <span className="text-xs font-medium text-gray-600 uppercase tracking-wide block">
+                                      {mealType.replace(/([A-Z])/g, ' $1').trim()}
+                                    </span>
+                                    <h5 className="text-sm font-semibold text-gray-800 mt-0.5">
+                                      {mealData.name || 'Meal'}
+                                    </h5>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleMealSelectAll(day, mealType)}
+                                  className={`text-xs px-2 py-1 rounded transition-colors flex-shrink-0 ${
+                                    allMealSelected
+                                      ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
+                                      : 'text-blue-600 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {allMealSelected ? 'Deselect' : 'Select All'}
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {mealData.ingredients.map((ingredient, idx) => {
+                                  // Safety check for ingredient structure
+                                  if (!ingredient || !ingredient.name) {
+                                    console.warn(`Invalid ingredient at ${day}/${mealType}[${idx}]:`, ingredient);
+                                    return null;
+                                  }
+
+                                  const ingredientKey = `${day}||${mealType}||${ingredient.name}`;
+                                  const isSelected = selectedDayIngredients.has(ingredientKey);
+                                  
+                                  return (
+                                    <div
+                                      key={`${day}-${mealType}-${idx}`}
+                                      className={`flex items-center p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-blue-50 border-blue-200 shadow-sm'
+                                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                      }`}
+                                      onClick={(e) => {
+                                        // Don't trigger if clicking directly on the checkbox
+                                        if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                                          handleDayIngredientToggle(ingredientKey);
+                                        }
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          handleDayIngredientToggle(ingredientKey);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
+                                      />
+                                      <div className="flex-1">
+                                        <span className={`font-medium text-sm sm:text-base ${
+                                          isSelected ? 'text-blue-900' : 'text-gray-800'
+                                        }`}>
+                                          {ingredient.name.split(' ').map(word => 
+                                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                          ).join(' ')}
+                                          <span className={`text-xs font-normal ml-1 ${
+                                            isSelected ? 'text-blue-600' : 'text-gray-500'
+                                          }`}>
+                                            {(() => {
+                                              if (ingredient.unit.toLowerCase() === 'g' && ingredient.amount >= 1000) {
+                                                const kgAmount = Math.round((ingredient.amount / 1000) * 100) / 100;
+                                                return `(${kgAmount} kg)`;
+                                              }
+                                              return `(${ingredient.amount} ${ingredient.unit})`;
+                                            })()}
+                                          </span>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                }).filter(Boolean)}
+                              </div>
+                            </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    }).filter(Boolean)}
+                  </div>
                 )}
               </div>
             ) : (
@@ -526,7 +1020,10 @@ export default function ShoppingListModal({
         {/* Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 gap-3 sm:gap-0 flex-shrink-0 rounded-b-2xl">
           <div className="text-sm text-gray-600 text-center sm:text-left">
-            {selectedIngredients.size} of {ingredients.length} ingredient{ingredients.length !== 1 ? 's' : ''} selected
+            {activeTab === 'day' && dayWise 
+              ? `${selectedDayIngredients.size} ingredient${selectedDayIngredients.size !== 1 ? 's' : ''} selected`
+              : `${selectedIngredients.size} of ${ingredients.length} ingredient${ingredients.length !== 1 ? 's' : ''} selected`
+            }
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
@@ -539,7 +1036,7 @@ export default function ShoppingListModal({
             
             <button
               onClick={handleShopOnAmazon}
-              disabled={selectedIngredients.size === 0}
+              disabled={activeTab === 'day' && dayWise ? selectedDayIngredients.size === 0 : selectedIngredients.size === 0}
               className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
