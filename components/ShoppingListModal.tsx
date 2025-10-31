@@ -814,7 +814,7 @@ export default function ShoppingListModal({
 
                 {/* Day View */}
                 {activeTab === 'day' && dayWise && Object.entries(dayWise).length > 0 && (
-                  <div className="space-y-6">
+                  <div className="space-y-2">
                     {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
                       const dayMeals = dayWise[day];
                       if (!dayMeals || Object.keys(dayMeals).length === 0) return null;
@@ -841,23 +841,25 @@ export default function ShoppingListModal({
                       const isExpanded = expandedDays.has(day);
 
                       return (
-                        <div key={day} className="space-y-3">
-                          <div className="border-b border-gray-200 pb-2 flex items-center justify-between">
+                        <div key={day} className={`space-y-3 ${isExpanded ? 'mb-4' : ''}`}>
+                          <div className="bg-gray-50 border-l-4 border-blue-500 rounded px-3 py-2.5 flex items-center justify-between">
                             <button
                               onClick={() => handleDayToggle(day)}
-                              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                              className="flex items-center gap-2.5 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
                             >
                               {isExpanded ? (
-                                <ChevronDown className="w-4 h-4" />
+                                <ChevronDown className="w-4 h-4 text-gray-600" />
                               ) : (
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className="w-4 h-4 text-gray-600" />
                               )}
-                              <h4>
-                                {dayName}
-                                <span className="ml-2 text-xs text-gray-500 font-normal">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-semibold text-gray-900">
+                                  {dayName}
+                                </h4>
+                                <span className="text-xs text-gray-500 font-normal">
                                   {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </span>
-                              </h4>
+                              </div>
                             </button>
                             <button
                               onClick={(e) => {
