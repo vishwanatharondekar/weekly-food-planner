@@ -1167,16 +1167,21 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       // Convert to format expected by PDF generator
       const pdfMeals: { [day: string]: { [mealType: string]: string } } = {};
       const videoURLs: { [day: string]: { [mealType: string]: string } } = {};
+      const imageURLs: { [day: string]: { [mealType: string]: string } } = {};
       
       DAYS_OF_WEEK.forEach(day => {
         pdfMeals[day] = {};
         videoURLs[day] = {};
+        imageURLs[day] = {};
         mealSettings.enabledMealTypes.forEach(mealType => {
           const meal = meals[day]?.[mealType];
           if (meal) {
             pdfMeals[day][mealType] = meal.name;
             if (meal.videoUrl) {
               videoURLs[day][mealType] = meal.videoUrl;
+            }
+            if (meal.imageUrl) {
+              imageURLs[day][mealType] = meal.imageUrl;
             }
           }
         });
@@ -1243,6 +1248,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         userInfo: user,
         mealSettings,
         videoURLs,
+        imageURLs,
         targetLanguage: userLanguage
       };
 

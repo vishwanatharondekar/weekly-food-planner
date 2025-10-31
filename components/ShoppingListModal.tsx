@@ -18,6 +18,7 @@ interface ShoppingListModalProps {
     userInfo: any;
     mealSettings: any;
     videoURLs: { [day: string]: { [mealType: string]: string } };
+    imageURLs?: { [day: string]: { [mealType: string]: string } };
     targetLanguage: string;
   };
   dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
@@ -37,7 +38,7 @@ export default function ShoppingListModal({
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'category' | 'day'>('category');
   const [selectedDayIngredients, setSelectedDayIngredients] = useState<Set<string>>(new Set());
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']));
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
@@ -848,20 +849,38 @@ export default function ShoppingListModal({
                             }
                             const allMealSelected = Array.from(mealIngredients).every(key => selectedDayIngredients.has(key));
 
+                            const imageUrl = mealPlan.imageURLs?.[day]?.[mealType];
+                            const baseUrl = process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL || '';
+                            const fullImageUrl = imageUrl ? baseUrl + imageUrl : null;
+
                             return (
                             <div key={`${day}-${mealType}`} className="space-y-2">
-                              <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 flex items-center justify-between">
-                                <div>
-                                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                                    {mealType.replace(/([A-Z])/g, ' $1').trim()}
-                                  </span>
-                                  <h5 className="text-sm font-semibold text-gray-800 mt-0.5">
-                                    {mealData.name || 'Meal'}
-                                  </h5>
+                              <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  {fullImageUrl && (
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={fullImageUrl}
+                                        alt={mealData.name || 'Meal'}
+                                        className="w-12 h-12 rounded-lg object-cover border border-gray-300"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <span className="text-xs font-medium text-gray-600 uppercase tracking-wide block">
+                                      {mealType.replace(/([A-Z])/g, ' $1').trim()}
+                                    </span>
+                                    <h5 className="text-sm font-semibold text-gray-800 mt-0.5">
+                                      {mealData.name || 'Meal'}
+                                    </h5>
+                                  </div>
                                 </div>
                                 <button
                                   onClick={() => handleMealSelectAll(day, mealType)}
-                                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                                  className={`text-xs px-2 py-1 rounded transition-colors flex-shrink-0 ${
                                     allMealSelected
                                       ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
                                       : 'text-blue-600 hover:bg-blue-50'
