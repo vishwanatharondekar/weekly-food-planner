@@ -48,7 +48,15 @@ export interface PDFMealPlan {
   };
   mealSettings?: MealSettings;
   videoURLs?: { [day: string]: { [mealType: string]: string } };
+  imageURLs?: { [day: string]: { [mealType: string]: string } };
   targetLanguage?: string; // Language code for translation
+  selectedIngredients?: string[];
+  extractedIngredients?: {
+    consolidated: string[];
+    weights: { [ingredient: string]: { amount: number, unit: string } };
+    categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
+    grouped: any[];
+  };
 }
 
 // Helper function to get video URL from meal data
@@ -506,9 +514,19 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       });
     });
 
-    // Extract ingredients from original meal names first
+    // Use already extracted ingredients if available, otherwise extract from meal names
     let ingredientsResult: { grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } } = { grouped: [], consolidated: [], weights: {}, categorized: {} };
-    if (originalMealNames.length > 0) {
+    
+    if (mealPlan.extractedIngredients) {
+      // Use the already extracted ingredients from the shopping list modal
+      ingredientsResult = {
+        grouped: mealPlan.extractedIngredients.grouped || [],
+        consolidated: mealPlan.extractedIngredients.consolidated || [],
+        weights: mealPlan.extractedIngredients.weights || {},
+        categorized: mealPlan.extractedIngredients.categorized || {}
+      };
+    } else if (originalMealNames.length > 0) {
+      // Fallback to API call if extracted ingredients not provided
       try {
         ingredientsResult = await extractIngredientsFromMeals(originalMealNames, mealPlan.mealSettings?.portions || 1);
       } catch (error) {

@@ -349,10 +349,64 @@ export default function ShoppingListModal({
       setIsSubmitting(true);
       const selectedIngredientsList = getSelectedIngredients();
 
-      // Create a modified meal plan with only selected ingredients
+      // Convert dayWise to grouped format for PDF
+      const grouped: any[] = [];
+      if (dayWise) {
+        Object.entries(dayWise).forEach(([day, dayMeals]) => {
+          Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+            if (mealData?.name && mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+              let mealIngredients = mealData.ingredients.map((ing: any) => ing.name);
+              
+              // Filter ingredients based on selection if needed
+              if (selectedIngredientsList.length > 0) {
+                mealIngredients = mealIngredients.filter(ing => selectedIngredientsList.includes(ing));
+              }
+              
+              // Only add meal if it has ingredients
+              if (mealIngredients.length > 0) {
+                grouped.push({ [mealData.name]: mealIngredients });
+              }
+            }
+          });
+        });
+      }
+
+      // Filter ingredients based on selection if needed
+      let filteredIngredients = selectedIngredientsList.length > 0 ? selectedIngredientsList : ingredients;
+      let filteredWeights: { [ingredient: string]: { amount: number, unit: string } } = {};
+      let filteredCategorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
+      
+      if (selectedIngredientsList.length > 0) {
+        // Filter weights and categorized based on selected ingredients
+        selectedIngredientsList.forEach(ingredient => {
+          if (weights[ingredient]) {
+            filteredWeights[ingredient] = weights[ingredient];
+          }
+        });
+        
+        Object.entries(categorized).forEach(([category, items]) => {
+          const filteredItems = items.filter(item => selectedIngredientsList.includes(item.name));
+          if (filteredItems.length > 0) {
+            filteredCategorized[category] = filteredItems;
+          }
+        });
+      } else {
+        // Use all ingredients if nothing is selected
+        filteredIngredients = ingredients;
+        filteredWeights = weights;
+        filteredCategorized = categorized;
+      }
+
+      // Create a modified meal plan with extracted ingredients data
       const modifiedMealPlan = {
         ...mealPlan,
-        selectedIngredients: selectedIngredientsList
+        selectedIngredients: filteredIngredients,
+        extractedIngredients: {
+          consolidated: filteredIngredients,
+          weights: filteredWeights,
+          categorized: filteredCategorized,
+          grouped: grouped
+        }
       };
 
       await generateShoppingListPDF(modifiedMealPlan);
