@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, FileDown, ShoppingCart } from 'lucide-react';
+import { X, FileDown, ShoppingCart, ChevronDown, ChevronRight } from 'lucide-react';
 import { generateShoppingListPDF } from '@/lib/pdf-generator';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -37,6 +37,7 @@ export default function ShoppingListModal({
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'category' | 'day'>('category');
   const [selectedDayIngredients, setSelectedDayIngredients] = useState<Set<string>>(new Set());
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']));
 
   useEffect(() => {
     if (isOpen) {
@@ -320,6 +321,18 @@ export default function ShoppingListModal({
         return newSet;
       });
     }
+  };
+
+  const handleDayToggle = (day: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(day)) {
+        newSet.delete(day);
+      } else {
+        newSet.add(day);
+      }
+      return newSet;
+    });
   };
 
 
@@ -776,17 +789,32 @@ export default function ShoppingListModal({
                       const allDaySelected = Array.from(dayIngredients).every(key => selectedDayIngredients.has(key));
                       const hasDaySelection = Array.from(dayIngredients).some(key => selectedDayIngredients.has(key));
 
+                      const isExpanded = expandedDays.has(day);
+
                       return (
                         <div key={day} className="space-y-3">
                           <div className="border-b border-gray-200 pb-2 flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-600">
-                              {dayName}
-                              <span className="ml-2 text-xs text-gray-500 font-normal">
-                                {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </span>
-                            </h4>
                             <button
-                              onClick={() => handleDaySelectAll(day)}
+                              onClick={() => handleDayToggle(day)}
+                              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                              <h4>
+                                {dayName}
+                                <span className="ml-2 text-xs text-gray-500 font-normal">
+                                  {dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </h4>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDaySelectAll(day);
+                              }}
                               className={`text-xs px-2 py-1 rounded transition-colors ${
                                 allDaySelected
                                   ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
@@ -797,7 +825,7 @@ export default function ShoppingListModal({
                             </button>
                           </div>
                           
-                          {Object.entries(dayMeals).map(([mealType, mealData]) => {
+                          {isExpanded && Object.entries(dayMeals).map(([mealType, mealData]) => {
                             // Safety check for mealData structure
                             if (!mealData || typeof mealData !== 'object') {
                               console.warn(`Invalid mealData for ${day}/${mealType}:`, mealData);
@@ -907,7 +935,7 @@ export default function ShoppingListModal({
                           })}
                         </div>
                       );
-                    })}
+                    }).filter(Boolean)}
                   </div>
                 )}
               </div>
