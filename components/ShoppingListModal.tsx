@@ -91,27 +91,28 @@ export default function ShoppingListModal({
       } else {
         newSet.add(index);
       }
+      
+      // Update category selection state based on ingredient selection using the NEW state
+      const ingredient = ingredients[index];
+      Object.entries(categorized).forEach(([category, items]) => {
+        const isIngredientInCategory = items.some(item => item.name === ingredient);
+        if (isIngredientInCategory) {
+          const categoryIndices = items.map(item => ingredients.indexOf(item.name)).filter(i => i !== -1);
+          const allCategoryIngredientsSelected = categoryIndices.every(i => newSet.has(i));
+          
+          setSelectedCategories(prevCategories => {
+            const newCategorySet = new Set(prevCategories);
+            if (allCategoryIngredientsSelected) {
+              newCategorySet.add(category);
+            } else {
+              newCategorySet.delete(category);
+            }
+            return newCategorySet;
+          });
+        }
+      });
+      
       return newSet;
-    });
-    
-    // Update category selection state based on ingredient selection
-    const ingredient = ingredients[index];
-    Object.entries(categorized).forEach(([category, items]) => {
-      const isIngredientInCategory = items.some(item => item.name === ingredient);
-      if (isIngredientInCategory) {
-        const categoryIndices = items.map(item => ingredients.indexOf(item.name)).filter(i => i !== -1);
-        const allCategoryIngredientsSelected = categoryIndices.every(i => selectedIngredients.has(i));
-        
-        setSelectedCategories(prev => {
-          const newSet = new Set(prev);
-          if (allCategoryIngredientsSelected) {
-            newSet.add(category);
-          } else {
-            newSet.delete(category);
-          }
-          return newSet;
-        });
-      }
     });
   };
 
@@ -647,13 +648,22 @@ export default function ShoppingListModal({
                                   ? 'bg-blue-50 border-blue-200 shadow-sm'
                                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                               }`}
-                              onClick={() => handleIngredientToggle(ingredientIndex)}
+                              onClick={(e) => {
+                                // Don't trigger if clicking directly on the checkbox
+                                if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                                  handleIngredientToggle(ingredientIndex);
+                                }
+                              }}
                             >
                               <input
                                 type="checkbox"
                                 checked={selectedIngredients.has(ingredientIndex)}
-                                onChange={() => handleIngredientToggle(ingredientIndex)}
-                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleIngredientToggle(ingredientIndex);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
                               />
                               <div className="flex-1">
                                 <span className={`font-medium text-sm sm:text-base ${
@@ -694,13 +704,22 @@ export default function ShoppingListModal({
                             ? 'bg-blue-50 border-blue-200 shadow-sm'
                             : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                         }`}
-                        onClick={() => handleIngredientToggle(index)}
+                        onClick={(e) => {
+                          // Don't trigger if clicking directly on the checkbox
+                          if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                            handleIngredientToggle(index);
+                          }
+                        }}
                       >
                         <input
                           type="checkbox"
                           checked={selectedIngredients.has(index)}
-                          onChange={() => handleIngredientToggle(index)}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleIngredientToggle(index);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
                         />
                         <div className="flex-1">
                           <span className={`font-medium text-sm sm:text-base ${
@@ -842,13 +861,22 @@ export default function ShoppingListModal({
                                           ? 'bg-blue-50 border-blue-200 shadow-sm'
                                           : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                                       }`}
-                                      onClick={() => handleDayIngredientToggle(ingredientKey)}
+                                      onClick={(e) => {
+                                        // Don't trigger if clicking directly on the checkbox
+                                        if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                                          handleDayIngredientToggle(ingredientKey);
+                                        }
+                                      }}
                                     >
                                       <input
                                         type="checkbox"
                                         checked={isSelected}
-                                        onChange={() => handleDayIngredientToggle(ingredientKey)}
-                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0"
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          handleDayIngredientToggle(ingredientKey);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-3 flex-shrink-0 cursor-pointer"
                                       />
                                       <div className="flex-1">
                                         <span className={`font-medium text-sm sm:text-base ${
