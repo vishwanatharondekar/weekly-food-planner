@@ -411,7 +411,6 @@ export default function ShoppingListModal({
 
       await generateShoppingListPDF(modifiedMealPlan);
       toast.success('Shopping list downloaded successfully!');
-      onClose();
     } catch (error) {
       console.error('Error generating shopping list PDF:', error);
       toast.error('Failed to generate shopping list PDF');
