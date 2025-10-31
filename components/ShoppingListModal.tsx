@@ -348,11 +348,6 @@ export default function ShoppingListModal({
     try {
       setIsSubmitting(true);
       const selectedIngredientsList = getSelectedIngredients();
-      
-      if (selectedIngredientsList.length === 0) {
-        toast.error('Please select at least one ingredient');
-        return;
-      }
 
       // Create a modified meal plan with only selected ingredients
       const modifiedMealPlan = {
@@ -542,7 +537,7 @@ export default function ShoppingListModal({
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Shopping List</h2>
             <button
               onClick={handleDownloadPDF}
-              disabled={isSubmitting || (activeTab === 'day' && dayWise ? selectedDayIngredients.size === 0 : selectedIngredients.size === 0)}
+              disabled={isSubmitting}
               className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={isSubmitting ? 'Generating...' : 'Download as PDF'}
             >
