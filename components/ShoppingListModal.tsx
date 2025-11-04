@@ -47,11 +47,8 @@ export default function ShoppingListModal({
       
       // Log the dayWise structure for debugging
       if (dayWise) {
-        console.log('DayWise data received:', dayWise);
         Object.entries(dayWise).forEach(([day, dayMeals]) => {
-          console.log(`Day: ${day}`, dayMeals);
           Object.entries(dayMeals).forEach(([mealType, mealData]) => {
-            console.log(`  MealType: ${mealType}`, mealData);
             if (!mealData || !Array.isArray(mealData.ingredients)) {
               console.warn(`  WARNING: Invalid ingredients structure for ${day}/${mealType}`);
             }
