@@ -5,6 +5,7 @@ import { X, FileDown, ShoppingCart, ChevronDown, ChevronRight } from 'lucide-rea
 import { generateShoppingListPDF } from '@/lib/pdf-generator';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { analytics } from '@/lib/analytics';
 
 interface ShoppingListModalProps {
   isOpen: boolean;
@@ -46,11 +47,8 @@ export default function ShoppingListModal({
       
       // Log the dayWise structure for debugging
       if (dayWise) {
-        console.log('DayWise data received:', dayWise);
         Object.entries(dayWise).forEach(([day, dayMeals]) => {
-          console.log(`Day: ${day}`, dayMeals);
           Object.entries(dayMeals).forEach(([mealType, mealData]) => {
-            console.log(`  MealType: ${mealType}`, mealData);
             if (!mealData || !Array.isArray(mealData.ingredients)) {
               console.warn(`  WARNING: Invalid ingredients structure for ${day}/${mealType}`);
             }
@@ -560,6 +558,20 @@ export default function ShoppingListModal({
       ingredientsField.value = JSON.stringify(ingredientsData);
       form.appendChild(ingredientsField);
 
+      // Track analytics event
+      analytics.trackEvent({
+        action: 'shop_on_amazon_click',
+        category: 'shopping',
+        label: `amazon_${amazonRegion}`,
+        custom_parameters: {
+          ingredient_count: selectedIngredientsList.length,
+          amazon_region: amazonRegion,
+          active_tab: activeTab,
+          week_start: mealPlan.weekStartDate,
+          user_id: mealPlan.userInfo?.id || mealPlan.userInfo?.uid || null,
+        },
+      });
+
       // Submit the form
       document.body.appendChild(form);
       form.submit();
@@ -739,7 +751,7 @@ export default function ShoppingListModal({
                                   }`}>
                                     {(() => {
                                       // Convert grams to kilograms for display if 1000g or more
-                                      if (item.unit.toLowerCase() === 'g' && item.amount >= 1000) {
+                                      if (item.unit?.toLowerCase() === 'g' && item.amount >= 1000) {
                                         const kgAmount = Math.round((item.amount / 1000) * 100) / 100;
                                         return `(${kgAmount} kg)`;
                                       }

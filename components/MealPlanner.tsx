@@ -430,7 +430,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       });
 
       if (imagesUpdated > 0) {
-        console.log(`Updated ${imagesUpdated} meals with new images`);
         setMeals(updatedMeals);
       }
 
@@ -592,7 +591,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       });
 
       if (imagesUpdated > 0) {
-        console.log(`Updated ${imagesUpdated} cook mode meals with new images`);
         setCookModeData(updatedMeals);
       }
 
@@ -835,7 +833,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const generateAIMeals = () => {
-    console.log('AI button clicked - checking for empty slots first');
     
     // First check if there are empty slots
     if (!hasEmptySlots()) {
@@ -843,7 +840,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       return;
     }
     
-    console.log('Empty slots found - checking guest limits');
     
     // Check guest usage limits before opening preferences modal
     if (isGuestUser(user?.id)) {
@@ -859,12 +855,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         }
     }
     
-    console.log('Opening preferences modal for AI generation');
     setShowPreferencesModal(true);
   };
 
   const handlePreferencesConfirm = async (preferences: any) => {
-    console.log('Updating preferences and generating AI meals');
     setIsUpdatingPreferences(true);
     
     try {
