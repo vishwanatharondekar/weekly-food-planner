@@ -835,7 +835,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const generateAIMeals = () => {
-    console.log('AI button clicked - checking for empty slots first');
     
     // First check if there are empty slots
     if (!hasEmptySlots()) {
@@ -843,7 +842,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       return;
     }
     
-    console.log('Empty slots found - checking guest limits');
     
     // Check guest usage limits before opening preferences modal
     if (isGuestUser(user?.id)) {
@@ -859,7 +857,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         }
     }
     
-    console.log('Opening preferences modal for AI generation');
     setShowPreferencesModal(true);
   };
 
