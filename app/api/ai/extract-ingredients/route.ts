@@ -210,11 +210,6 @@ Return only the JSON object, nothing else.
       
       // Validate the structure
       if (result.grouped && result.consolidated) {
-        console.log('AI response structure:', {
-          hasDayWise: !!result.dayWise,
-          dayWiseType: typeof result.dayWise,
-          dayWiseKeys: result.dayWise ? Object.keys(result.dayWise) : []
-        });
         
         return {
           grouped: Array.isArray(result.grouped) ? result.grouped : [],
