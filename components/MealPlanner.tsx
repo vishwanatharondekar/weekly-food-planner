@@ -430,7 +430,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       });
 
       if (imagesUpdated > 0) {
-        console.log(`Updated ${imagesUpdated} meals with new images`);
         setMeals(updatedMeals);
       }
 
@@ -592,7 +591,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       });
 
       if (imagesUpdated > 0) {
-        console.log(`Updated ${imagesUpdated} cook mode meals with new images`);
         setCookModeData(updatedMeals);
       }
 
@@ -861,7 +859,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   };
 
   const handlePreferencesConfirm = async (preferences: any) => {
-    console.log('Updating preferences and generating AI meals');
     setIsUpdatingPreferences(true);
     
     try {
