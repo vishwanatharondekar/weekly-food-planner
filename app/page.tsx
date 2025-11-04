@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { getWeekStartDate, formatDate, getPlanUrl } from '@/lib/utils';
 import AuthForm from '@/components/AuthForm';
 import StorageInitializer from '@/components/StorageInitializer';
+import { analytics } from '@/lib/analytics';
 import { 
   Calendar, 
   ShoppingCart, 
@@ -44,6 +45,26 @@ export default function LandingPage() {
       setIsCheckingAuth(false);
     }
   }, [router]);
+
+  // Track landing page view - fires only once per session
+  useEffect(() => {
+    // Only track if we're showing the landing page (not auth form or loading)
+    if (!isCheckingAuth && !showAuthForm) {
+      const hasTracked = sessionStorage.getItem('landing_page_viewed');
+      if (!hasTracked) {
+        analytics.trackEvent({
+          action: 'landing_page_viewed',
+          category: 'navigation',
+          label: 'root_landing_page',
+          custom_parameters: {
+            page_path: '/',
+            timestamp: new Date().toISOString(),
+          },
+        });
+        sessionStorage.setItem('landing_page_viewed', 'true');
+      }
+    }
+  }, [isCheckingAuth, showAuthForm]);
 
   const handleAuthSuccess = (token: string, user: any) => {
     // Redirect to home page to check meal availability and redirect appropriately
