@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 
 interface FullScreenLoaderProps {
@@ -8,15 +8,47 @@ interface FullScreenLoaderProps {
   onCancel?: () => void;
   message: string;
   subMessage?: string;
+  dynamicMessages?: string[];
+  dynamicMessageInterval?: number;
 }
 
 export default function FullScreenLoader({ 
   isVisible, 
   onCancel, 
   message, 
-  subMessage 
+  subMessage,
+  dynamicMessages = [],
+  dynamicMessageInterval = 3500
 }: FullScreenLoaderProps) {
+  const [currentDynamicMessage, setCurrentDynamicMessage] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible || dynamicMessages.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentDynamicMessage((prev) => {
+        const next = (prev + 1) % dynamicMessages.length;
+        setFadeKey(prev => prev + 1); // Trigger fade animation
+        return next;
+      });
+    }, dynamicMessageInterval);
+
+    return () => clearInterval(interval);
+  }, [isVisible, dynamicMessages.length, dynamicMessageInterval]);
+
+  useEffect(() => {
+    if (isVisible && dynamicMessages.length > 0) {
+      setCurrentDynamicMessage(0);
+      setFadeKey(0);
+    }
+  }, [isVisible, message]);
+
   if (!isVisible) return null;
+
+  const displaySubMessage = dynamicMessages.length > 0 
+    ? dynamicMessages[currentDynamicMessage]
+    : subMessage;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -46,10 +78,13 @@ export default function FullScreenLoader({
             {message}
           </h3>
           
-          {/* Sub message */}
-          {subMessage && (
-            <p className="text-gray-600 text-sm">
-              {subMessage}
+          {/* Sub message with fade animation for dynamic messages */}
+          {displaySubMessage && (
+            <p 
+              key={`${fadeKey}-${currentDynamicMessage}`}
+              className="text-gray-600 text-sm min-h-[1.5rem] animate-fade-in"
+            >
+              {displaySubMessage}
             </p>
           )}
           

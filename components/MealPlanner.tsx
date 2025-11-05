@@ -76,6 +76,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [showLoader, setShowLoader] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState('');
   const [loaderSubMessage, setLoaderSubMessage] = useState('');
+  const [loaderDynamicMessages, setLoaderDynamicMessages] = useState<string[]>([]);
   
   // Image loading states
   const [imagesLoading, setImagesLoading] = useState<Set<string>>(new Set());
@@ -202,9 +203,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
 
   // Helper functions for loader management
-  const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string) => {
+  const showFullScreenLoader = (operation: 'ai' | 'pdf' | 'shopping', message: string, subMessage?: string, dynamicMessages?: string[]) => {
     setLoaderMessage(message);
     setLoaderSubMessage(subMessage || '');
+    setLoaderDynamicMessages(dynamicMessages || []);
     setShowLoader(true);
   };
 
@@ -212,6 +214,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setShowLoader(false);
     setLoaderMessage('');
     setLoaderSubMessage('');
+    setLoaderDynamicMessages([]);
   };
 
   const handleLoaderCancel = () => {
@@ -1134,7 +1137,16 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         }
       }
 
-      showFullScreenLoader('shopping', 'Analyzing Ingredients', 'Extracting ingredients from your planned meals...');
+      // Dynamic thinking messages for ingredient extraction
+      const dynamicMessages = [
+        'Analyzing your meal plan...',
+        'Identifying ingredients needed...',
+        'Calculating quantities...',
+        'Organizing by category...',
+        'Almost done...'
+      ];
+
+      showFullScreenLoader('shopping', 'Extracting Ingredients', undefined, dynamicMessages);
       
       // Track shopping list generation event
       analytics.trackEvent({
@@ -1173,9 +1185,6 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           }
         });
       });
-
-      setLoaderMessage('Extracting Ingredients');
-      setLoaderSubMessage('Analyzing meal names and extracting ingredients...');
 
       // Extract ingredients from meal names
       const mealNames: string[] = [];
@@ -1527,6 +1536,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         onCancel={handleLoaderCancel}
         message={loaderMessage}
         subMessage={loaderSubMessage}
+        dynamicMessages={loaderDynamicMessages}
       />
 
       {/* Preferences Edit Modal */}
