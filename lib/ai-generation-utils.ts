@@ -41,6 +41,7 @@ If uncertain, default to a vegetarian option.`;
     returnString += `\n\nHealth Preference: User prefers healthy, nutritious, and balanced meals.`;
     returnString += `\nPrioritize meals with: whole grains, vegetables, lean proteins, and minimal processed foods.`;
     returnString += `\nFocus on nutrient-dense options that support overall wellness.`;
+    returnString += `\nprefer high protein items.`;
   }
 
   // Add calorie information if enabled

@@ -133,7 +133,7 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
 
           {/* Non-Vegetarian Days Selection */}
           {!isVegetarian && (
-            <div className="mb-5">
+            <div className="mb-5 pb-5 border-b border-gray-200">
               <button
                 onClick={() => setShowNonVegDays(!showNonVegDays)}
                 className="w-full flex items-center justify-between mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -180,7 +180,7 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
           )}
 
           {/* Prefer Healthy & Dietary Restrictions */}
-          <div className="mb-5">
+          <div className="mb-5 pb-5 border-b border-gray-200">
             <div className="flex items-center mb-3">
               <div className="p-2 bg-blue-100 rounded-full mr-3">
                 <Heart className="w-5 h-5 text-blue-600" />
@@ -191,7 +191,10 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               {/* Prefer Healthy */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Prefer healthy meals</span>
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Prefer healthy meals</span>
+                  <p className="text-xs text-gray-500 mt-0.5">(prefer high protein items)</p>
+                </div>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
