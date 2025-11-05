@@ -10,7 +10,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 interface CuisineOnboardingProps {
-  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => void;
+  onComplete: (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => void;
   onCreateGuestUser: () => Promise<void>;
   isUserAuthenticated?: boolean;
 }
@@ -18,7 +18,7 @@ interface CuisineOnboardingProps {
 export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUserAuthenticated = false }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
-  const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number } | null>(null);
+  const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean } | null>(null);
   const [currentStep, setCurrentStep] = useState<'welcome' | 'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('welcome');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,7 +51,7 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUse
     }
   };
 
-  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => {
+  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => {
     setDietaryPreferences(preferences);
     setCurrentStep('breakfast');
   };

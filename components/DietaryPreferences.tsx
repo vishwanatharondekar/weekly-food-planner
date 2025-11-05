@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Leaf, Beef, Plus, Minus } from 'lucide-react';
+import { Settings, Leaf, Beef, Plus, Minus, Heart, ChevronDown, ChevronUp, Shield, Ban } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
@@ -25,8 +25,13 @@ interface DietaryPreferencesProps {
 export default function DietaryPreferences({ user, onClose, onUserUpdate }: DietaryPreferencesProps) {
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [nonVegDays, setNonVegDays] = useState<string[]>([]);
+  const [showNonVegDays, setShowNonVegDays] = useState(false);
   const [showCalories, setShowCalories] = useState(false);
   const [dailyCalorieTarget, setDailyCalorieTarget] = useState<number>(2000);
+  const [preferHealthy, setPreferHealthy] = useState(false);
+  const [glutenFree, setGlutenFree] = useState(false);
+  const [nutsFree, setNutsFree] = useState(false);
+  const [lactoseIntolerant, setLactoseIntolerant] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -39,9 +44,13 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
       const preferences = await authAPI.getDietaryPreferences();
       if (preferences) {
         setIsVegetarian(preferences.isVegetarian);
-        setNonVegDays(preferences.nonVegDays);
+        setNonVegDays(preferences.nonVegDays || []);
         setShowCalories(preferences.showCalories || false);
         setDailyCalorieTarget(preferences.dailyCalorieTarget || 2000);
+        setPreferHealthy(preferences.preferHealthy || false);
+        setGlutenFree(preferences.glutenFree || false);
+        setNutsFree(preferences.nutsFree || false);
+        setLactoseIntolerant(preferences.lactoseIntolerant || false);
       }
     } catch (error) {
       console.error('Error loading dietary preferences:', error);
@@ -72,6 +81,10 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
         isVegetarian,
         showCalories,
         dailyCalorieTarget,
+        preferHealthy,
+        glutenFree,
+        nutsFree,
+        lactoseIntolerant,
       });
       
       // Track dietary preferences update
@@ -84,6 +97,10 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
           non_veg_days_count: nonVegDays.length,
           show_calories: showCalories,
           daily_calorie_target: dailyCalorieTarget,
+          prefer_healthy: preferHealthy,
+          gluten_free: glutenFree,
+          nuts_free: nutsFree,
+          lactose_intolerant: lactoseIntolerant,
           user_id: user?.id,
         },
       });
@@ -98,7 +115,11 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
             isVegetarian,
             nonVegDays,
             showCalories,
-            dailyCalorieTarget
+            dailyCalorieTarget,
+            preferHealthy,
+            glutenFree,
+            nutsFree,
+            lactoseIntolerant
           }
         };
         onUserUpdate(updatedUser);
@@ -180,44 +201,56 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
         {/* Non-Vegetarian Days Selection */}
         {!isVegetarian && (
           <div className="mb-8">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-red-100 rounded-full mr-4">
-                <Beef className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Non-Vegetarian Days</h3>
-                <p className="text-sm text-gray-600">Select days for meat/fish meals</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {DAYS_OF_WEEK.map(({ key, label }) => (
-                  <label key={key} className="flex items-center cursor-pointer p-2 rounded hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={nonVegDays.includes(key)}
-                      onChange={() => handleDayToggle(key)}
-                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                    />
-                    <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
-                  </label>
-                ))}
-              </div>
-              
-              {nonVegDays.length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-700 font-medium">
-                    Selected: {nonVegDays.map(day => 
-                      DAYS_OF_WEEK.find(d => d.key === day)?.label
-                    ).join(', ')}
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    AI will suggest meat/fish meals only on selected days.
-                  </p>
+            <button
+              onClick={() => setShowNonVegDays(!showNonVegDays)}
+              className="w-full flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center">
+                <div className="p-3 bg-red-100 rounded-full mr-4">
+                  <Beef className="w-6 h-6 text-red-600" />
                 </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold text-gray-900">Non-Vegetarian Days</h3>
+                  <p className="text-sm text-gray-600">Select days for meat/fish meals</p>
+                </div>
+              </div>
+              {showNonVegDays ? (
+                <ChevronUp className="w-5 h-5 text-gray-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-600" />
               )}
-            </div>
+            </button>
+            
+            {showNonVegDays && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {DAYS_OF_WEEK.map(({ key, label }) => (
+                    <label key={key} className="flex items-center cursor-pointer p-2 rounded hover:bg-gray-100 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={nonVegDays.includes(key)}
+                        onChange={() => handleDayToggle(key)}
+                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                
+                {nonVegDays.length > 0 && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-700 font-medium">
+                      Selected: {nonVegDays.map(day => 
+                        DAYS_OF_WEEK.find(d => d.key === day)?.label
+                      ).join(', ')}
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">
+                      AI will suggest meat/fish meals only on selected days.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -237,6 +270,136 @@ export default function DietaryPreferences({ user, onClose, onUserUpdate }: Diet
             </div>
           </div>
         )}
+
+        {/* Prefer Healthy Options */}
+        <div className="mb-8">
+          <div className="flex items-center mb-6">
+            <div className="p-3 bg-blue-100 rounded-full mr-4">
+              <Heart className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Prefer Healthy Options</h3>
+              <p className="text-sm text-gray-600">Prioritize nutritious and balanced meals</p>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">Prefer healthy meals</span>
+                <p className="text-xs text-gray-500 mt-1">AI will prioritize nutritious, balanced options</p>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={preferHealthy}
+                  onChange={(e) => setPreferHealthy(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                  preferHealthy ? 'bg-blue-500' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    preferHealthy ? 'translate-x-7' : 'translate-x-0'
+                  }`}></div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Dietary Restrictions */}
+        <div className="mb-8">
+          <div className="flex items-center mb-6">
+            <div className="p-3 bg-purple-100 rounded-full mr-4">
+              <Shield className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Dietary Restrictions</h3>
+              <p className="text-sm text-gray-600">Select any dietary restrictions you have</p>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            {/* Gluten Free */}
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center">
+                <Ban className="w-5 h-5 text-purple-600 mr-3" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Gluten Free</span>
+                  <p className="text-xs text-gray-500 mt-1">Exclude gluten-containing ingredients</p>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={glutenFree}
+                  onChange={(e) => setGlutenFree(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                  glutenFree ? 'bg-purple-500' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    glutenFree ? 'translate-x-7' : 'translate-x-0'
+                  }`}></div>
+                </div>
+              </label>
+            </div>
+
+            {/* Nuts Free */}
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center">
+                <Ban className="w-5 h-5 text-purple-600 mr-3" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Nuts Free</span>
+                  <p className="text-xs text-gray-500 mt-1">Exclude all nuts and tree nuts</p>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nutsFree}
+                  onChange={(e) => setNutsFree(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                  nutsFree ? 'bg-purple-500' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    nutsFree ? 'translate-x-7' : 'translate-x-0'
+                  }`}></div>
+                </div>
+              </label>
+            </div>
+
+            {/* Lactose Intolerant */}
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center">
+                <Ban className="w-5 h-5 text-purple-600 mr-3" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Lactose Intolerant</span>
+                  <p className="text-xs text-gray-500 mt-1">Exclude dairy and lactose-containing ingredients</p>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lactoseIntolerant}
+                  onChange={(e) => setLactoseIntolerant(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                  lactoseIntolerant ? 'bg-purple-500' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    lactoseIntolerant ? 'translate-x-7' : 'translate-x-0'
+                  }`}></div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
 
         {/* Calorie Tracking */}
         <div className="mb-8">

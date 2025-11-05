@@ -134,6 +134,10 @@ export const authAPI = {
     isVegetarian: boolean;
     showCalories?: boolean;
     dailyCalorieTarget?: number;
+    preferHealthy?: boolean;
+    glutenFree?: boolean;
+    nutsFree?: boolean;
+    lactoseIntolerant?: boolean;
   }) => {
     try {
       const token = localStorage.getItem('token');

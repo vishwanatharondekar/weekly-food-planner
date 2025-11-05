@@ -19,6 +19,30 @@ If uncertain, default to a vegetarian option.`;
     returnString += dietaryPreferences.nonVegDays ? `Non-vegetarian, User can eat non veg only on the days: ${dietaryPreferences.nonVegDays?.join(', ')}. Exclude any dish with meat, fish, or eggs on other days.` : `Non-vegetarian, User can eat non veg on any day. Have a mix of vegetarian and non-vegetarian meals.`;
   }
 
+  // Add dietary restrictions
+  const restrictions: string[] = [];
+  if (dietaryPreferences.glutenFree) {
+    restrictions.push('gluten-free (exclude wheat, barley, rye, and any gluten-containing ingredients)');
+  }
+  if (dietaryPreferences.nutsFree) {
+    restrictions.push('nuts-free (exclude all nuts, tree nuts, and nut-based products)');
+  }
+  if (dietaryPreferences.lactoseIntolerant) {
+    restrictions.push('lactose-free (exclude dairy products and lactose-containing ingredients)');
+  }
+
+  if (restrictions.length > 0) {
+    returnString += `\n\nDietary Restrictions: ${restrictions.join('; ')}.`;
+    returnString += `\nIMPORTANT: Strictly avoid all restricted ingredients. Never suggest dishes containing these ingredients.`;
+  }
+
+  // Add healthy preference
+  if (dietaryPreferences.preferHealthy) {
+    returnString += `\n\nHealth Preference: User prefers healthy, nutritious, and balanced meals.`;
+    returnString += `\nPrioritize meals with: whole grains, vegetables, lean proteins, and minimal processed foods.`;
+    returnString += `\nFocus on nutrient-dense options that support overall wellness.`;
+  }
+
   // Add calorie information if enabled
   if (dietaryPreferences.showCalories) {
     returnString += `\n\nCalorie Tracking: ENABLED`;

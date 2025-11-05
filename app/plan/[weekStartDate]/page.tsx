@@ -220,7 +220,7 @@ export default function PlanPage() {
     loadUserProfile();
   };
 
-  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => {
+  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => {
     try {
       // Save cuisine preferences
       await authAPI.updateCuisinePreferences({
@@ -235,6 +235,10 @@ export default function PlanPage() {
           nonVegDays: dietaryPreferences.nonVegDays,
           showCalories: dietaryPreferences.showCalories,
           dailyCalorieTarget: dietaryPreferences.dailyCalorieTarget,
+          preferHealthy: dietaryPreferences.preferHealthy,
+          glutenFree: dietaryPreferences.glutenFree,
+          nutsFree: dietaryPreferences.nutsFree,
+          lactoseIntolerant: dietaryPreferences.lactoseIntolerant,
         });
       }
       
