@@ -862,17 +862,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setIsUpdatingPreferences(true);
     
     try {
-      // Update user preferences
-      await authAPI.updateDishPreferences({
-        dishPreferences: preferences.dishPreferences,
-        onboardingCompleted: true,
-      });
-
-      // Update the user data in parent component
+      // Update the user data in parent component with ingredients
       if (onUserUpdate) {
         const updatedUser = {
           ...user,
-          dishPreferences: preferences.dishPreferences,
           ingredients: preferences.ingredients || [],
           customIngredients: preferences.customIngredients || []
         };

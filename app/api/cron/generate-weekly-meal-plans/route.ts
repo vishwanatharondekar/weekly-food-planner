@@ -184,10 +184,9 @@ async function getUsersForGeneration(weekStartDate: string): Promise<{users: any
       const historySnapshot = await getDocs(historyQuery);
       const hasHistory = !historySnapshot.empty;
 
-      // Skip if no history and no preferences
-      if (!hasHistory && cuisinePreferences.length === 0 && 
-          (dishPreferences.breakfast.length === 0 || dishPreferences.lunch_dinner.length === 0)) {
-        console.log(`Skipping user ${userData.email} - no history or preferences`);
+      // Skip if no history and no cuisine preferences
+      if (!hasHistory && cuisinePreferences.length === 0) {
+        console.log(`Skipping user ${userData.email} - no history or cuisine preferences`);
         continue;
       }
 

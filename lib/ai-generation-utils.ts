@@ -119,23 +119,16 @@ export async function generateAISuggestions(
     `Must use all of the following ingredients in at least one dish: ${ingredients.join(', ')}` :
     '';
 
-  // Prepare cuisine preferences and get available dishes
+  // Prepare cuisine preferences
   let cuisineInfo = 'No specific cuisine preferences';
-  let availableDishes = '';
   
-  // Get JSON format for the prompt (needed regardless of cuisine/dish preferences)
+  // Get JSON format for the prompt
   const showCalories = dietaryPreferences?.showCalories || false;
   const jsonFormat = getJsonFormat(mealSettings, showCalories);
   
-  // Check if user has specific dish preferences (from onboarding)
-  const hasDishPreferences = dishPreferences.breakfast.length > 0 && dishPreferences.lunch_dinner.length > 0;
-  
-  if (hasDishPreferences) {
-    // Use user's specific dish preferences from onboarding
+  // Use cuisine preferences for meal suggestions
+  if (cuisinePreferences.length > 0) {
     cuisineInfo = `Include authentic dishes from: ${cuisinePreferences.join(', ')} cuisine`;
-    availableDishes = `User likes following dishes:
-      Breakfast: ${dishPreferences.breakfast.join(', ')}
-      Lunch/Dinner: ${dishPreferences.lunch_dinner.join(', ')}`;
   }
 
   const calorieInstructions = showCalories 
@@ -150,21 +143,19 @@ ${dietaryPreferences?.dailyCalorieTarget ? `- Try to keep total daily calories a
 ${dietaryInfo}
 ${ingredientsInfo}
 ${cuisineInfo}
-${availableDishes}
 
 Meal History:
 ${historyText}
 
 Please suggest meals for each day (${enabledMeals.join(', ')}) that are:
-${history.length > 0 ? '1. Similar to the users meal history but do not repeat the same meals' : '1. Similar to the their dish preferences but do not repeat the same meals'}
+${history.length > 0 ? '1. Similar to the users meal history but do not repeat the same meals' : '1. Based on their cuisine preferences and dietary restrictions'}
 2. Respect their dietary restrictions
 3. ${ingredients.length > 0 ? 'Use the ingredients listed above for some dishes' : 'Use common ingredients that are easily available'}
 4. ${cuisinePreferences.length > 0 ? `Focus on ${cuisinePreferences.join(', ')} cuisine` : 'Use any appropriate cuisine'}
 5. Easy to prepare
-6. Include authentic dishes from: ${cuisinePreferences.join(', ')}
-7. Use the dishes provided above as reference for selecting other dishes
-8. Do not repeat the suggestions. Provide new suggestions for each day.
-9. Do not suggest the options which are present in the meal history provided above.
+6. ${cuisinePreferences.length > 0 ? `Include authentic dishes from: ${cuisinePreferences.join(', ')} cuisine` : 'Include variety in dishes'}
+7. Do not repeat the suggestions. Provide new suggestions for each day.
+8. Do not suggest the options which are present in the meal history provided above.
 ${calorieInstructions}
 
 Return the suggestions in this exact JSON format:

@@ -252,8 +252,6 @@ export default function PlanPage() {
           selected_cuisines: selectedCuisines,
           dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
           non_veg_days: dietaryPreferences?.nonVegDays?.length || 0,
-          breakfast_dishes: selectedDishes.breakfast.length,
-          lunch_dinner_dishes: selectedDishes.lunch_dinner.length,
         },
       });
       
@@ -267,7 +265,6 @@ export default function PlanPage() {
       });
       
       // Fetch complete user profile to ensure all preferences are available
-      // This is crucial for the AI modal to have access to dishPreferences
       try {
         const response = await authAPI.getProfile();
         setUser(response.user);
@@ -278,7 +275,6 @@ export default function PlanPage() {
           ...prev,
           cuisinePreferences: selectedCuisines,
           dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
-          dishPreferences: selectedDishes,
           onboardingCompleted: true,
         }));
       }

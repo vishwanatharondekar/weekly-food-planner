@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, HelpCircle, ArrowRight, ChefHat } from 'lucide-react';
 import { INDIAN_CUISINES, type Cuisine } from '@/lib/cuisine-data';
-import BreakfastSelection from './BreakfastSelection';
-import LunchDinnerSelection from './LunchDinnerSelection';
 import DietaryOnboarding from './DietaryOnboarding';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -17,9 +15,8 @@ interface CuisineOnboardingProps {
 
 export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUserAuthenticated = false }: CuisineOnboardingProps) {
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
-  const [selectedBreakfast, setSelectedBreakfast] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<{ isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean } | null>(null);
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'cuisine' | 'dietary' | 'breakfast' | 'lunch_dinner'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'cuisine' | 'dietary'>('welcome');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCuisineToggle = (cuisineName: string) => {
@@ -51,51 +48,12 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUse
     }
   };
 
-  const handleDietaryComplete = (preferences: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => {
+  const handleDietaryComplete = async (preferences: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => {
     setDietaryPreferences(preferences);
-    setCurrentStep('breakfast');
-  };
-
-  const handleBreakfastComplete = (breakfast: string[]) => {
-    setSelectedBreakfast(breakfast);
-    setCurrentStep('lunch_dinner');
-  };
-
-  const handleLunchDinnerComplete = async (lunchDinner: string[]) => {
-    try {
-      // Save dish preferences to backend
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Authentication required. Please login again.');
-        return;
-      }
-
-      const response = await fetch('/api/auth/dish-preferences', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          dishPreferences: {
-            breakfast: selectedBreakfast,
-            lunch_dinner: lunchDinner
-          },
-          onboardingCompleted: true
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save preferences');
-      }
-
-      // Call the completion handler with the data
-      onComplete(selectedCuisines, { breakfast: selectedBreakfast, lunch_dinner: lunchDinner }, dietaryPreferences || undefined);
-    } catch (error) {
-      console.error('Error saving dish preferences:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save preferences');
-    }
+    
+    // Complete onboarding with empty dish preferences
+    // Call the completion handler with empty dishes so AI can generate suggestions directly
+    onComplete(selectedCuisines, { breakfast: [], lunch_dinner: [] }, preferences);
   };
 
   const handleBackToCuisines = () => {
@@ -104,10 +62,6 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUse
 
   const handleBackToDietary = () => {
     setCurrentStep('dietary');
-  };
-
-  const handleBackToBreakfast = () => {
-    setCurrentStep('breakfast');
   };
 
   const handleWelcomeNext = async () => {
@@ -187,31 +141,6 @@ export default function CuisineOnboarding({ onComplete, onCreateGuestUser, isUse
       <DietaryOnboarding
         onComplete={handleDietaryComplete}
         onBack={handleBackToCuisines}
-      />
-    );
-  }
-
-  // Show breakfast selection if user has completed dietary preferences
-  if (currentStep === 'breakfast') {
-    return (
-      <BreakfastSelection
-        selectedCuisines={selectedCuisines}
-        initialBreakfast={selectedBreakfast}
-        onComplete={handleBreakfastComplete}
-        onBack={handleBackToDietary}
-      />
-    );
-  }
-
-  // Show lunch/dinner selection if user has completed breakfast selection
-  if (currentStep === 'lunch_dinner') {
-    return (
-      <LunchDinnerSelection
-        selectedCuisines={selectedCuisines}
-        selectedBreakfast={selectedBreakfast}
-        dietaryPreferences={dietaryPreferences || undefined}
-        onComplete={handleLunchDinnerComplete}
-        onBack={handleBackToBreakfast}
       />
     );
   }
