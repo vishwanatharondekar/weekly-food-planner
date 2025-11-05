@@ -98,26 +98,20 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 min-h-0">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0">
 
           {/* Vegetarian Toggle */}
-          <div className="mb-8">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-green-100 rounded-full mr-4">
-                <Leaf className="w-6 h-6 text-green-600" />
+          <div className="mb-5">
+            <div className="flex items-center mb-3">
+              <div className="p-2 bg-green-100 rounded-full mr-3">
+                <Leaf className="w-5 h-5 text-green-600" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Vegetarian Diet</h3>
-                <p className="text-sm text-gray-600">Choose your dietary preference</p>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Vegetarian Diet</h3>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-medium text-gray-700">I am vegetarian</span>
-                  <p className="text-sm text-gray-500 mt-1">Plant-based meals only</p>
-                </div>
+                <span className="text-sm font-medium text-gray-700">I am vegetarian</span>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -125,11 +119,11 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
                     onChange={(e) => setIsVegetarian(e.target.checked)}
                     className="sr-only"
                   />
-                  <div className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${
+                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
                     isVegetarian ? 'bg-green-500' : 'bg-gray-300'
                   }`}>
-                    <div className={`absolute top-0.5 left-0.5 w-7 h-7 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      isVegetarian ? 'translate-x-8' : 'translate-x-0'
+                    <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      isVegetarian ? 'translate-x-7' : 'translate-x-0'
                     }`}></div>
                   </div>
                 </label>
@@ -139,53 +133,45 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
 
           {/* Non-Vegetarian Days Selection */}
           {!isVegetarian && (
-            <div className="mb-8">
+            <div className="mb-5">
               <button
                 onClick={() => setShowNonVegDays(!showNonVegDays)}
-                className="w-full flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center justify-between mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center">
-                  <div className="p-3 bg-red-100 rounded-full mr-4">
-                    <Beef className="w-6 h-6 text-red-600" />
+                  <div className="p-2 bg-red-100 rounded-full mr-3">
+                    <Beef className="w-5 h-5 text-red-600" />
                   </div>
-                  <div className="text-left">
-                    <h3 className="text-lg font-semibold text-gray-900">Non-Vegetarian Days</h3>
-                    <p className="text-sm text-gray-600">Select days for meat/fish meals</p>
-                  </div>
+                  <h3 className="text-base font-semibold text-gray-900">Non-Vegetarian Days</h3>
                 </div>
                 {showNonVegDays ? (
-                  <ChevronUp className="w-5 h-5 text-gray-600" />
+                  <ChevronUp className="w-4 h-4 text-gray-600" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-600" />
+                  <ChevronDown className="w-4 h-4 text-gray-600" />
                 )}
               </button>
               
               {showNonVegDays && (
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {DAYS_OF_WEEK.map(({ key, label }) => (
-                      <label key={key} className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                      <label key={key} className="flex items-center cursor-pointer p-2 rounded hover:bg-gray-100 transition-colors">
                         <input
                           type="checkbox"
                           checked={nonVegDays.includes(key)}
                           onChange={() => handleDayToggle(key)}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-1"
                         />
-                        <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
+                        <span className="ml-2 text-xs font-medium text-gray-700">{label}</span>
                       </label>
                     ))}
                   </div>
                   
                   {nonVegDays.length > 0 && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-700 font-medium">
-                        Selected: {nonVegDays.map(day => 
-                          DAYS_OF_WEEK.find(d => d.key === day)?.label
-                        ).join(', ')}
-                      </p>
-                      <p className="text-xs text-red-600 mt-1">
-                        AI will suggest meat/fish meals only on selected days.
-                      </p>
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                      Selected: {nonVegDays.map(day => 
+                        DAYS_OF_WEEK.find(d => d.key === day)?.label
+                      ).join(', ')}
                     </div>
                   )}
                 </div>
@@ -193,41 +179,19 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
             </div>
           )}
 
-          {/* Vegetarian Info */}
-          {isVegetarian && (
-            <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-start">
-                <Leaf className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-green-800">
-                    Vegetarian mode enabled
-                  </p>
-                  <p className="text-xs text-green-700 mt-1">
-                    All AI suggestions will be plant-based and vegetarian-friendly.
-                  </p>
-                </div>
+          {/* Prefer Healthy & Dietary Restrictions */}
+          <div className="mb-5">
+            <div className="flex items-center mb-3">
+              <div className="p-2 bg-blue-100 rounded-full mr-3">
+                <Heart className="w-5 h-5 text-blue-600" />
               </div>
-            </div>
-          )}
-
-          {/* Prefer Healthy Options */}
-          <div className="mb-8">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-blue-100 rounded-full mr-4">
-                <Heart className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Prefer Healthy Options</h3>
-                <p className="text-sm text-gray-600">Prioritize nutritious and balanced meals</p>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Preferences & Restrictions</h3>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              {/* Prefer Healthy */}
               <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-medium text-gray-700">Prefer healthy meals</span>
-                  <p className="text-sm text-gray-500 mt-1">AI will prioritize nutritious, balanced options</p>
-                </div>
+                <span className="text-sm font-medium text-gray-700">Prefer healthy meals</span>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -235,135 +199,93 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
                     onChange={(e) => setPreferHealthy(e.target.checked)}
                     className="sr-only"
                   />
-                  <div className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${
+                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
                     preferHealthy ? 'bg-blue-500' : 'bg-gray-300'
                   }`}>
-                    <div className={`absolute top-0.5 left-0.5 w-7 h-7 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      preferHealthy ? 'translate-x-8' : 'translate-x-0'
-                    }`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Dietary Restrictions */}
-          <div className="mb-8">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-purple-100 rounded-full mr-4">
-                <Shield className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Dietary Restrictions</h3>
-                <p className="text-sm text-gray-600">Select any dietary restrictions you have</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-              {/* Gluten Free */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center">
-                  <Ban className="w-5 h-5 text-purple-600 mr-3" />
-                  <div>
-                    <span className="text-sm font-medium text-gray-700">Gluten Free</span>
-                    <p className="text-xs text-gray-500 mt-1">Exclude gluten-containing ingredients</p>
-                  </div>
-                </div>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={glutenFree}
-                    onChange={(e) => setGlutenFree(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
-                    glutenFree ? 'bg-purple-500' : 'bg-gray-300'
-                  }`}>
                     <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      glutenFree ? 'translate-x-7' : 'translate-x-0'
+                      preferHealthy ? 'translate-x-7' : 'translate-x-0'
                     }`}></div>
                   </div>
                 </label>
               </div>
 
-              {/* Nuts Free */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center">
-                  <Ban className="w-5 h-5 text-purple-600 mr-3" />
-                  <div>
-                    <span className="text-sm font-medium text-gray-700">Nuts Free</span>
-                    <p className="text-xs text-gray-500 mt-1">Exclude all nuts and tree nuts</p>
-                  </div>
+              {/* Dietary Restrictions */}
+              <div className="pt-3 border-t border-gray-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Gluten Free</span>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={glutenFree}
+                      onChange={(e) => setGlutenFree(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                      glutenFree ? 'bg-purple-500' : 'bg-gray-300'
+                    }`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        glutenFree ? 'translate-x-5' : 'translate-x-0'
+                      }`}></div>
+                    </div>
+                  </label>
                 </div>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={nutsFree}
-                    onChange={(e) => setNutsFree(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
-                    nutsFree ? 'bg-purple-500' : 'bg-gray-300'
-                  }`}>
-                    <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      nutsFree ? 'translate-x-7' : 'translate-x-0'
-                    }`}></div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Lactose Intolerant */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center">
-                  <Ban className="w-5 h-5 text-purple-600 mr-3" />
-                  <div>
-                    <span className="text-sm font-medium text-gray-700">Lactose Intolerant</span>
-                    <p className="text-xs text-gray-500 mt-1">Exclude dairy and lactose-containing ingredients</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Nuts Free</span>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={nutsFree}
+                      onChange={(e) => setNutsFree(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                      nutsFree ? 'bg-purple-500' : 'bg-gray-300'
+                    }`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        nutsFree ? 'translate-x-5' : 'translate-x-0'
+                      }`}></div>
+                    </div>
+                  </label>
                 </div>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={lactoseIntolerant}
-                    onChange={(e) => setLactoseIntolerant(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
-                    lactoseIntolerant ? 'bg-purple-500' : 'bg-gray-300'
-                  }`}>
-                    <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      lactoseIntolerant ? 'translate-x-7' : 'translate-x-0'
-                    }`}></div>
-                  </div>
-                </label>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Lactose Intolerant</span>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={lactoseIntolerant}
+                      onChange={(e) => setLactoseIntolerant(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                      lactoseIntolerant ? 'bg-purple-500' : 'bg-gray-300'
+                    }`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
+                      }`}></div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Calorie Tracking */}
-          <div className="mb-8">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-orange-100 rounded-full mr-4">
-                <Settings className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-gray-900">Calorie Tracking</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                    Experimental
-                  </span>
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 rounded-full mr-3">
+                  <Settings className="w-5 h-5 text-orange-600" />
                 </div>
-                <p className="text-sm text-gray-600">Track calories for your meals</p>
+                <h3 className="text-base font-semibold text-gray-900">Calorie Tracking</h3>
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Experimental
+                </span>
               </div>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-              {/* Show Calories Toggle */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-medium text-gray-700">Show Calorie Count</span>
-                  <p className="text-sm text-gray-500 mt-1">Display calorie information for meals</p>
-                </div>
+                <span className="text-sm font-medium text-gray-700">Show Calorie Count</span>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -371,79 +293,58 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
                     onChange={(e) => setShowCalories(e.target.checked)}
                     className="sr-only"
                   />
-                  <div className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${
+                  <div className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
                     showCalories ? 'bg-orange-500' : 'bg-gray-300'
                   }`}>
-                    <div className={`absolute top-0.5 left-0.5 w-7 h-7 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      showCalories ? 'translate-x-8' : 'translate-x-0'
+                    <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      showCalories ? 'translate-x-7' : 'translate-x-0'
                     }`}></div>
                   </div>
                 </label>
               </div>
 
-              {/* Daily Calorie Target */}
               {showCalories && (
-                <div className="pt-4 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Daily Calorie Target
-                  </label>
-                  <div className="flex items-center justify-center space-x-4">
+                <div className="pt-3 border-t border-gray-200">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Daily Calorie Target</label>
+                  <div className="flex items-center justify-center space-x-3">
                     <button
                       onClick={() => updateCalorieTarget(-50)}
-                      className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      className="flex items-center justify-center w-9 h-9 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 transition-all"
                       title="Decrease by 50"
                     >
-                      <Minus className="w-5 h-5" />
+                      <Minus className="w-4 h-4" />
                     </button>
                     
-                    <div className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-white border-2 border-orange-300 rounded-lg">
-                      <span className="text-2xl font-bold text-orange-600">
+                    <div className="flex items-center justify-center min-w-[100px] px-3 py-1.5 bg-white border-2 border-orange-300 rounded-lg">
+                      <span className="text-xl font-bold text-orange-600">
                         {dailyCalorieTarget || 2000}
                       </span>
-                      <span className="text-sm text-gray-500 ml-2">kcal</span>
+                      <span className="text-xs text-gray-500 ml-1">kcal</span>
                     </div>
                     
                     <button
                       onClick={() => updateCalorieTarget(50)}
-                      className="flex items-center justify-center w-10 h-10 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 hover:border-orange-400 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      className="flex items-center justify-center w-9 h-9 bg-white border-2 border-orange-300 text-orange-600 rounded-full hover:bg-orange-100 transition-all"
                       title="Increase by 50"
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 text-center mt-2">
-                    Range: 500 - 5000 kcal • AI will try to suggest meals within your target
+                    Range: 500 - 5000 kcal
                   </p>
                 </div>
               )}
             </div>
-
-            {showCalories && (
-              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-start">
-                  <span className="text-orange-600 mr-3 mt-0.5 flex-shrink-0">📊</span>
-                  <div>
-                    <p className="text-sm font-medium text-orange-800">
-                      Calorie tracking enabled
-                    </p>
-                    <p className="text-xs text-orange-700 mt-1">
-                      {dailyCalorieTarget > 0 
-                        ? `AI will try to suggest meals within ${dailyCalorieTarget} calories per day`
-                        : 'Calorie information will be displayed for each meal'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-gray-50 p-4 sm:p-6 flex-shrink-0">
+        <div className="border-t bg-gray-50 p-4 flex-shrink-0">
           <div className="flex justify-between items-center">
             <button
               onClick={onBack}
-              className="px-6 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+              className="px-4 py-2.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 text-sm"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
@@ -451,7 +352,7 @@ export default function DietaryOnboarding({ onComplete, onBack }: DietaryOnboard
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+              className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 text-sm"
             >
               {isSubmitting ? (
                 <>
