@@ -122,11 +122,10 @@ export async function POST(request: NextRequest) {
     const dishPreferences = userData?.dishPreferences || { breakfast: [], lunch_dinner: [] };
     const mealSettings = userData?.mealSettings;
 
-    // If no history, check if user has cuisine preferences or dish preferences
-    if (history.length < 1 && cuisinePreferences.length === 0 && 
-        (dishPreferences.breakfast.length === 0 || dishPreferences.lunch_dinner.length === 0)) {
+    // If no history, check if user has cuisine preferences
+    if (history.length < 1 && cuisinePreferences.length === 0) {
       return NextResponse.json(
-        { error: 'Need at least 1 week of meal history, cuisine preferences, or dish preferences to generate suggestions' },
+        { error: 'Need at least 1 week of meal history or cuisine preferences to generate suggestions' },
         { status: 400 }
       );
     }

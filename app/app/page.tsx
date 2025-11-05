@@ -170,7 +170,7 @@ export default function Home() {
     loadUserProfile();
   };
 
-  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number }) => {
+  const handleCuisineOnboardingComplete = async (selectedCuisines: string[], selectedDishes: { breakfast: string[]; lunch_dinner: string[] }, dietaryPreferences?: { isVegetarian: boolean; nonVegDays: string[]; showCalories: boolean; dailyCalorieTarget: number; preferHealthy: boolean; glutenFree: boolean; nutsFree: boolean; lactoseIntolerant: boolean }) => {
     try {
       // Save cuisine preferences
       await authAPI.updateCuisinePreferences({
@@ -185,6 +185,10 @@ export default function Home() {
           nonVegDays: dietaryPreferences.nonVegDays,
           showCalories: dietaryPreferences.showCalories,
           dailyCalorieTarget: dietaryPreferences.dailyCalorieTarget,
+          preferHealthy: dietaryPreferences.preferHealthy,
+          glutenFree: dietaryPreferences.glutenFree,
+          nutsFree: dietaryPreferences.nutsFree,
+          lactoseIntolerant: dietaryPreferences.lactoseIntolerant,
         });
       }
       
@@ -198,8 +202,6 @@ export default function Home() {
           selected_cuisines: selectedCuisines,
           dietary_preference: dietaryPreferences?.isVegetarian ? 'vegetarian' : 'non-vegetarian',
           non_veg_days: dietaryPreferences?.nonVegDays?.length || 0,
-          breakfast_dishes: selectedDishes.breakfast.length,
-          lunch_dinner_dishes: selectedDishes.lunch_dinner.length,
         },
       });
       
@@ -213,7 +215,6 @@ export default function Home() {
       });
       
       // Fetch complete user profile to ensure all preferences are available
-      // This is crucial for the AI modal to have access to dishPreferences
       try {
         const response = await authAPI.getProfile();
         setUser(response.user);
@@ -224,7 +225,6 @@ export default function Home() {
           ...prev,
           cuisinePreferences: selectedCuisines,
           dietaryPreferences: dietaryPreferences || prev.dietaryPreferences,
-          dishPreferences: selectedDishes,
           onboardingCompleted: true,
         }));
       }

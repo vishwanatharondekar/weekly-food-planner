@@ -214,6 +214,12 @@ class StorageWrapper {
   async updateDietaryPreferences(userId: string, preferences: {
     nonVegDays: string[];
     isVegetarian: boolean;
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
+    preferHealthy?: boolean;
+    glutenFree?: boolean;
+    nutsFree?: boolean;
+    lactoseIntolerant?: boolean;
   }): Promise<User> {
     return this.provider.updateDietaryPreferences(userId, preferences);
   }
@@ -221,6 +227,12 @@ class StorageWrapper {
   async getDietaryPreferences(userId: string): Promise<{
     nonVegDays: string[];
     isVegetarian: boolean;
+    showCalories?: boolean;
+    dailyCalorieTarget?: number;
+    preferHealthy?: boolean;
+    glutenFree?: boolean;
+    nutsFree?: boolean;
+    lactoseIntolerant?: boolean;
   } | null> {
     return this.provider.getDietaryPreferences(userId);
   }

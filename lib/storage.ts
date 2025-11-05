@@ -180,6 +180,10 @@ class StorageManager {
     isVegetarian: boolean;
     showCalories?: boolean;
     dailyCalorieTarget?: number;
+    preferHealthy?: boolean;
+    glutenFree?: boolean;
+    nutsFree?: boolean;
+    lactoseIntolerant?: boolean;
   }): Promise<User> {
     if (typeof window === 'undefined') {
       throw new Error('Cannot update dietary preferences on server-side');
@@ -208,6 +212,10 @@ class StorageManager {
     isVegetarian: boolean;
     showCalories?: boolean;
     dailyCalorieTarget?: number;
+    preferHealthy?: boolean;
+    glutenFree?: boolean;
+    nutsFree?: boolean;
+    lactoseIntolerant?: boolean;
   } | null> {
     if (typeof window === 'undefined') {
       return null;
