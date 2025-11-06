@@ -66,7 +66,7 @@ export default function Footer() {
               © {new Date().getFullYear()} Khana Kya Banau. All rights reserved.
             </div>
             <div className="text-gray-400 text-sm mt-2 md:mt-0">
-              Made with ❤️ and to avoid questions like "खाना क्या बनाऊं?"
+              Made with ❤️ and to avoid questions like "Khana Kya Banau?"
             </div>
           </div>
         </div>
