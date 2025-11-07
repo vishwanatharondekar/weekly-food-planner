@@ -265,6 +265,105 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="py-20 bg-white/50">
+      
+      <div>
+          <div style={{ textAlign: 'center' }}><div><h2>Plan Weekly Meals Efficiently With Khana Kya Banau</h2></div></div>
+          
+     <div style={{ position: 'relative', paddingBottom: '56.25%' }}>
+     <iframe style={{ width: '100%', height: '100%', position: 'absolute', left: '0px', top: '0px', borderRadius: '10px' }} src="https://embed.app.guidde.com/playbooks/mv2xmC6sMYxydy2EFbgrqq?" title="Plan Weekly Meals Efficiently With Khana Kya Banau" frameBorder="0" referrerPolicy="unsafe-url" allowFullScreen={true} allow="clipboard-write" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-forms allow-same-origin allow-presentation"></iframe>
+     </div>
+          
+          <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>
+                      Go to <a href="https://www.khanakyabanau.in" target="_blank" rel="noreferrer">www.khanakyabanau.in</a>
+                  </h3> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>1. Introduction</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+             It highlights features that simplify meal planning, generate shopping lists, and integrate recipe discovery.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F3ts2b8S7ifxFdhjNXHfHoA_doc.png?alt=media&amp;token=43d66ea5-1f1f-40f2-8e68-c3abfcb35606" alt="Introduction" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>2. Open Meal Planning Feature</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            It helps you plan your meals
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FmS3bxTg7kC4R3GcMke6MM5_doc.png?alt=media&amp;token=7bc1a38a-67ba-4c0a-a002-f5d26c37ff17" alt="Open Meal Planning Feature" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>3. Select Free Trial Option</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Try Free" to explore meal planning without having to register
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2Ffnjj3XpyUzZDXqoN9Mvj6x_doc.png?alt=media&amp;token=70497851-18f7-4863-ab5f-638d040b9c18" alt="Select Free Trial Option" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>4. Begin Setup Process</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Get Started" to initiate your personalised meal planning journey.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FvWqyERcci1MPzAXmLob1u6_doc.png?alt=media&amp;token=16917683-54ad-4e47-b232-a49bb8e586c3" alt="Begin Setup Process" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>5. Choose Maharashtrian Cuisine</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Select your cuisine
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FtVphPxZPWbAidAtaVXMYKE_doc.png?alt=media&amp;token=e636f618-1224-4d14-a80d-abcd3cddc07b" alt="Choose Maharashtrian Cuisine" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>6. Choose South Indian Cuisine</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F9uLfmZ9psoTdq6e6iqPbuF_doc.png?alt=media&amp;token=ef69163c-c734-4e49-b68f-ad8de5bc69aa" alt="Choose South Indian Cuisine" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>7. Proceed To Dietary Preferences</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Next: Dietary Preferences" to specify your dietary needs and restrictions.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FvymCKvADy29zYvZyxJKdLU_doc.png?alt=media&amp;token=b75cc7bc-1258-4132-b44a-b2d6afd1b383" alt="Proceed To Dietary Preferences" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>8. Access Dietary Options</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click here if you eat non veg on specific days
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2Fedz22HA9Krziaum6SsqX2i_doc.png?alt=media&amp;token=c623ef91-152d-4e42-8e40-e3e0cbd4fab5" alt="Access Dietary Options" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>9. Modify Dietary Settings</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            You can select calorie count switch if you want to see calorie count and plan your meal according to calorie count
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FkyCwrjPss3imi9viQyW3tc_doc.png?alt=media&amp;token=96a7d4a7-9bfd-4f68-a81a-742fb8b48730" alt="Modify Dietary Settings" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>10. Enable Dietary Preference</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            You can select calorie count switch if you want to see calorie count and plan your meal according to calorie count
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FhJypjSTga8QbR7hcNU6mLd_doc.png?alt=media&amp;token=ed827ec2-ca20-4475-9031-a433eda8c516" alt="Enable Dietary Preference" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>11. Advance To Dish Selection</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Next" to see meal plan available for you
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FoxYucuRSSFr7hUVWoSbJ59_doc.png?alt=media&amp;token=1d9664ba-85c3-455a-9beb-c40fb606b1f1" alt="Advance To Dish Selection" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>12. View Meal Plan As PDF</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "PDF" to generate a printable version of your meal plan for easy reference.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FeYGYQ49aMNHXpKuon2oDWb_doc.png?alt=media&amp;token=062e7097-0f93-41fd-bbe8-e9de81578e7f" alt="View Meal Plan As PDF" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>13. Switch To List View</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Clicking on Shopping list button will present the list of ingredients required for cooking this plan
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FbWiya6d7HSb68XFtiuMuUf_doc.png?alt=media&amp;token=039bbfd7-a496-44b2-9308-76260e831380" alt="Switch To List View" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>14. Organise Plan By Day</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            You can also view the ingredients by day if you wish to shop for a particular day
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F2jmGTVuKbsTFa6oS2WUr4f_doc.png?alt=media&amp;token=8a40d63a-35bf-4977-a255-d795a6e88f07" alt="Organise Plan By Day" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>15. Review Rice Portion</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FreP6rActQu2B5TTPz7Jrvr_doc.png?alt=media&amp;token=3de41b59-a046-4882-9930-647abeaa9050" alt="Review Rice Portion" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>16. Shop Ingredients Online</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Clicking on "Shop on Amazon" will take you to Amazon Fresh shopping page with one click to add all the selected ingredients to Shopping cart. 
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FnoSgPy9DXqpMvyRCHL5uEU_doc.png?alt=media&amp;token=372bc67d-9f64-4742-b1a9-db1eb60393f3" alt="Shop Ingredients Online" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>17. Navigate To Amazon Website</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2Fnr1UBe9ZxoWHK6pVhGZFjh_doc.png?alt=media&amp;token=8c93facb-eeea-4923-9407-faff6796bfa2" alt="Navigate To Amazon Website" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>18. Add Items To Shopping Cart</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FjXBa6FUGsHdyaYJaqXBK1n_doc.png?alt=media&amp;token=a755675e-25c5-4299-882a-977911ec1789" alt="Add Items To Shopping Cart" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>19. Proceed To Cart Review</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FrQg9DXf246DfGibGLCkXww_doc.png?alt=media&amp;token=e51cf406-1c6f-4def-9d5a-f3c5e6fc0ce4" alt="Proceed To Cart Review" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>20. Select AI Meal Plan Option</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Using AI option you can generate weekly meal plan for any of the week. 
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F61x1ZZvc7fUyP5jrqhVv63_doc.png?alt=media&amp;token=37f7b839-35c7-46a1-8681-729af2f50d98" alt="Select AI Meal Plan Option" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>21. Choose Ingredients List</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            It even allows you to put ingredients you already have at home
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F9PHHV2PfMaDpxtkZ5aACNd_doc.png?alt=media&amp;token=1fde0177-54f6-429e-ae58-090f32ecad31" alt="Choose Ingredients List" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>22. Generate AI Meal Plan</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Generate AI Meal Plan" to create a customised meal schedule using AI.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FijCiSQ1M4bjB1GBRZqZjkv_doc.png?alt=media&amp;token=52a65972-e47c-4a8d-a57d-86bbd1f92a04" alt="Generate AI Meal Plan" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>23. Open Dietary Preferences</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Dietary Preferences" to review or update your dietary settings.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FnmdvetVeDAg1ibfU37JL2p_doc.png?alt=media&amp;token=f5ca3526-55ae-465e-860d-3b5552f21834" alt="Open Dietary Preferences" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>24. Access Dietary Settings</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click here to modify your dietary preferences for accurate meal recommendations.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FfC1nd2vKoKLtQkynkgG4hC_doc.png?alt=media&amp;token=dab70100-7f1b-4805-835e-8c0bf4a2154a" alt="Access Dietary Settings" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>25. Open Meal Settings</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Meal Settings" to adjust preferences related to your meal plans.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FbqY1VN31m6HTzvuYe7sjLF_doc.png?alt=media&amp;token=ab825963-4bdf-43cf-b537-abed14f9df3b" alt="Open Meal Settings" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>26. Access Meal Settings Options</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click here to explore detailed meal configuration settings.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2Fn7p4beqB7r6FkPwNtAEuZG_doc.png?alt=media&amp;token=1014435f-7b9a-472d-8376-dd3b0251437c" alt="Access Meal Settings Options" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>27. Open Video Feature</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            You can click on the video icon to search and save a video of recipe you can refer later in the PDF getting exported. 
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F24QvRXDUzEoNk9vez7zLkB_doc.png?alt=media&amp;token=45c48514-20ee-479d-b9c6-a95546120eb3" alt="Open Video Feature" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>28. Access Video Options</h3> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F8LRzLftvooVr9vMvU3wDJh_doc.png?alt=media&amp;token=a8d44626-e09b-425a-b247-03641848be6a" alt="Access Video Options" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>29. Open Video URLs Section</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Video URLs" to manage links to youtube URLs you saved
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FiZC6fwyZPhHosTFtbBFRA2_doc.png?alt=media&amp;token=dc0d9104-7773-4f75-a1db-dca6d88e45d7" alt="Open Video URLs Section" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>30. Close Video URLs</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "✕" to close the video URLs management window.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F7BLEdZT5ttT8PbJUTfmW3C_doc.png?alt=media&amp;token=c5a9b29e-ed59-4f5b-951a-8df4526500cc" alt="Close Video URLs" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>31. Open Language Preferences</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Click "Language Preferences" to choose your preferred language settings.
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2F8X355KAdhQT9eJxD7mpGfB_doc.png?alt=media&amp;token=8fffdbb8-dcec-4496-a57d-c3f643c234cb" alt="Open Language Preferences" /> <h3 style={{ fontSize: '1.17em', fontWeight: 'bold', margin: '1em 0', width: '100%', wordBreak: 'break-word', maxWidth: '100%' }}>32. Save Language Settings</h3> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Language selected here will be used for translation of PDFs so you can share them with anyone in the language they prefer
+            
+        </div> <img width="100%" src="https://static.guidde.com/v0/qg%2F9w9EPiSEZkV3Z6qBlIjJSledUiu2%2Fmv2xmC6sMYxydy2EFbgrqq%2FcunxDsdhwPZj2jkJ4onyY1_doc.png?alt=media&amp;token=d98b238d-656d-4ed3-a454-f7716df70419" alt="Save Language Settings" /> <div style={{ marginTop: '16px', marginBottom: '16px' }} >
+            Thank You!
+            
+        </div>
+          <div style={{ marginRight: '2px' }}><a href="https://www.guidde.com" rel="noreferrer" target="_blank" style={{ textDecoration: 'none', color: '#000000' }}>Powered by <strong style={{ color: '#CB0000' }}>guidde</strong></a></div>
+      </div>
+      
+      
+      </section>
+
       {/* How It Works Section */}
       <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
