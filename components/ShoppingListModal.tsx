@@ -852,9 +852,12 @@ export default function ShoppingListModal({
 
                       const isExpanded = expandedDays.has(day);
 
+                      // Day background color - same for all days
+                      const dayColor = { bg: 'bg-teal-50', border: 'border-teal-500' };
+
                       return (
                         <div key={day} className={`space-y-3 ${isExpanded ? 'mb-4' : ''}`}>
-                          <div className="bg-gray-50 border-l-4 border-blue-500 rounded px-3 py-2.5 flex items-center justify-between">
+                          <div className={`${dayColor.bg} border-l-4 ${dayColor.border} rounded px-3 py-2.5 flex items-center justify-between`}>
                             <button
                               onClick={() => handleDayToggle(day)}
                               className="flex items-center gap-2.5 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
@@ -881,7 +884,7 @@ export default function ShoppingListModal({
                               className={`text-xs px-2 py-1 rounded transition-colors ${
                                 allDaySelected
                                   ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
-                                  : 'text-blue-600 hover:bg-blue-50'
+                                  : 'text-teal-600 hover:bg-teal-50'
                               }`}
                             >
                               {allDaySelected ? 'Deselect All' : 'Select All'}
@@ -915,9 +918,12 @@ export default function ShoppingListModal({
                             const baseUrl = process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL || '';
                             const fullImageUrl = imageUrl ? baseUrl + imageUrl : null;
 
+                            // Meal background color - same for all meals (more subtle than days)
+                            const mealColor = { bg: 'bg-amber-50', border: 'border-amber-200' };
+
                             return (
                             <div key={`${day}-${mealType}`} className="space-y-2">
-                              <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 flex items-center justify-between gap-3">
+                              <div className={`${mealColor.bg} border ${mealColor.border} rounded-md px-3 py-2 flex items-center justify-between gap-3`}>
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                   {fullImageUrl && (
                                     <div className="flex-shrink-0">
@@ -945,7 +951,7 @@ export default function ShoppingListModal({
                                   className={`text-xs px-2 py-1 rounded transition-colors flex-shrink-0 ${
                                     allMealSelected
                                       ? 'bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300'
-                                      : 'text-blue-600 hover:bg-blue-50'
+                                      : 'text-amber-600 hover:bg-amber-50'
                                   }`}
                                 >
                                   {allMealSelected ? 'Deselect' : 'Select All'}
