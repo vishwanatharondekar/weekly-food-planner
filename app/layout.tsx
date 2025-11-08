@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.khanakyabanau.in'),
-  title: 'खाना क्या बनाऊं - Weekly Meal Planning',
+  title: 'Khana Kya Banau - Weekly Meal Planning',
   description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
   manifest: '/manifest.json',
   icons: {
@@ -24,27 +24,27 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'खाना क्या बनाऊं',
+    title: 'Khana Kya Banau',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://yourdomain.com',
-    siteName: 'खाना क्या बनाऊं',
-    title: 'खाना क्या बनाऊं - Weekly Meal Planning',
+    siteName: 'Khana Kya Banau',
+    title: 'Khana Kya Banau - Weekly Meal Planning',
     description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists. Perfect for households and cooking enthusiasts!',
     images: [
       {
         url: '/images/logos/logo-pack-fe229c/icon-transparent.png',
         width: 1200,
         height: 630,
-        alt: 'खाना क्या बनाऊं - Weekly Meal Planning',
+        alt: 'Khana Kya Banau - Weekly Meal Planning',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'खाना क्या बनाऊं - Weekly Meal Planning',
+    title: 'Khana Kya Banau - Weekly Meal Planning',
     description: 'Plan your weekly meals with AI-powered suggestions and smart shopping lists',
     images: ['/images/logos/logo-pack-fe229c/icon-transparent.png'],
   },

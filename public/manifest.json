@@ -1,6 +1,6 @@
 {
-  "name": "खाना क्या बनाऊं - Weekly Meal Planner",
-  "short_name": "खाना क्या बनाऊं",
+  "name": "Khana Kya Banau - Weekly Meal Planner",
+  "short_name": "Khana Kya Banau",
   "description": "Plan your weekly meals with AI-powered suggestions and smart shopping lists. Perfect for households and cooking enthusiasts!",
   "start_url": "/app",
   "display": "standalone",

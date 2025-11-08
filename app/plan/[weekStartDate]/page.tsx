@@ -334,11 +334,11 @@ export default function PlanPage() {
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                     <img 
                       src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
-                      alt="खाना क्या बनाऊं Logo" 
+                      alt="Khana Kya Banau Logo" 
                       className="w-10 h-10 object-contain"
                     />
                   </div>
-                  <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
+                  <span className="text-xl font-bold text-slate-800">Khana Kya Banau</span>
                 </div>
                 <div className="flex items-center space-x-4">
                   {/* Login CTA for Guest Users - Desktop Only */}

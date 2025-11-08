@@ -107,11 +107,11 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img 
                   src="/images/logos/logo-pack-fe229c/icon-transparent.png" 
-                  alt="खाना क्या बनाऊं Logo" 
+                  alt="Khana Kya Banau Logo" 
                   className="w-10 h-10 object-contain"
                 />
               </div>
-              <span className="text-xl font-bold text-slate-800">खाना क्या बनाऊं</span>
+              <span className="text-xl font-bold text-slate-800">Khana Kya Banau</span>
             </div>
             <div className="flex items-center">
               <Link 
@@ -130,7 +130,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-slate-800 mb-6">
-              <span className="text-4xl md:text-5xl">खाना क्या बनाऊं?</span>
+              <span className="text-4xl md:text-5xl">Khana Kya Banau?</span>
               <span className="block bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent mt-2">
                 Plan Your Meals, Simplify Your Life
               </span>
@@ -265,50 +265,28 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Video Tutorial Section */}
+      <section className="py-20 bg-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-slate-800 mb-4">
-              How It Works
+              See How It Works
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Get started in minutes with our simple 3-step process
+              Watch our step-by-step guide to plan your weekly meals efficiently with Khana Kya Banau
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">1</span>
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Set Your Preferences</h3>
-              <p className="text-slate-600">
-                Tell us about your dietary preferences, meal types, and any restrictions. 
-                Our AI will learn your tastes and preferences.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">2</span>
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Plan Your Meals</h3>
-              <p className="text-slate-600">
-                Use our intuitive interface to plan your weekly meals. 
-                Get suggestions, browse recipes, and organize your schedule.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">3</span>
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Shop & Cook</h3>
-              <p className="text-slate-600">
-                Generate your shopping list, shop from online apps, export to PDF, and start cooking! 
-              </p>
-            </div>
+          <div style={{ position: 'relative', paddingBottom: '56.25%' }}>
+            <iframe 
+              style={{ width: '100%', height: '100%', position: 'absolute', left: '0px', top: '0px', borderRadius: '10px' }} 
+              src="https://embed.app.guidde.com/playbooks/mv2xmC6sMYxydy2EFbgrqq?" 
+              title="Plan Weekly Meals Efficiently With Khana Kya Banau" 
+              frameBorder="0" 
+              referrerPolicy="unsafe-url" 
+              allowFullScreen={true} 
+              allow="clipboard-write" 
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-forms allow-same-origin allow-presentation"
+            ></iframe>
           </div>
         </div>
       </section>
