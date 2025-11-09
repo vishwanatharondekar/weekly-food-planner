@@ -435,12 +435,14 @@ export default function ShoppingListModal({
       // Create a hidden form for Amazon submission
       const form = document.createElement('form');
       form.method = 'POST';
+
       
       // Set the appropriate Amazon URL based on region
+      const associateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG || 'khanakyabanau-21';
       if (amazonRegion === 'us') {
-        form.action = 'https://www.amazon.com/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
+        form.action = `https://www.amazon.com/afx/ingredients/landing?tag=${associateTag}&associateTag=${associateTag}`;
       } else {
-        form.action = 'https://www.amazon.in/afx/ingredients/landing?tag=khanakyabanau-21&associateTag=khanakyabanau-21';
+        form.action = `https://www.amazon.in/afx/ingredients/landing?tag=${associateTag}&associateTag=${associateTag}`;
       }
       
       form.target = isMobile ? '_self' : '_blank';
@@ -456,7 +458,7 @@ export default function ShoppingListModal({
       const associateTagField = document.createElement('input');
       associateTagField.type = 'hidden';
       associateTagField.name = 'associateTag';
-      associateTagField.value = 'khanakyabanau-21';
+      associateTagField.value = associateTag;
       form.appendChild(associateTagField);
 
       // Generate ingredients JSON in the format expected by Amazon using only selected ingredients
