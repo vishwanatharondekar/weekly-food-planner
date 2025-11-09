@@ -164,6 +164,7 @@ Example response format:
         "ingredients": [
           {"name": "rice", "amount": 500, "unit": "g"},
           {"name": "urad dal", "amount": 150, "unit": "g"}
+          {"name": "pickle", "amount": 1, "unit": "serving"}
         ]
       }
     }
@@ -224,6 +225,9 @@ Return only the JSON object, nothing else.
     // If no valid JSON object found, try to parse the entire response
     const result = JSON.parse(text);
     
+
+    console.log('Object.keys(result) : ', Object.keys(result));
+
     if (result.grouped && result.consolidated) {
       return {
         grouped: Array.isArray(result.grouped) ? result.grouped : [],
