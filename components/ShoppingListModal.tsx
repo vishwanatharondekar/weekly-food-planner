@@ -403,7 +403,7 @@ export default function ShoppingListModal({
           consolidated: filteredIngredients,
           weights: filteredWeights,
           categorized: filteredCategorized,
-          grouped: grouped
+          dayWise: dayWise
         }
       };
 
