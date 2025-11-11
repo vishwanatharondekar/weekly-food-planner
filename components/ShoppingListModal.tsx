@@ -1,11 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, FileDown, ShoppingCart, ChevronDown, ChevronRight } from 'lucide-react';
 import { generateShoppingListPDF } from '@/lib/pdf-generator';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { analytics } from '@/lib/analytics';
+
+// Meal Image component with error handling
+const MealImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  // Handle image load errors
+  const handleError = () => {
+    setHasError(true);
+  };
+  
+  if (hasError) {
+    return null;
+  }
+  
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={48}
+      height={48}
+      className={className}
+      onError={handleError}
+    />
+  );
+};
 
 interface ShoppingListModalProps {
   isOpen: boolean;
@@ -919,13 +945,10 @@ export default function ShoppingListModal({
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                   {fullImageUrl && (
                                     <div className="flex-shrink-0">
-                                      <img
+                                      <MealImage
                                         src={fullImageUrl}
                                         alt={mealData.name || 'Meal'}
                                         className="w-12 h-12 rounded-lg object-cover border border-gray-300"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                        }}
                                       />
                                     </div>
                                   )}
