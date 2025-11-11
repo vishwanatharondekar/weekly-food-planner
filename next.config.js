@@ -3,6 +3,14 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'd3rj590miwbz96.cloudfront.net',
+      }
+    ],
+  },
   webpack: (config, { isServer }) => {
     // Exclude onnxruntime-node and transformers from client-side bundle
     if (!isServer) {
