@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { format, addWeeks, subWeeks, addDays, isToday, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Sparkles, Trash2, X, FileDown, ShoppingCart, ChefHat, Calendar, Pencil } from 'lucide-react';
 import { mealsAPI, aiAPI, authAPI, imageMappingAPI } from '@/lib/api';
@@ -23,6 +24,31 @@ const ImageShimmer = ({ className = "w-24 h-24" }: { className?: string }) => (
     <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
   </div>
 );
+
+// Meal Image component with error handling
+const MealImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  // Handle image load errors
+  const handleError = () => {
+    setHasError(true);
+  };
+  
+  if (hasError) {
+    return null;
+  }
+  
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={96}
+      height={96}
+      className={className}
+      onError={handleError}
+    />
+  );
+};
 
 interface MealData {
   [day: string]: {
@@ -1789,14 +1815,10 @@ function CookModeView({ todaysData, mealSettings, onVideoClick, onRefresh, image
                       <div className="flex items-start gap-4">
                         {imageUrl && !(editingMeal?.day === day && editingMeal?.mealType === mealType) ? (
                           <div className="flex-shrink-0">
-                            <img 
+                            <MealImage 
                               src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
                               alt={mealName}
                               className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
-                              onError={(e) => {
-                                // Hide image if it fails to load
-                                e.currentTarget.style.display = 'none';
-                              }}
                             />
                           </div>
                         ) : imagesLoading.has(`cook-${day}-${mealType}`) ? (
@@ -2185,14 +2207,10 @@ function PlanModeView({
                               {/* Meal Image - hidden in edit mode */}
                               {imageUrl && !isEditing ? (
                                 <div className="flex-shrink-0">
-                                  <img 
+                                  <MealImage 
                                     src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
                                     alt={mealName}
                                     className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
-                                    onError={(e) => {
-                                      // Hide image if it fails to load
-                                      e.currentTarget.style.display = 'none';
-                                    }}
                                   />
                                 </div>
                               ) : imagesLoading.has(`${day}-${mealType}`) ? (
@@ -2298,14 +2316,10 @@ function PlanModeView({
                         {/* Meal Image - Full height on mobile */}
                         {imageUrl && !isEditing ? (
                           <div className="flex-shrink-0">
-                            <img 
+                            <MealImage 
                               src={process.env.NEXT_PUBLIC_MEAL_IMAGES_BASE_URL + imageUrl} 
                               alt={mealName}
                               className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
-                              onError={(e) => {
-                                // Hide image if it fails to load
-                                e.currentTarget.style.display = 'none';
-                              }}
                             />
                           </div>
                         ) : imagesLoading.has(`${day}-${mealType}`) ? (
