@@ -52,11 +52,88 @@ export interface PDFMealPlan {
   targetLanguage?: string; // Language code for translation
   selectedIngredients?: string[];
   extractedIngredients?: {
-    consolidated: string[];
-    weights: { [ingredient: string]: { amount: number, unit: string } };
     categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
-    grouped: any[];
+    dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
   };
+}
+
+// Helper function to derive consolidated from categorized
+function deriveConsolidatedFromCategorized(categorized: { [category: string]: { name: string, amount: number, unit: string }[] }): string[] {
+  const consolidated: string[] = [];
+  if (categorized && typeof categorized === 'object') {
+    Object.values(categorized).forEach((category) => {
+      if (Array.isArray(category)) {
+        category.forEach((item) => {
+          if (item.name && !consolidated.includes(item.name)) {
+            consolidated.push(item.name);
+          }
+        });
+      }
+    });
+  }
+  return consolidated;
+}
+
+// Helper function to derive weights from categorized
+function deriveWeightsFromCategorized(categorized: { [category: string]: { name: string, amount: number, unit: string }[] }): { [ingredient: string]: { amount: number, unit: string } } {
+  const weights: { [ingredient: string]: { amount: number, unit: string } } = {};
+  if (categorized && typeof categorized === 'object') {
+    Object.values(categorized).forEach((category) => {
+      if (Array.isArray(category)) {
+        category.forEach((item) => {
+          if (item.name && item.amount !== undefined && item.unit) {
+            weights[item.name] = { amount: item.amount, unit: item.unit };
+          }
+        });
+      }
+    });
+  }
+  return weights;
+}
+
+// Helper function to derive grouped format from dayWise or meals structure
+function deriveGroupedFromDayWise(dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } }): any[] {
+  if (!dayWise) return [];
+  
+  const grouped: any[] = [];
+  Object.entries(dayWise).forEach(([day, dayMeals]) => {
+    Object.entries(dayMeals).forEach(([mealType, mealData]) => {
+      if (mealData?.name && mealData?.ingredients && Array.isArray(mealData.ingredients)) {
+        const mealIngredients = mealData.ingredients.map((ing: any) => ing.name);
+        if (mealIngredients.length > 0) {
+          grouped.push({ [mealData.name]: mealIngredients });
+        }
+      }
+    });
+  });
+  return grouped;
+}
+
+// Helper function to derive grouped format from meals structure (fallback)
+function deriveGroupedFromMeals(meals: { [day: string]: { [mealType: string]: any } }, enabledMealTypes: string[]): any[] {
+  const grouped: any[] = [];
+  const mealMap = new Map<string, string[]>();
+  
+  DAYS_OF_WEEK.forEach(day => {
+    enabledMealTypes.forEach(mealType => {
+      const meal = meals[day]?.[mealType];
+      const mealName = meal instanceof Object && 'name' in meal ? meal.name : meal;
+      if (mealName) {
+        if (!mealMap.has(mealName)) {
+          mealMap.set(mealName, []);
+        }
+        // For now, we'll just create entries with empty ingredient arrays
+        // The actual ingredients will come from consolidated list
+      }
+    });
+  });
+  
+  // Convert map to grouped format
+  mealMap.forEach((ingredients, mealName) => {
+    grouped.push({ [mealName]: ingredients });
+  });
+  
+  return grouped;
 }
 
 // Helper function to get video URL from meal data
@@ -515,15 +592,13 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     });
 
     // Use already extracted ingredients if available, otherwise extract from meal names
-    let ingredientsResult: { grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } } = { grouped: [], consolidated: [], weights: {}, categorized: {} };
+    let ingredientsResult: { categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } } = { categorized: {} };
     
     if (mealPlan.extractedIngredients) {
       // Use the already extracted ingredients from the shopping list modal
       ingredientsResult = {
-        grouped: mealPlan.extractedIngredients.grouped || [],
-        consolidated: mealPlan.extractedIngredients.consolidated || [],
-        weights: mealPlan.extractedIngredients.weights || {},
-        categorized: mealPlan.extractedIngredients.categorized || {}
+        categorized: mealPlan.extractedIngredients.categorized || {},
+        dayWise: mealPlan.extractedIngredients.dayWise
       };
     } else if (originalMealNames.length > 0) {
       // Fallback to API call if extracted ingredients not provided
@@ -534,13 +609,24 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
       }
     }
 
+    // Derive consolidated from categorized
+    const consolidated = deriveConsolidatedFromCategorized(ingredientsResult.categorized || {});
+
+    // Derive weights from categorized
+    const weights = deriveWeightsFromCategorized(ingredientsResult.categorized || {});
+
+    // Derive grouped from dayWise if available, otherwise from meals structure
+    const grouped = ingredientsResult.dayWise 
+      ? deriveGroupedFromDayWise(ingredientsResult.dayWise)
+      : deriveGroupedFromMeals(mealPlan.meals, enabledMealTypes);
+
     // Now prepare all texts for translation (meals + ingredients + UI text)
-    const allIngredients = ingredientsResult.consolidated || [];
+    const allIngredients = consolidated;
     
     // Extract meal names from the grouped result for translation
     const groupedMealNames: string[] = [];
-    if (ingredientsResult.grouped && Array.isArray(ingredientsResult.grouped)) {
-      ingredientsResult.grouped.forEach((mealObj: any) => {
+    if (grouped && Array.isArray(grouped)) {
+      grouped.forEach((mealObj: any) => {
         const mealName = Object.keys(mealObj)[0];
         if (mealName) {
           groupedMealNames.push(mealName);
@@ -692,10 +778,13 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     } else {
       try {
         // Use the already extracted ingredients result
-        const result = ingredientsResult;
+        const result = {
+          ...ingredientsResult,
+          consolidated: consolidated
+        };
 
         // Create organized layout with modern cards
-        if (result.grouped && result.grouped.length > 0 && result.consolidated && result.consolidated.length > 0) {
+        if (grouped && grouped.length > 0 && consolidated && consolidated.length > 0) {
           // Check if we have categorized data
           if (result.categorized && Object.keys(result.categorized).length > 0) {
             // Define category colors (same as modal)
@@ -839,9 +928,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
             // Create a map to count the number of meals each ingredient appears in
             const ingredientMealCount: { [ingredient: string]: number } = {};
-            const weights = result.weights || {};
-            if (result.grouped && Array.isArray(result.grouped)) {
-              result.grouped.forEach((mealObj: any) => {
+            if (grouped && Array.isArray(grouped)) {
+              grouped.forEach((mealObj: any) => {
                 // Each mealObj is like { "Meal Name": [ingredients] }
                 const ingredients = Object.values(mealObj)[0];
                 if (Array.isArray(ingredients)) {
@@ -853,8 +941,8 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
               });
             }
             
-            // Sort result.consolidated by descending count in ingredientMealCount, then alphabetically
-            result.consolidated.sort((a, b) => {
+            // Sort consolidated by descending count in ingredientMealCount, then alphabetically
+            consolidated.sort((a, b) => {
               const countA = ingredientMealCount[a.trim().toLowerCase()] || 0;
               const countB = ingredientMealCount[b.trim().toLowerCase()] || 0;
               if (countA !== countB) {
@@ -865,12 +953,12 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             });
 
             // Create organized columns - use 4 columns for better space utilization
-            const itemsPerColumn = Math.ceil(result.consolidated.length / 4);
+            const itemsPerColumn = Math.ceil(consolidated.length / 4);
             const columns = [
-              result.consolidated.slice(0, itemsPerColumn),
-              result.consolidated.slice(itemsPerColumn, itemsPerColumn * 2),
-              result.consolidated.slice(itemsPerColumn * 2, itemsPerColumn * 3),
-              result.consolidated.slice(itemsPerColumn * 3)
+              consolidated.slice(0, itemsPerColumn),
+              consolidated.slice(itemsPerColumn, itemsPerColumn * 2),
+              consolidated.slice(itemsPerColumn * 2, itemsPerColumn * 3),
+              consolidated.slice(itemsPerColumn * 3)
             ];
             
             const maxItems = Math.max(...columns.map(col => col.length));
@@ -904,7 +992,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
           }
 
           // Add new section: Ingredients by Meal - with pagination
-          let remainingMeals = [...result.grouped];
+          let remainingMeals = [...grouped];
           let pageIndex = 0;
 
           // Calculate dynamic height for each meal based on ingredient count and line wrapping
@@ -941,7 +1029,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
             return mealNameHeight + totalIngredientHeight + 5; // +5 for spacing
           };
 
-          const totalMeals = result.grouped.length;
+          const totalMeals = grouped.length;
           const totalPages = Math.ceil(totalMeals / 10); // Estimate pages, will be adjusted dynamically
 
           
@@ -1089,7 +1177,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   }
 }
 
-async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ grouped: any[], consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] } }> {
+async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -1113,19 +1201,13 @@ async function extractIngredientsFromMeals(meals: string[], portions: number = 1
     const data = await response.json();
 
     return {
-      grouped: data.grouped || [],
-      consolidated: data.consolidated || [],
-      weights: data.weights || {},
-      categorized: data.categorized || {}
+      categorized: data.categorized || {},
+      dayWise: data.dayWise
     };
   } catch (error) {
     console.error('Error calling AI for ingredients:', error);
     // Fallback: basic ingredient extraction
-    const basicIngredients = extractBasicIngredients(meals);
     return {
-      grouped: [],
-      consolidated: basicIngredients,
-      weights: {},
       categorized: {}
     };
   }

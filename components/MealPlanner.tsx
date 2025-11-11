@@ -1223,10 +1223,36 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
           if (response.ok) {
             const result = await response.json();
-            ingredients = result.consolidated || [];
-            weights = result.weights || {};
             categorized = result.categorized || {};
             setShoppingListDayWise(result.dayWise || undefined);
+            
+            // Derive consolidated from categorized (extract all ingredient names)
+            ingredients = [];
+            if (categorized && typeof categorized === 'object') {
+              Object.values(categorized).forEach((category: any) => {
+                if (Array.isArray(category)) {
+                  category.forEach((item: { name: string, amount: number, unit: string }) => {
+                    if (item.name && !ingredients.includes(item.name)) {
+                      ingredients.push(item.name);
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Derive weights from categorized (each ingredient appears once with its total weight)
+            weights = {};
+            if (categorized && typeof categorized === 'object') {
+              Object.values(categorized).forEach((category: any) => {
+                if (Array.isArray(category)) {
+                  category.forEach((item: { name: string, amount: number, unit: string }) => {
+                    if (item.name && item.amount !== undefined && item.unit) {
+                      weights[item.name] = { amount: item.amount, unit: item.unit };
+                    }
+                  });
+                }
+              });
+            }
           } else {
             console.error('Failed to extract ingredients:', response.status, response.statusText);
             const errorText = await response.text();

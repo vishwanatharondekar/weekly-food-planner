@@ -371,17 +371,10 @@ export default function ShoppingListModal({
 
       // Filter ingredients based on selection if needed
       let filteredIngredients = selectedIngredientsList.length > 0 ? selectedIngredientsList : ingredients;
-      let filteredWeights: { [ingredient: string]: { amount: number, unit: string } } = {};
       let filteredCategorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
       
       if (selectedIngredientsList.length > 0) {
-        // Filter weights and categorized based on selected ingredients
-        selectedIngredientsList.forEach(ingredient => {
-          if (weights[ingredient]) {
-            filteredWeights[ingredient] = weights[ingredient];
-          }
-        });
-        
+        // Filter categorized based on selected ingredients
         Object.entries(categorized).forEach(([category, items]) => {
           const filteredItems = items.filter(item => selectedIngredientsList.includes(item.name));
           if (filteredItems.length > 0) {
@@ -391,7 +384,6 @@ export default function ShoppingListModal({
       } else {
         // Use all ingredients if nothing is selected
         filteredIngredients = ingredients;
-        filteredWeights = weights;
         filteredCategorized = categorized;
       }
 
@@ -400,10 +392,8 @@ export default function ShoppingListModal({
         ...mealPlan,
         selectedIngredients: filteredIngredients,
         extractedIngredients: {
-          consolidated: filteredIngredients,
-          weights: filteredWeights,
           categorized: filteredCategorized,
-          grouped: grouped
+          dayWise: dayWise
         }
       };
 
