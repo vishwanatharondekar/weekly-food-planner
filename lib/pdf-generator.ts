@@ -53,10 +53,26 @@ export interface PDFMealPlan {
   selectedIngredients?: string[];
   extractedIngredients?: {
     consolidated: string[];
-    weights: { [ingredient: string]: { amount: number, unit: string } };
     categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
     dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
   };
+}
+
+// Helper function to derive weights from categorized
+function deriveWeightsFromCategorized(categorized: { [category: string]: { name: string, amount: number, unit: string }[] }): { [ingredient: string]: { amount: number, unit: string } } {
+  const weights: { [ingredient: string]: { amount: number, unit: string } } = {};
+  if (categorized && typeof categorized === 'object') {
+    Object.values(categorized).forEach((category) => {
+      if (Array.isArray(category)) {
+        category.forEach((item) => {
+          if (item.name && item.amount !== undefined && item.unit) {
+            weights[item.name] = { amount: item.amount, unit: item.unit };
+          }
+        });
+      }
+    });
+  }
+  return weights;
 }
 
 // Helper function to derive grouped format from dayWise or meals structure
@@ -560,13 +576,12 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     });
 
     // Use already extracted ingredients if available, otherwise extract from meal names
-    let ingredientsResult: { consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } } = { consolidated: [], weights: {}, categorized: {} };
+    let ingredientsResult: { consolidated: string[], categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } } = { consolidated: [], categorized: {} };
     
     if (mealPlan.extractedIngredients) {
       // Use the already extracted ingredients from the shopping list modal
       ingredientsResult = {
         consolidated: mealPlan.extractedIngredients.consolidated || [],
-        weights: mealPlan.extractedIngredients.weights || {},
         categorized: mealPlan.extractedIngredients.categorized || {},
         dayWise: mealPlan.extractedIngredients.dayWise
       };
@@ -578,6 +593,9 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
         console.error('Error extracting ingredients:', error);
       }
     }
+
+    // Derive weights from categorized
+    const weights = deriveWeightsFromCategorized(ingredientsResult.categorized || {});
 
     // Derive grouped from dayWise if available, otherwise from meals structure
     const grouped = ingredientsResult.dayWise 
@@ -889,7 +907,6 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
 
             // Create a map to count the number of meals each ingredient appears in
             const ingredientMealCount: { [ingredient: string]: number } = {};
-            const weights = result.weights || {};
             if (grouped && Array.isArray(grouped)) {
               grouped.forEach((mealObj: any) => {
                 // Each mealObj is like { "Meal Name": [ingredients] }
@@ -1139,7 +1156,7 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   }
 }
 
-async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
+async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ consolidated: string[], categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -1164,7 +1181,6 @@ async function extractIngredientsFromMeals(meals: string[], portions: number = 1
 
     return {
       consolidated: data.consolidated || [],
-      weights: data.weights || {},
       categorized: data.categorized || {},
       dayWise: data.dayWise
     };
@@ -1174,7 +1190,6 @@ async function extractIngredientsFromMeals(meals: string[], portions: number = 1
     const basicIngredients = extractBasicIngredients(meals);
     return {
       consolidated: basicIngredients,
-      weights: {},
       categorized: {}
     };
   }

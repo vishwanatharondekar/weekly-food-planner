@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function extractIngredientsWithAI(meals: string[], portions: number = 1, dayWiseMeals?: { [day: string]: { [mealType: string]: string } }): Promise<{ consolidated: string[], weights: { [ingredient: string]: { amount: number, unit: string } }, categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
+async function extractIngredientsWithAI(meals: string[], portions: number = 1, dayWiseMeals?: { [day: string]: { [mealType: string]: string } }): Promise<{ consolidated: string[], categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
   let prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
@@ -145,8 +145,7 @@ Number of portions: ${portions}`;
   }
   
   prompt += `\n${dayWiseMeals ? '2' : '1'}. "consolidated": An array of all unique ingredients needed for all meals
-${dayWiseMeals ? '3' : '2'}. "weights": An object where each ingredient is mapped to its total quantity needed (amount and unit)
-${dayWiseMeals ? '4' : '3'}. "categorized": An object where ingredients are grouped by type with their quantities
+${dayWiseMeals ? '3' : '2'}. "categorized": An object where ingredients are grouped by type with their quantities
 
 For each ingredient, provide realistic quantities based on the number of portions. Use appropriate units (grams, kilograms, pieces, cups, etc.).
 
@@ -169,13 +168,6 @@ Example response format:
     }
   },
   ` : ''}"consolidated": ["brinjal", "paneer", "eggs", "onions", "tomatoes"],
-  "weights": {
-    "brinjal": {"amount": 500, "unit": "g"},
-    "paneer": {"amount": 250, "unit": "g"},
-    "eggs": {"amount": 6, "unit": "pieces"},
-    "onions": {"amount": 600, "unit": "g"},
-    "tomatoes": {"amount": 900, "unit": "g"}
-  },
   "categorized": {
     "Vegetables": [
       {"name": "brinjal", "amount": 500, "unit": "g"},
@@ -208,7 +200,6 @@ Return only the JSON object, nothing else.
         
         return {
           consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
-          weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
           categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
           dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
         };
@@ -224,18 +215,17 @@ Return only the JSON object, nothing else.
     if (result.consolidated) {
       return {
         consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
-        weights: result.weights && typeof result.weights === 'object' ? result.weights : {},
         categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
         dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
       };
     }
     
     // Fallback: if structure is not as expected, return empty
-    return { consolidated: [], weights: {}, categorized: {}, dayWise: undefined };
+    return { consolidated: [], categorized: {}, dayWise: undefined };
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
     console.error('Raw AI response:', text);
     // Fallback: return empty structure, the client will use basic extraction
-    return { consolidated: [], weights: {}, categorized: {}, dayWise: undefined };
+    return { consolidated: [], categorized: {}, dayWise: undefined };
   }
 } 
