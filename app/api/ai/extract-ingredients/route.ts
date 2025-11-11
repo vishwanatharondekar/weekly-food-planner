@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function extractIngredientsWithAI(meals: string[], portions: number = 1, dayWiseMeals?: { [day: string]: { [mealType: string]: string } }): Promise<{ consolidated: string[], categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
+async function extractIngredientsWithAI(meals: string[], portions: number = 1, dayWiseMeals?: { [day: string]: { [mealType: string]: string } }): Promise<{ categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
   let prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
@@ -144,8 +144,7 @@ Number of portions: ${portions}`;
    }`;
   }
   
-  prompt += `\n${dayWiseMeals ? '2' : '1'}. "consolidated": An array of all unique ingredients needed for all meals
-${dayWiseMeals ? '3' : '2'}. "categorized": An object where ingredients are grouped by type with their quantities
+  prompt += `\n${dayWiseMeals ? '2' : '1'}. "categorized": An object where ingredients are grouped by type with their quantities
 
 For each ingredient, provide realistic quantities based on the number of portions. Use appropriate units (grams, kilograms, pieces, cups, etc.).
 
@@ -167,8 +166,7 @@ Example response format:
       }
     }
   },
-  ` : ''}"consolidated": ["brinjal", "paneer", "eggs", "onions", "tomatoes"],
-  "categorized": {
+  ` : ''}"categorized": {
     "Vegetables": [
       {"name": "brinjal", "amount": 500, "unit": "g"},
       {"name": "onions", "amount": 600, "unit": "g"},
@@ -196,10 +194,9 @@ Return only the JSON object, nothing else.
       const result = JSON.parse(jsonMatch[0]);
       
       // Validate the structure
-      if (result.consolidated) {
+      if (result.categorized) {
         
         return {
-          consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
           categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
           dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
         };
@@ -212,20 +209,19 @@ Return only the JSON object, nothing else.
 
     console.log('Object.keys(result) : ', Object.keys(result));
 
-    if (result.consolidated) {
+    if (result.categorized) {
       return {
-        consolidated: Array.isArray(result.consolidated) ? result.consolidated : [],
         categorized: result.categorized && typeof result.categorized === 'object' ? result.categorized : {},
         dayWise: result.dayWise && typeof result.dayWise === 'object' ? result.dayWise : undefined
       };
     }
     
     // Fallback: if structure is not as expected, return empty
-    return { consolidated: [], categorized: {}, dayWise: undefined };
+    return { categorized: {}, dayWise: undefined };
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
     console.error('Raw AI response:', text);
     // Fallback: return empty structure, the client will use basic extraction
-    return { consolidated: [], categorized: {}, dayWise: undefined };
+    return { categorized: {}, dayWise: undefined };
   }
 } 

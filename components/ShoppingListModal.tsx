@@ -392,7 +392,6 @@ export default function ShoppingListModal({
         ...mealPlan,
         selectedIngredients: filteredIngredients,
         extractedIngredients: {
-          consolidated: filteredIngredients,
           categorized: filteredCategorized,
           dayWise: dayWise
         }
