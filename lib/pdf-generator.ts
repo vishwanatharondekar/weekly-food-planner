@@ -603,7 +603,25 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
     } else if (originalMealNames.length > 0) {
       // Fallback to API call if extracted ingredients not provided
       try {
-        ingredientsResult = await extractIngredientsFromMeals(originalMealNames, mealPlan.mealSettings?.portions || 1);
+        // Convert meals to dayWiseMeals format for the API
+        const dayWiseMeals: { [day: string]: { [mealType: string]: string } } = {};
+        DAYS_OF_WEEK.forEach(day => {
+          dayWiseMeals[day] = {};
+          enabledMealTypes.forEach(mealType => {
+            const meal = mealPlan.meals[day]?.[mealType];
+            const mealName = meal instanceof Object && 'name' in meal ? meal.name : meal;
+            if (mealName) {
+              dayWiseMeals[day][mealType] = mealName;
+            }
+          });
+        });
+        
+        ingredientsResult = await extractIngredientsFromMeals(
+          originalMealNames, 
+          mealPlan.mealSettings?.portions || 1,
+          mealPlan.weekStartDate,
+          dayWiseMeals
+        );
       } catch (error) {
         console.error('Error extracting ingredients:', error);
       }
@@ -1177,7 +1195,12 @@ export async function generateShoppingListPDF(mealPlan: PDFMealPlan): Promise<vo
   }
 }
 
-async function extractIngredientsFromMeals(meals: string[], portions: number = 1): Promise<{ categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
+async function extractIngredientsFromMeals(
+  meals: string[], 
+  portions: number = 1, 
+  weekStartDate?: string,
+  dayWiseMeals?: { [day: string]: { [mealType: string]: string } }
+): Promise<{ categorized: { [category: string]: { name: string, amount: number, unit: string }[] }, dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } } }> {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -1185,13 +1208,22 @@ async function extractIngredientsFromMeals(meals: string[], portions: number = 1
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch('/api/ai/extract-ingredients', {
+    if (!weekStartDate) {
+      throw new Error('weekStartDate is required for shopping list generation');
+    }
+
+    const response = await fetch('/api/ai/get-shopping-list', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ meals, portions }),
+      body: JSON.stringify({ 
+        meals, 
+        portions,
+        weekStartDate,
+        dayWiseMeals
+      }),
     });
 
     if (!response.ok) {
