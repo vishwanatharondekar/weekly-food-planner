@@ -22,19 +22,19 @@ function getUserIdFromToken(token: string): string | null {
 // Create a hash from meal plan data
 function createMealPlanHash(
   meals: string[],
-  dayWiseMeals: { [day: string]: { [mealType: string]: string } } | undefined,
+  dayWiseMeals: { [day: string]: { [mealType: string]: string } },
   portions: number
 ): string {
   // Normalize the meal plan data for consistent hashing
   const normalizedData = {
     meals: meals.sort(),
-    dayWiseMeals: dayWiseMeals ? Object.keys(dayWiseMeals).sort().reduce((acc, day) => {
+    dayWiseMeals: Object.keys(dayWiseMeals).sort().reduce((acc, day) => {
       acc[day] = Object.keys(dayWiseMeals[day]).sort().reduce((dayAcc, mealType) => {
         dayAcc[mealType] = dayWiseMeals[day][mealType];
         return dayAcc;
       }, {} as { [mealType: string]: string });
       return acc;
-    }, {} as { [day: string]: { [mealType: string]: string } }) : undefined,
+    }, {} as { [day: string]: { [mealType: string]: string } }),
     portions
   };
 
@@ -42,43 +42,38 @@ function createMealPlanHash(
   return createHash('sha256').update(dataString).digest('hex');
 }
 
-// Extract ingredients using AI (same logic as extract-ingredients route)
+// Extract ingredients using AI
 async function extractIngredientsWithAI(
   meals: string[],
   portions: number = 1,
-  dayWiseMeals?: { [day: string]: { [mealType: string]: string } }
+  dayWiseMeals: { [day: string]: { [mealType: string]: string } }
 ): Promise<{
   categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
   dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
 }> {
+
   let prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
 Number of portions: ${portions}`;
 
-  // Add day-wise information if available
-  if (dayWiseMeals) {
-    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    prompt += `\n\nDay-wise meals:\n`;
-    dayOrder.forEach(day => {
-      if (dayWiseMeals[day]) {
-        const mealsByDay = Object.entries(dayWiseMeals[day]);
-        if (mealsByDay.length > 0) {
-          prompt += `${day.charAt(0).toUpperCase() + day.slice(1)}:\n`;
-          mealsByDay.forEach(([mealType, mealName]) => {
-            prompt += `  - ${mealType}: ${mealName}\n`;
-          });
-        }
+  // Add day-wise information
+  const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  prompt += `\n\nDay-wise meals:\n`;
+  dayOrder.forEach(day => {
+    if (dayWiseMeals[day]) {
+      const mealsByDay = Object.entries(dayWiseMeals[day]);
+      if (mealsByDay.length > 0) {
+        prompt += `${day.charAt(0).toUpperCase() + day.slice(1)}:\n`;
+        mealsByDay.forEach(([mealType, mealName]) => {
+          prompt += `  - ${mealType}: ${mealName}\n`;
+        });
       }
-    });
-  } else {
-    prompt += `\n\nMeal names: ${meals.join(', ')}`;
-  }
+    }
+  });
 
-  prompt += `\n\nPlease return a JSON object with the following properties:`;
-  
-  if (dayWiseMeals) {
-    prompt += `\n1. "dayWise": An object where each day contains meals with their ingredients
+  prompt += `\n\nPlease return a JSON object with the following properties:
+1. "dayWise": An object where each day contains meals with their ingredients
    For example: {
      "monday": {
        "breakfast": {
@@ -89,10 +84,8 @@ Number of portions: ${portions}`;
          ]
        }
      }
-   }`;
-  }
-  
-  prompt += `\n${dayWiseMeals ? '2' : '1'}. "categorized": An object where ingredients are grouped by type with their quantities
+   }
+2. "categorized": An object where ingredients are grouped by type with their quantities
 
 For each ingredient, provide realistic quantities based on the number of portions. Use appropriate units (grams, kilograms, pieces, cups, etc.).
 
@@ -102,7 +95,7 @@ Categorize ingredients into these types: "Vegetables", "Fruits", "Dairy & Eggs",
 
 Example response format:
 {
-  ${dayWiseMeals ? `"dayWise": {
+  "dayWise": {
     "monday": {
       "breakfast": {
         "name": "Dosa",
@@ -114,7 +107,7 @@ Example response format:
       }
     }
   },
-  ` : ''}"categorized": {
+  "categorized": {
     "Vegetables": [
       {"name": "brinjal", "amount": 500, "unit": "g"},
       {"name": "onions", "amount": 600, "unit": "g"},
@@ -160,13 +153,13 @@ Return only the JSON object, nothing else.
       };
     }
     
-    // Fallback: if structure is not as expected, return empty
-    return { categorized: {}, dayWise: undefined };
+    // If structure is not as expected, throw error
+    throw new Error('Error while extracting ingredients with AI. Please try again.');
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
     console.error('Raw AI response:', text);
-    // Fallback: return empty structure, the client will use basic extraction
-    return { categorized: {}, dayWise: undefined };
+    // If structure is not as expected, throw error
+    throw new Error('Error while extracting ingredients with AI. Please try again.');
   }
 }
 
@@ -186,9 +179,13 @@ export async function POST(request: NextRequest) {
 
     const { meals, dayWiseMeals, portions = 1, weekStartDate } = await request.json();
 
-    // Accept either simple array or day-wise structure
-    if (!meals || (!Array.isArray(meals) && !dayWiseMeals)) {
+    // Validate required fields
+    if (!meals || !Array.isArray(meals)) {
       return NextResponse.json({ error: 'Invalid meals data' }, { status: 400 });
+    }
+
+    if (!dayWiseMeals || typeof dayWiseMeals !== 'object') {
+      return NextResponse.json({ error: 'dayWiseMeals is required' }, { status: 400 });
     }
 
     if (!weekStartDate) {
@@ -271,9 +268,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract ingredients using AI
-    const result = dayWiseMeals 
-      ? await extractIngredientsWithAI(meals, portions, dayWiseMeals)
-      : await extractIngredientsWithAI(meals, portions);
+    const result = await extractIngredientsWithAI(meals, portions, dayWiseMeals);
 
     // Save shopping list to DB
     const newShoppingListRef = doc(db, shoppingListsCollection, `${userId}_${weekStartDate}`);

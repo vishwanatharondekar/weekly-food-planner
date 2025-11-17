@@ -678,8 +678,36 @@ export default function ShoppingListModal({
                 {/* Category View */}
                 {activeTab === 'category' && (
                   Object.entries(categorized).length > 0 ? (
-                  // Render categorized ingredients
-                  Object.entries(categorized).map(([category, items]) => {
+                  // Define category order
+                  (() => {
+                    const categoryOrder = [
+                      'Vegetables',
+                      'Fruits',
+                      'Dairy & Eggs',
+                      'Meat & Seafood',
+                      'Grains & Pulses',
+                      'Spices & Herbs',
+                      'Pantry Items',
+                      'Other'
+                    ];
+                    
+                    // Get all categories that have items
+                    const categoriesWithItems = Object.entries(categorized)
+                      .filter(([_, items]) => items && items.length > 0);
+                    
+                    // Separate known and unknown categories
+                    const knownCategories = categoryOrder
+                      .filter(category => categorized[category] && categorized[category].length > 0)
+                      .map(category => [category, categorized[category]] as [string, { name: string, amount: number, unit: string }[]]);
+                    
+                    const unknownCategories = categoriesWithItems
+                      .filter(([category]) => !categoryOrder.includes(category))
+                      .map(([category, items]) => [category, items] as [string, { name: string, amount: number, unit: string }[]]);
+                    
+                    // Combine: known categories in order, then unknown categories
+                    const sortedCategories = [...knownCategories, ...unknownCategories];
+
+                    return sortedCategories.map(([category, items]) => {
                     // Define category colors
                     const getCategoryStyles = (category: string) => {
                       switch (category) {
@@ -784,7 +812,8 @@ export default function ShoppingListModal({
                         </div>
                       </div>
                     );
-                  })
+                    });
+                  })()
                   ) : (
                   // Fallback to simple list if no categorized data
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">

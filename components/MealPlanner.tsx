@@ -1225,11 +1225,15 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       let ingredients: string[] = [];
       let weights: { [ingredient: string]: { amount: number, unit: string } } = {};
       let categorized: { [category: string]: { name: string, amount: number, unit: string }[] } = {};
+      let hasError = false;
+      
       if (mealNames.length > 0) {
         try {
           const token = localStorage.getItem('token');
           if (!token) {
             console.error('No authentication token found');
+            toast.error('No authentication token found');
+            hideFullScreenLoader();
             return;
           }
 
@@ -1281,44 +1285,79 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               });
             }
           } else {
-            console.error('Failed to extract ingredients:', response.status, response.statusText);
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
+            hasError = true;
+            let errorMessage = 'Failed to extract ingredients';
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+              } else {
+                const errorText = await response.text();
+                if (errorText) {
+                  errorMessage = errorText;
+                }
+              }
+            } catch (parseError) {
+              // If we can't parse the error, use default message
+              console.error('Error parsing error response:', parseError);
+            }
+            console.error('Failed to extract ingredients:', response.status, response.statusText, errorMessage);
+            toast.error(errorMessage);
+            hideFullScreenLoader();
+            return;
           }
-        } catch (error) {
+        } catch (error: any) {
+          hasError = true;
           console.error('Error extracting ingredients:', error);
+          const errorMessage = error.message || 'Failed to extract ingredients. Please try again.';
+          toast.error(errorMessage);
+          hideFullScreenLoader();
+          return;
         }
+      } else {
+        // No meals to extract ingredients from
+        toast.error('Please add some meals to your plan first');
+        hideFullScreenLoader();
+        return;
       }
 
-      // Prepare meal plan data for the modal
-      const mealPlanData = {
-        weekStartDate: formatDate(currentWeek),
-        meals: pdfMeals,
-        userInfo: user,
-        mealSettings,
-        videoURLs,
-        imageURLs,
-        targetLanguage: userLanguage
-      };
+      // Only show modal if we have ingredients and no error occurred
+      if (!hasError && ingredients.length > 0) {
+        // Prepare meal plan data for the modal
+        const mealPlanData = {
+          weekStartDate: formatDate(currentWeek),
+          meals: pdfMeals,
+          userInfo: user,
+          mealSettings,
+          videoURLs,
+          imageURLs,
+          targetLanguage: userLanguage
+        };
 
-      hideFullScreenLoader();
-      
-      // Refresh user data to get updated usage counts for guest users
-      if (isGuestUser(user?.id) && onUserUpdate) {
-        try {
-          const response = await authAPI.getProfile();
-          onUserUpdate(response.user);
-        } catch (error) {
-          console.error('Error refreshing user data:', error);
+        hideFullScreenLoader();
+        
+        // Refresh user data to get updated usage counts for guest users
+        if (isGuestUser(user?.id) && onUserUpdate) {
+          try {
+            const response = await authAPI.getProfile();
+            onUserUpdate(response.user);
+          } catch (error) {
+            console.error('Error refreshing user data:', error);
+          }
         }
+        
+        // Show the shopping list modal
+        setShoppingListIngredients(ingredients);
+        setShoppingListWeights(weights);
+        setShoppingListCategorized(categorized);
+        setShoppingListMealPlan(mealPlanData);
+        setShowShoppingListModal(true);
+      } else if (!hasError) {
+        // No ingredients extracted but no error - shouldn't happen, but handle gracefully
+        toast.error('No ingredients found for the selected meals');
+        hideFullScreenLoader();
       }
-      
-      // Show the shopping list modal
-      setShoppingListIngredients(ingredients);
-      setShoppingListWeights(weights);
-      setShoppingListCategorized(categorized);
-      setShoppingListMealPlan(mealPlanData);
-      setShowShoppingListModal(true);
       
     } catch (error: any) {
       console.error('Error generating shopping list:', error);
