@@ -51,6 +51,7 @@ async function extractIngredientsWithAI(
   categorized: { [category: string]: { name: string, amount: number, unit: string }[] };
   dayWise?: { [day: string]: { [mealType: string]: { name: string, ingredients: { name: string, amount: number, unit: string }[] } } };
 }> {
+
   let prompt = `
 You are a helpful cooking assistant. Given a list of meal names and the number of portions, extract the main ingredients needed to cook these dishes with their quantities.
 
@@ -152,13 +153,13 @@ Return only the JSON object, nothing else.
       };
     }
     
-    // Fallback: if structure is not as expected, return empty
-    return { categorized: {}, dayWise: undefined };
+    // If structure is not as expected, throw error
+    throw new Error('Error while extracting ingredients with AI. Please try again.');
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
     console.error('Raw AI response:', text);
-    // Fallback: return empty structure, the client will use basic extraction
-    return { categorized: {}, dayWise: undefined };
+    // If structure is not as expected, throw error
+    throw new Error('Error while extracting ingredients with AI. Please try again.');
   }
 }
 

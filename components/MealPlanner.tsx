@@ -1281,12 +1281,33 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               });
             }
           } else {
-            console.error('Failed to extract ingredients:', response.status, response.statusText);
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
+            let errorMessage = 'Failed to extract ingredients';
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+              } else {
+                const errorText = await response.text();
+                if (errorText) {
+                  errorMessage = errorText;
+                }
+              }
+            } catch (parseError) {
+              // If we can't parse the error, use default message
+              console.error('Error parsing error response:', parseError);
+            }
+            console.error('Failed to extract ingredients:', response.status, response.statusText, errorMessage);
+            toast.error(errorMessage);
+            hideFullScreenLoader();
+            return;
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error extracting ingredients:', error);
+          const errorMessage = error.message || 'Failed to extract ingredients. Please try again.';
+          toast.error(errorMessage);
+          hideFullScreenLoader();
+          return;
         }
       }
 
