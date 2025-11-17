@@ -122,6 +122,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
   const [upgradeModalType, setUpgradeModalType] = useState<'ai' | 'shopping_list'>('ai');
   const [showNoEmptySlotsModal, setShowNoEmptySlotsModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [isOverwriteMode, setIsOverwriteMode] = useState(false);
   
   // Shopping list modal state
   const [showShoppingListModal, setShowShoppingListModal] = useState(false);
@@ -887,6 +888,29 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
     setShowPreferencesModal(true);
   };
 
+  const handleOverwriteConfirm = () => {
+    setShowNoEmptySlotsModal(false);
+    setIsOverwriteMode(true);
+    
+    // Check guest usage limits before opening preferences modal
+    if (isGuestUser(user?.id)) {
+      if (hasExceededGuestLimit('ai', user)) {
+        setUpgradeModalType('ai');
+        setShowUpgradeModal(true);
+        setIsOverwriteMode(false);
+        return;
+      }
+      
+      const remaining = getRemainingGuestUsage('ai', user);
+      if (remaining <= 1) {
+        toast.success(`You have ${remaining} AI generation${remaining === 1 ? '' : 's'} remaining as a guest user. Sign in for unlimited access!`);
+      }
+    }
+    
+    // Open preferences modal to get ingredients, then proceed with overwrite
+    setShowPreferencesModal(true);
+  };
+
   const handlePreferencesConfirm = async (preferences: any) => {
     setIsUpdatingPreferences(true);
     
@@ -904,18 +928,23 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       // Close modal
       setShowPreferencesModal(false);
       
+      // Use overwrite mode if set
+      const shouldOverwrite = isOverwriteMode;
+      setIsOverwriteMode(false);
+      
       // Now generate AI meals with ingredients
-      await performAIGeneration(preferences.ingredients);
+      await performAIGeneration(preferences.ingredients, shouldOverwrite);
       
     } catch (error: any) {
       console.error('Error updating preferences:', error);
       toast.error(error.message || 'Failed to update preferences');
+      setIsOverwriteMode(false);
     } finally {
       setIsUpdatingPreferences(false);
     }
   };
 
-  const performAIGeneration = async (ingredients?: string[]) => {
+  const performAIGeneration = async (ingredients?: string[], overwrite: boolean = false) => {
     try {
       setLoading(true);
       showFullScreenLoader('ai', 'Getting AI Results', 'Analyzing your preferences and generating meal suggestions...');
@@ -930,6 +959,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
           ingredient_count: ingredients?.length || 0,
           user_id: user?.id,
           is_guest: isGuestUser(user?.id),
+          overwrite: overwrite,
         },
       });
       
@@ -939,51 +969,55 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
 
       // Update loader message
       setLoaderMessage('Processing AI Results');
-      setLoaderSubMessage('Applying suggestions to your meal plan...');
+      setLoaderSubMessage(overwrite ? 'Overwriting your meal plan with new suggestions...' : 'Applying suggestions to your meal plan...');
       
-      // Prepare updated meals with AI suggestions for empty slots
-      const updatedMeals = { ...meals };
+      // Prepare updated meals with AI suggestions
+      const updatedMeals = overwrite ? {} : { ...meals };
       let hasUpdates = false;
       
-      // Only update empty meals, preserve existing user input
+      // Update meals based on overwrite mode
       for (const [day, dayMeals] of Object.entries(suggestions)) {
+        if (!updatedMeals[day]) {
+          updatedMeals[day] = {};
+        }
         for (const [mealType, mealData] of Object.entries(dayMeals as any)) {
           // Only update if the meal type is enabled in settings
           if (mealSettings.enabledMealTypes.includes(mealType)) {
             const currentMeal = meals[day]?.[mealType]?.name || '';
-          if (!currentMeal.trim()) {
-            // Handle both string and object formats
-            let mealName: string;
-            let calories: number | undefined = undefined;
-            
-            if (typeof mealData === 'string') {
-              mealName = mealData;
-            } else if (typeof mealData === 'object' && mealData !== null && 'name' in mealData) {
-              mealName = (mealData as any).name;
-              calories = (mealData as any).calories;
-            } else {
-              mealName = String(mealData);
-            }
-            
-            // Check if there's a saved video URL for this recipe
-            let videoUrl: string | undefined = undefined;
-            try {
-              const normalizedRecipeName = mealName.toLowerCase().trim();
-              videoUrl = userVideoURLs[normalizedRecipeName];
-            } catch (error) {
-              console.warn('Failed to check for video URL:', error);
-            }
+            // If overwrite mode, replace all meals. Otherwise, only fill empty slots.
+            if (overwrite || !currentMeal.trim()) {
+              // Handle both string and object formats
+              let mealName: string;
+              let calories: number | undefined = undefined;
+              
+              if (typeof mealData === 'string') {
+                mealName = mealData;
+              } else if (typeof mealData === 'object' && mealData !== null && 'name' in mealData) {
+                mealName = (mealData as any).name;
+                calories = (mealData as any).calories;
+              } else {
+                mealName = String(mealData);
+              }
+              
+              // Check if there's a saved video URL for this recipe
+              let videoUrl: string | undefined = undefined;
+              try {
+                const normalizedRecipeName = mealName.toLowerCase().trim();
+                videoUrl = userVideoURLs[normalizedRecipeName];
+              } catch (error) {
+                console.warn('Failed to check for video URL:', error);
+              }
 
-            // Update local state
-            updatedMeals[day] = {
-              ...updatedMeals[day],
+              // Update local state
+              updatedMeals[day] = {
+                ...updatedMeals[day],
                 [mealType]: {
                   name: mealName,
                   videoUrl: videoUrl,
                   calories: calories
                 }
-            };
-            hasUpdates = true;
+              };
+              hasUpdates = true;
             }
           }
         }
@@ -999,7 +1033,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       }
       
       hideFullScreenLoader();
-      toast.success('AI meal suggestions applied to empty slots!');
+      toast.success(overwrite ? 'Meal plan overwritten with new AI suggestions!' : 'AI meal suggestions applied to empty slots!');
       await checkAIStatus();
       
       // Refresh user data to get updated usage counts for guest users
@@ -1634,7 +1668,10 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
       {/* Preferences Edit Modal */}
       <PreferencesEditModal
         isOpen={showPreferencesModal}
-        onClose={() => setShowPreferencesModal(false)}
+        onClose={() => {
+          setShowPreferencesModal(false);
+          setIsOverwriteMode(false);
+        }}
         onConfirm={handlePreferencesConfirm}
         user={user}
         isLoading={isUpdatingPreferences}
@@ -1656,7 +1693,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
         usageLimit={upgradeModalType === 'ai' ? (user?.guestUsageLimits?.aiGeneration || 3) : (user?.guestUsageLimits?.shoppingList || 3)}
       />
 
-      {/* No Empty Slots Modal */}
+      {/* Overwrite Modal */}
       {showNoEmptySlotsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -1667,21 +1704,27 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
                 </div>
                 <div className="ml-3">
                   <h3 className="text-lg font-medium text-gray-900">
-                    No Empty Slots Available
+                    Overwrite Current Plan?
                   </h3>
                 </div>
               </div>
               <div className="mb-6">
                 <p className="text-sm text-gray-600">
-                  AI will be used only for filling empty slots. Clear the complete plan if you wish to regenerate the whole plan.
+                  All meals in your current plan will be overwritten with new AI-generated suggestions. This action cannot be undone.
                 </p>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowNoEmptySlotsModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleOverwriteConfirm}
                   className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                 >
-                  OK
+                  Overwrite
                 </button>
               </div>
             </div>
