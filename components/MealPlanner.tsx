@@ -1233,7 +1233,7 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
             return;
           }
 
-          const response = await fetch('/api/ai/extract-ingredients', {
+          const response = await fetch('/api/ai/get-shopping-list', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1243,7 +1243,8 @@ export default function MealPlanner({ user, continueFromOnboarding = false, onUs
               meals: mealNames,
               dayWiseMeals: pdfMeals,
               language: userLanguage,
-              portions: mealSettings.portions || 1
+              portions: mealSettings.portions || 1,
+              weekStartDate: formatDate(currentWeek)
             }),
           });
 
