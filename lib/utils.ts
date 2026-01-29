@@ -30,14 +30,12 @@ export function getPlanUrl(date: Date): string {
 }
 
 export function getNextWeekStartDate(date: Date): Date {
-  // If the given date is Saturday (6) or Sunday (0), return next week's Monday
-  const day = date.getDay();
-  // Move to next Monday
-  const nextMonday = new Date(date);
-  // Calculate days to add: (8 - day) % 7
-  const daysToAdd = (8 - day) % 7;
-  nextMonday.setDate(date.getDate() + daysToAdd);
-  return startOfWeek(nextMonday, { weekStartsOn: 1 });
+  // Get the start of the current week (Monday)
+  const currentWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+  // Add 7 days to get next week's Monday
+  const nextMonday = new Date(currentWeekStart);
+  nextMonday.setDate(currentWeekStart.getDate() + 7);
+  return nextMonday;
 }
 
 export function getWeekDays(startDate: Date): Date[] {
